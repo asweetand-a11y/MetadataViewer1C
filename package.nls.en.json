@@ -20,6 +20,7 @@
 	"1c-metadata-viewer.clearFilter.title": "Очистить фильтр по подсистеме",
 	"1c-metadata-viewer.settings.title": "Настройки",
 	"1c-metadata-viewer.openDcsEditor.title": "Открыть редактор СКД",
+	"1c-metadata-viewer.searchInTree.title": "Поиск",
 	"1c-metadata-viewer.reindexStructure.title": "Переиндексировать структуру",
 	"1c-metadata-viewer.refreshObjectStructure.title": "Обновить структуру",
 	"1c-metadata-viewer.genFromComment.title": "BSL: Сгенерировать из // @gen",

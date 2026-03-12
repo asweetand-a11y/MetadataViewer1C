@@ -29,6 +29,12 @@ function debugWarn(message: string, outputChannel?: vscode.OutputChannel) {
 }
 
 /**
+ * Версия структуры дерева метаданных
+ * Изменение версии инвалидирует весь кэш
+ */
+export const TREE_CACHE_VERSION = 'tree-cache-v2-fix-parentId';
+
+/**
  * Multi-layer cache:
  *  - L1: in-memory per running session
  *  - L2: workspaceState (small metadata + pointer)
@@ -56,7 +62,7 @@ export class MetadataCache {
       ? ['ConfigDumpInfo.xml', 'Configuration.xml']
       : [path.join('Configuration', 'Configuration.mdo')];
 
-    const treeStructureVersion = 'tree-cache-v1'; // Версия структуры дерева
+    const treeStructureVersion = TREE_CACHE_VERSION;
     const parts: string[] = [this.extVersion, configType, treeStructureVersion];
     for (const rel of keyFiles) {
       const p = path.join(configRoot, rel);
@@ -140,8 +146,8 @@ export class MetadataCache {
       const env = JSON.parse(raw) as TreeCacheEnvelope;
       
       // Проверка версии кэша при чтении из L3
-      if (env.version !== 'tree-cache-v1') {
-        debugWarn(`[MetadataCache.read] Неверная версия кэша: ${env.version}, ожидается: tree-cache-v1. Кэш будет проигнорирован.`, this.outputChannel);
+      if (env.version !== TREE_CACHE_VERSION) {
+        debugWarn(`[MetadataCache.read] Неверная версия кэша: ${env.version}, ожидается: ${TREE_CACHE_VERSION}. Кэш будет проигнорирован.`, this.outputChannel);
         return undefined;
       }
       
@@ -177,8 +183,8 @@ export class MetadataCache {
     }
     
     // Проверка версии
-    if (env.version !== 'tree-cache-v1') {
-      debugWarn(`[MetadataCache.write] Неверная версия кэша: ${env.version}, ожидается: tree-cache-v1`, this.outputChannel);
+    if (env.version !== TREE_CACHE_VERSION) {
+      debugWarn(`[MetadataCache.write] Неверная версия кэша: ${env.version}, ожидается: ${TREE_CACHE_VERSION}`, this.outputChannel);
     }
     
     try {

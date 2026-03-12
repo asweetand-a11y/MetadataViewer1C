@@ -39,6 +39,7 @@ const hydrate_1 = require("./runtime/hydrate");
 const extension_1 = require("./extension");
 const metadata_types_1 = require("./Metadata/metadata-types");
 const predefinedParser_1 = require("./xmlParsers/predefinedParser");
+const configDumpInfoUpdater_1 = require("./utils/configDumpInfoUpdater");
 class MetadataView {
     constructor(context) {
         this.panel = undefined;
@@ -51,6 +52,7 @@ class MetadataView {
                 ? vscode.workspace.workspaceFolders[0].uri : undefined;
             this.dataProvider = new NodeWithIdTreeDataProvider();
             const view = vscode.window.createTreeView('metadataView', { treeDataProvider: this.dataProvider, showCollapseAll: true });
+            this.treeView = view;
             context.subscriptions.push(view);
             extension_1.outputChannel.appendLine('TreeView "metadataView" успешно создан');
             this.reindexStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -124,6 +126,7 @@ class MetadataView {
         vscode.commands.registerCommand('metadataViewer.openPredefinedData', (item) => this.openPredefinedData(context, item));
         vscode.commands.registerCommand('metadataViewer.openHandler', (item) => this.openHandler(item));
         vscode.commands.registerCommand('metadataViewer.openMetadataProperties', (item) => this.openMetadataProperties(context, item));
+        vscode.commands.registerCommand('metadataViewer.searchInTree', () => this.searchInTree());
         vscode.commands.registerCommand('metadataViewer.reindexStructure', async () => {
             await this.reindexStructure();
         });
@@ -206,6 +209,26 @@ class MetadataView {
                 }
             }
             const N = allConfigs.length;
+            // Синхронизация ConfigDumpInfo.xml с файловой структурой для XML-конфигураций.
+            // Добавляет записи для объектов, созданных вручную (например, новая обработка в DataProcessors).
+            sb.text = '$(sync~spin) Переиндексация: синхронизация ConfigDumpInfo…';
+            for (const cfg of allConfigs) {
+                if (cfg.type === 'xml') {
+                    try {
+                        const syncResult = await (0, configDumpInfoUpdater_1.syncConfigDumpInfoWithFileSystem)(cfg.configRoot, extension_1.outputChannel);
+                        if (syncResult.addedCount > 0) {
+                            extension_1.outputChannel.appendLine(`[MetadataView.reindexStructure] ConfigDumpInfo: добавлено ${syncResult.addedCount} объектов для ${cfg.configRoot}`);
+                        }
+                        if (syncResult.errors.length > 0) {
+                            extension_1.outputChannel.appendLine(`[MetadataView.reindexStructure] ConfigDumpInfo sync: ${syncResult.errors.join('; ')}`);
+                        }
+                    }
+                    catch (syncErr) {
+                        const msg = syncErr instanceof Error ? syncErr.message : String(syncErr);
+                        extension_1.outputChannel.appendLine(`[MetadataView.reindexStructure] Ошибка синхронизации ConfigDumpInfo: ${msg}`);
+                    }
+                }
+            }
             sb.text = '$(sync~spin) Переиндексация: загрузка конфигураций…';
             let x = 0;
             for (const cfg of allConfigs) {
@@ -224,6 +247,126 @@ class MetadataView {
             setTimeout(() => sb.hide(), 2500);
             throw err;
         }
+    }
+    /**
+     * Поиск по дереву метаданных.
+     * Пользователь вводит текст, через 3 секунды после последнего ввода выполняется поиск.
+     * Найденные объекты отображаются в QuickPick, при выборе — позиционирование и выделение в дереве.
+     */
+    searchInTree() {
+        const DEBOUNCE_MS = 3000;
+        let debounceTimer;
+        if (!tree[0].children?.length) {
+            vscode.window.showInformationMessage('Дерево метаданных пусто. Выполните переиндексацию.');
+            return;
+        }
+        const input = vscode.window.createInputBox();
+        input.placeholder = 'Введите текст для поиска (поиск через 3 сек после ввода)…';
+        input.prompt = 'Поиск по дереву метаданных';
+        input.show();
+        const runSearch = (query) => {
+            if (!query.trim())
+                return;
+            const q = query.trim().toLowerCase();
+            const matches = [];
+            const collect = (nodes, breadcrumb) => {
+                if (!nodes)
+                    return;
+                for (const node of nodes) {
+                    const label = typeof node.label === 'string' ? node.label : node.label?.label ?? '';
+                    const fullPath = breadcrumb ? `${breadcrumb} / ${label}` : label;
+                    if (label && label.toLowerCase().includes(q)) {
+                        matches.push({ item: node, breadcrumb: fullPath });
+                    }
+                    collect(node.children, fullPath);
+                }
+            };
+            collect(tree[0].children, '');
+            if (matches.length === 0) {
+                vscode.window.showInformationMessage(`По запросу «${query}» ничего не найдено`);
+                return;
+            }
+            const items = matches.map((m) => ({
+                label: (typeof m.item.label === 'string' ? m.item.label : m.item.label?.label) ?? '',
+                description: m.breadcrumb,
+                treeItem: m.item,
+            }));
+            vscode.window.showQuickPick(items, {
+                placeHolder: `Найдено: ${matches.length}. Выберите объект`,
+                matchOnDescription: true,
+            }).then(async (selected) => {
+                if (!selected || !this.treeView)
+                    return;
+                const itemId = selected.treeItem.id;
+                const debugMode = vscode.workspace.getConfiguration().get('metadataViewer.debugMode', false);
+                extension_1.outputChannel.appendLine(`[searchInTree] Выбран: "${selected.label}" id="${itemId}"`);
+                const itemIdNorm = itemId.replace(/\\/g, '/');
+                const configNode = tree[0].children?.find((c) => {
+                    if (!c.isConfiguration)
+                        return false;
+                    const cfgIdNorm = c.id.replace(/\\/g, '/');
+                    return itemIdNorm.startsWith(cfgIdNorm + '/') || itemIdNorm === cfgIdNorm;
+                });
+                extension_1.outputChannel.appendLine(`[searchInTree] configNode: ${configNode ? configNode.id : 'не найден'}`);
+                if (configNode) {
+                    await this.expand(configNode);
+                }
+                const itemInTree = SearchTree(tree[0], itemId) ?? SearchTreeByNormalizedId(tree[0], itemId);
+                extension_1.outputChannel.appendLine(`[searchInTree] itemInTree: ${itemInTree ? `найден (id=${itemInTree.id})` : 'НЕ НАЙДЕН'}`);
+                if (!itemInTree && debugMode) {
+                    extension_1.outputChannel.appendLine(`[searchInTree] Примеры id в дереве: ${collectSampleIds(tree[0], 12).join(' | ')}`);
+                }
+                const toReveal = itemInTree ?? selected.treeItem;
+                try {
+                    await vscode.commands.executeCommand('metadataView.focus');
+                    await new Promise((r) => setTimeout(r, 80));
+                }
+                catch {
+                    // команда focus может отсутствовать в некоторых контекстах
+                }
+                // Последовательно раскрываем путь от корня до целевого узла — reveal срабатывает только при уже раскрытом пути
+                const pathToItem = getPathFromRootToItem(toReveal);
+                if (debugMode) {
+                    extension_1.outputChannel.appendLine(`[searchInTree] Путь от корня (${pathToItem.length} элементов):`);
+                    pathToItem.forEach((node, idx) => {
+                        const lbl = typeof node.label === 'string' ? node.label : node.label?.label ?? '';
+                        extension_1.outputChannel.appendLine(`  [${idx}] id="${node.id}" label="${lbl}" parentId="${node.parentId}"`);
+                    });
+                }
+                for (let i = 0; i < pathToItem.length - 1; i++) {
+                    const node = pathToItem[i];
+                    if (debugMode) {
+                        const lbl = typeof node.label === 'string' ? node.label : node.label?.label ?? '';
+                        extension_1.outputChannel.appendLine(`[searchInTree] Раскрываю [${i}]: "${lbl}" (collapsibleState: ${node.collapsibleState})`);
+                    }
+                    // Если узел ещё не раскрыт — принудительно раскрываем его children
+                    if (node.collapsibleState === vscode.TreeItemCollapsibleState.Collapsed && node.children && node.children.length > 0) {
+                        node.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+                        this.dataProvider?.update();
+                    }
+                    this.treeView.reveal(node, { select: false, focus: false, expand: 1 });
+                    await new Promise((r) => setTimeout(r, 80));
+                }
+                if (debugMode) {
+                    const lbl = typeof toReveal.label === 'string' ? toReveal.label : toReveal.label?.label ?? '';
+                    extension_1.outputChannel.appendLine(`[searchInTree] Финальный reveal: "${lbl}"`);
+                }
+                this.treeView.reveal(toReveal, { select: true, focus: true, expand: 1 });
+            });
+        };
+        input.onDidChangeValue((value) => {
+            if (debounceTimer)
+                clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                debounceTimer = undefined;
+                runSearch(value);
+            }, DEBOUNCE_MS);
+        });
+        input.onDidHide(() => {
+            if (debounceTimer)
+                clearTimeout(debounceTimer);
+            input.dispose();
+        });
     }
     /**
      * Точечное обновление структуры конкретного объекта метаданных.
@@ -1288,7 +1431,7 @@ class MetadataView {
             // Проверка валидности кеша
             const isValidCache = cached
                 && cached.fingerprint === fingerprint
-                && cached.version === 'tree-cache-v1'
+                && cached.version === MetadataCache_1.TREE_CACHE_VERSION
                 && cached.root?.children
                 && cached.root.children.length > 0;
             if (isValidCache) {
@@ -1313,7 +1456,7 @@ class MetadataView {
                     if (cached.fingerprint !== fingerprint) {
                         reasons.push(`fingerprint не совпадает`);
                     }
-                    if (cached.version !== 'tree-cache-v1') {
+                    if (cached.version !== MetadataCache_1.TREE_CACHE_VERSION) {
                         reasons.push(`версия не совпадает`);
                     }
                     if (!cached.root?.children || cached.root.children.length === 0) {
@@ -1398,7 +1541,7 @@ class MetadataView {
                 if (element.children && element.children.length > 0) {
                     const serializedRoot = (0, hydrate_1.serializeTree)(element);
                     const envelope = {
-                        version: 'tree-cache-v1',
+                        version: MetadataCache_1.TREE_CACHE_VERSION,
                         fingerprint: fingerprint,
                         builtAt: Date.now(),
                         root: serializedRoot,
@@ -1971,7 +2114,7 @@ function CreateTreeElements(rootPath, element, metadataFile, subsystemFilter) {
             case current.$_name.startsWith('ExchangePlan.'):
                 previous.exchangePlan.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'exchangePlan', context: 'object_and_manager', path: treeItemPath,
-                    children: FillObjectItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillObjectItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('EventSubscription.'):
@@ -2033,13 +2176,13 @@ function CreateTreeElements(rootPath, element, metadataFile, subsystemFilter) {
             case current.$_name.startsWith('Catalog.'):
                 previous.catalog.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'catalog', context: 'object_and_manager_and_predefined', path: treeItemPath,
-                    children: FillObjectItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillObjectItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('Document.'):
                 previous.document.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'document', context: 'object_and_manager', path: treeItemPath,
-                    children: FillObjectItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillObjectItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('DocumentNumerator.'):
@@ -2051,79 +2194,79 @@ function CreateTreeElements(rootPath, element, metadataFile, subsystemFilter) {
             case current.$_name.startsWith('DocumentJournal.'):
                 previous.documentJournal.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'documentJournal', context: 'manager', path: treeItemPath,
-                    children: FillDocumentJournalItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillDocumentJournalItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('Enum.'):
                 previous.enum.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'enum', context: 'manager', path: treeItemPath,
-                    children: FillEnumItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillEnumItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('Report.'):
                 previous.report.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'report', context: 'object_and_manager', path: treeItemPath,
-                    children: FillObjectItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillObjectItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('DataProcessor.'):
                 previous.dataProcessor.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'dataProcessor', context: 'object_and_manager', path: treeItemPath,
-                    children: FillObjectItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillObjectItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('ChartOfCharacteristicTypes.'):
                 previous.сhartOfCharacteristicTypes.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'chartsOfCharacteristicType', context: 'object_and_manager_and_predefined', path: treeItemPath,
-                    children: FillObjectItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillObjectItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('ChartOfAccounts.'):
                 previous.chartOfAccounts.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'chartsOfAccount', context: 'object_and_manager_and_predefined', path: treeItemPath,
-                    children: FillChartOfAccountsItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillChartOfAccountsItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('ChartOfCalculationTypes.'):
                 previous.chartOfCalculationTypes.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'chartsOfCalculationType', context: 'object_and_manager_and_predefined', path: treeItemPath,
-                    children: FillObjectItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillObjectItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('InformationRegister.'):
                 previous.informationRegister.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'informationRegister', context: 'recordset_and_manager', path: treeItemPath,
-                    children: FillRegisterItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillRegisterItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('AccumulationRegister.'):
                 previous.accumulationRegister.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'accumulationRegister', context: 'recordset_and_manager', path: treeItemPath,
-                    children: FillRegisterItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillRegisterItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('AccountingRegister.'):
                 previous.accountingRegister.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'accountingRegister', context: 'recordset_and_manager', path: treeItemPath,
-                    children: FillRegisterItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillRegisterItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('CalculationRegister.'):
                 previous.calculationRegister.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'calculationRegister', context: 'recordset_and_manager', path: treeItemPath,
-                    children: FillCalculationRegisterItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillCalculationRegisterItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('BusinessProcess.'):
                 previous.businessProcess.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'businessProcess', context: 'object_and_manager', path: treeItemPath,
-                    children: FillObjectItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillObjectItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('Task.'):
                 previous.task.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
                     icon: 'task', context: 'object_and_manager', path: treeItemPath,
-                    children: FillTaskItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillTaskItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('ExternalDataSource.'):
@@ -2131,7 +2274,7 @@ function CreateTreeElements(rootPath, element, metadataFile, subsystemFilter) {
                     icon: 'externalDataSource',
                     context: 'object',
                     path: treeItemPath,
-                    children: FillExternalDataSourceItemsByMetadata(treeItemIdSlash, current, attributeReduceResult)
+                    children: FillExternalDataSourceItemsByMetadata(treeItemId + '/', current, attributeReduceResult)
                 }));
                 break;
             case current.$_name.startsWith('DefinedType.'):
@@ -2261,8 +2404,8 @@ function FillObjectItemsByMetadata(idPrefix, versionMetadata, objectData) {
         });
     });
     const items = [
-        (0, utils_1.GetTreeItem)('', 'Реквизиты', { icon: 'attribute', children: attributes.length === 0 ? undefined : attributes }),
-        (0, utils_1.GetTreeItem)('', 'Табличные части', { icon: 'tabularSection', children: tabularSection }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'attributes', 'Реквизиты', { icon: 'attribute', children: attributes.length === 0 ? undefined : attributes }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'tabularSections', 'Табличные части', { icon: 'tabularSection', children: tabularSection }),
     ];
     return [...items, ...FillCommonItems(idPrefix, versionMetadata, objectData)];
 }
@@ -2272,7 +2415,7 @@ function FillDocumentJournalItemsByMetadata(idPrefix, versionMetadata, objectDat
         .filter(m => m.$_name.startsWith(versionMetadata.$_name + '.Column.'))
         .map(m => (0, utils_1.GetTreeItem)(idPrefix + m.$_id, m.$_name, { icon: 'column' }));
     const items = [
-        (0, utils_1.GetTreeItem)('', 'Графы', { icon: 'column', children: columns.length === 0 ? undefined : columns }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'columns', 'Графы', { icon: 'column', children: columns.length === 0 ? undefined : columns }),
     ];
     return [...items, ...FillCommonItems(idPrefix, versionMetadata, objectData)];
 }
@@ -2282,7 +2425,7 @@ function FillEnumItemsByMetadata(idPrefix, versionMetadata, objectData) {
         .filter(m => m.$_name.startsWith('Enum.'))
         .map(m => (0, utils_1.GetTreeItem)(idPrefix + m.$_id, m.$_name, { icon: 'attribute' }));
     const items = [
-        (0, utils_1.GetTreeItem)('', 'Значения', { icon: 'attribute', children: values.length === 0 ? undefined : values }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'values', 'Значения', { icon: 'attribute', children: values.length === 0 ? undefined : values }),
     ];
     return [...items, ...FillCommonItems(idPrefix, versionMetadata, objectData)];
 }
@@ -2296,8 +2439,8 @@ function FillChartOfAccountsItemsByMetadata(idPrefix, versionMetadata, objectDat
         .filter(m => m.$_name.startsWith(versionMetadata.$_name + '.ExtDimensionAccountingFlag.'))
         .map(m => (0, utils_1.GetTreeItem)(idPrefix + m.$_id, m.$_name, { icon: 'extDimensionAccountingFlag' }));
     const items = [
-        (0, utils_1.GetTreeItem)('', 'Признаки учета', { icon: 'accountingFlag', children: accountingFlags.length === 0 ? undefined : accountingFlags }),
-        (0, utils_1.GetTreeItem)('', 'Признаки учета субконто', {
+        (0, utils_1.GetTreeItem)(idPrefix + 'accountingFlags', 'Признаки учета', { icon: 'accountingFlag', children: accountingFlags.length === 0 ? undefined : accountingFlags }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'extDimensionAccountingFlags', 'Признаки учета субконто', {
             icon: 'extDimensionAccountingFlag', children: extDimensionAccountingFlag.length === 0 ? undefined : extDimensionAccountingFlag
         }),
     ];
@@ -2318,9 +2461,9 @@ function FillRegisterItemsByMetadata(idPrefix, versionMetadata, objectData) {
         .filter(m => m.$_name.startsWith(versionMetadata.$_name + '.Attribute.'))
         .map(m => (0, utils_1.GetTreeItem)(idPrefix + m.$_id, m.$_name, { icon: 'attribute' }));
     const items = [
-        (0, utils_1.GetTreeItem)('', 'Измерения', { icon: 'dimension', children: dimensions.length === 0 ? undefined : dimensions }),
-        (0, utils_1.GetTreeItem)('', 'Ресурсы', { icon: 'resource', children: resources.length === 0 ? undefined : resources }),
-        (0, utils_1.GetTreeItem)('', 'Реквизиты', { icon: 'attribute', children: attributes.length === 0 ? undefined : attributes }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'dimensions', 'Измерения', { icon: 'dimension', children: dimensions.length === 0 ? undefined : dimensions }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'resources', 'Ресурсы', { icon: 'resource', children: resources.length === 0 ? undefined : resources }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'attributes', 'Реквизиты', { icon: 'attribute', children: attributes.length === 0 ? undefined : attributes }),
     ];
     return [...items, ...FillCommonItems(idPrefix, versionMetadata, objectData)];
 }
@@ -2336,7 +2479,7 @@ function FillTaskItemsByMetadata(idPrefix, versionMetadata, objectData) {
         .filter(m => m.$_name.startsWith(versionMetadata.$_name + '.AddressingAttribute.'))
         .map(m => (0, utils_1.GetTreeItem)(idPrefix + m.$_id, m.$_name, { icon: 'attribute' }));
     const items = [
-        (0, utils_1.GetTreeItem)('', 'Реквизиты адресации', { icon: 'attribute', children: attributes.length === 0 ? undefined : attributes }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'addressingAttributes', 'Реквизиты адресации', { icon: 'attribute', children: attributes.length === 0 ? undefined : attributes }),
     ];
     return [...items, ...FillObjectItemsByMetadata(idPrefix, versionMetadata, objectData)]
         .sort((x, y) => { return x.label == "Реквизиты" ? -1 : y.label == "Реквизиты" ? 1 : 0; });
@@ -2380,13 +2523,13 @@ function FillCommonItems(idPrefix, versionMetadata, objectData) {
         }
     }
     const items = [
-        (0, utils_1.GetTreeItem)('', 'Формы', { icon: 'form', children: forms.length === 0 ? undefined : forms }),
-        (0, utils_1.GetTreeItem)('', 'Команды', { icon: 'command', children: commands.length === 0 ? undefined : commands }),
-        (0, utils_1.GetTreeItem)('', 'Макеты', { icon: 'template', children: templates.length === 0 ? undefined : templates }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'forms', 'Формы', { icon: 'form', children: forms.length === 0 ? undefined : forms }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'commands', 'Команды', { icon: 'command', children: commands.length === 0 ? undefined : commands }),
+        (0, utils_1.GetTreeItem)(idPrefix + 'templates', 'Макеты', { icon: 'template', children: templates.length === 0 ? undefined : templates }),
     ];
     // Добавляем узел "Предопределенные" только если есть предопределенные элементы
     if (predefined.length > 0) {
-        items.push((0, utils_1.GetTreeItem)('', 'Предопределенные', { icon: 'predefined', children: predefined }));
+        items.push((0, utils_1.GetTreeItem)(idPrefix + 'predefined', 'Предопределенные', { icon: 'predefined', children: predefined }));
     }
     return items;
 }
@@ -2400,6 +2543,58 @@ function SearchTree(element, matchingId) {
             result = SearchTree(element.children[i], matchingId);
         }
         return result;
+    }
+    return null;
+}
+/** Собирает примеры id из дерева для отладки. */
+function collectSampleIds(element, max) {
+    const out = [];
+    const visit = (n) => {
+        if (out.length >= max)
+            return;
+        if (n.id)
+            out.push(n.id);
+        n.children?.forEach(visit);
+    };
+    visit(element);
+    return out;
+}
+/** Собирает путь от корня до элемента (включительно) для последовательного reveal. */
+function getPathFromRootToItem(item) {
+    const path = [];
+    let current = item;
+    const visited = new Set();
+    while (current) {
+        // Защита от циклов
+        if (visited.has(current.id)) {
+            extension_1.outputChannel.appendLine(`[getPathFromRootToItem] Обнаружен цикл на элементе id="${current.id}"`);
+            break;
+        }
+        visited.add(current.id);
+        path.unshift(current);
+        if (!current.parentId)
+            break;
+        const parent = SearchTree(tree[0], current.parentId) ?? SearchTreeByNormalizedId(tree[0], current.parentId);
+        if (!parent) {
+            extension_1.outputChannel.appendLine(`[getPathFromRootToItem] Не найден родитель для id="${current.id}" parentId="${current.parentId}"`);
+            break;
+        }
+        current = parent;
+    }
+    return path;
+}
+/** Поиск по id с нормализацией путей (для Windows, где \\ и / могут различаться). */
+function SearchTreeByNormalizedId(element, matchingId) {
+    const norm = (s) => s.replace(/\\/g, '/');
+    const target = norm(matchingId);
+    if (norm(element.id) === target)
+        return element;
+    if (element.children) {
+        for (const ch of element.children) {
+            const found = SearchTreeByNormalizedId(ch, matchingId);
+            if (found)
+                return found;
+        }
     }
     return null;
 }

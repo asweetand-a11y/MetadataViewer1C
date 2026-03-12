@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MetadataCache = void 0;
+exports.MetadataCache = exports.TREE_CACHE_VERSION = void 0;
 const crypto = __importStar(require("crypto"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
@@ -50,6 +50,11 @@ function debugWarn(message, outputChannel) {
     }
 }
 /**
+ * Версия структуры дерева метаданных
+ * Изменение версии инвалидирует весь кэш
+ */
+exports.TREE_CACHE_VERSION = 'tree-cache-v2-fix-parentId';
+/**
  * Multi-layer cache:
  *  - L1: in-memory per running session
  *  - L2: workspaceState (small metadata + pointer)
@@ -71,7 +76,7 @@ class MetadataCache {
         const keyFiles = configType === 'xml'
             ? ['ConfigDumpInfo.xml', 'Configuration.xml']
             : [path.join('Configuration', 'Configuration.mdo')];
-        const treeStructureVersion = 'tree-cache-v1'; // Версия структуры дерева
+        const treeStructureVersion = exports.TREE_CACHE_VERSION;
         const parts = [this.extVersion, configType, treeStructureVersion];
         for (const rel of keyFiles) {
             const p = path.join(configRoot, rel);
@@ -144,8 +149,8 @@ class MetadataCache {
             const raw = fs.readFileSync(l3file, 'utf8');
             const env = JSON.parse(raw);
             // Проверка версии кэша при чтении из L3
-            if (env.version !== 'tree-cache-v1') {
-                debugWarn(`[MetadataCache.read] Неверная версия кэша: ${env.version}, ожидается: tree-cache-v1. Кэш будет проигнорирован.`, this.outputChannel);
+            if (env.version !== exports.TREE_CACHE_VERSION) {
+                debugWarn(`[MetadataCache.read] Неверная версия кэша: ${env.version}, ожидается: ${exports.TREE_CACHE_VERSION}. Кэш будет проигнорирован.`, this.outputChannel);
                 return undefined;
             }
             // Проверка наличия детей в дереве
@@ -177,8 +182,8 @@ class MetadataCache {
             return;
         }
         // Проверка версии
-        if (env.version !== 'tree-cache-v1') {
-            debugWarn(`[MetadataCache.write] Неверная версия кэша: ${env.version}, ожидается: tree-cache-v1`, this.outputChannel);
+        if (env.version !== exports.TREE_CACHE_VERSION) {
+            debugWarn(`[MetadataCache.write] Неверная версия кэша: ${env.version}, ожидается: ${exports.TREE_CACHE_VERSION}`, this.outputChannel);
         }
         try {
             fs.writeFileSync(l3file, JSON.stringify(env), 'utf8');
