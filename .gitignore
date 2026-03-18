@@ -16,3 +16,4 @@ test-cases/**
 node_modules/**
 AGENTS.md
 *.code-workspace
+*.xsd
