@@ -4,7 +4,7 @@
  * Функции для изменения структуры макета, работы с форматами заполнения и именованными областями
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteColumn = exports.calculateRowHeight = exports.calculateColumnWidth = exports.addColumn = exports.unmergeCells = exports.mergeCells = exports.updateCellText = exports.deleteRow = exports.addRow = exports.isEmptyRow = exports.createEmptyRow = exports.deleteCellNote = exports.createCellNote = exports.updateCellDetailParameter = exports.updateCellNote = exports.updateCellColors = exports.updateCellBorders = exports.updateCellAlignment = exports.updateCellFont = exports.updateCellFormat = exports.getEffectiveFont = exports.getEffectiveFormat = exports.renameNamedArea = exports.deleteNamedArea = exports.updateNamedArea = exports.generateNamedAreaName = exports.createNamedColumns = exports.createNamedRows = exports.createNamedArea = exports.isCellOnNamedAreaBoundary = exports.getNamedAreasForColumn = exports.getNamedAreasForRow = exports.getNamedAreaForColumn = exports.getNamedAreaForRow = exports.findNamedAreaByPosition = exports.validateNamedArea = exports.validateNamedAreaName = exports.getNamedArea = exports.getAllNamedAreas = exports.extractTextFromTemplateTextData = exports.toggleCellFillPattern = exports.setCellAsTemplate = exports.setCellAsParameter = exports.convertParameterToTemplate = exports.parseTemplateParameters = exports.extractParameterFromTemplate = exports.getCellFillPattern = exports.findCellByPosition = exports.updateTemplateDocument = void 0;
+exports.deleteColumn = exports.calculateRowHeight = exports.calculateColumnWidth = exports.addColumn = exports.unmergeCells = exports.mergeCells = exports.updateCellText = exports.deleteRow = exports.addRow = exports.isEmptyRow = exports.createEmptyRow = exports.deleteCellNote = exports.createCellNote = exports.updateCellDetailParameter = exports.updateCellNote = exports.updateCellColors = exports.updateCellBorders = exports.updateCellAlignment = exports.updateCellFont = exports.updateCellFormat = exports.getEffectiveFont = exports.getEffectiveFormat = exports.renameNamedArea = exports.deleteNamedArea = exports.updateNamedArea = exports.generateNamedAreaName = exports.createNamedColumns = exports.createNamedRows = exports.createNamedArea = exports.isCellOnNamedAreaBoundary = exports.getNamedAreasForColumn = exports.getNamedAreasForRow = exports.getNamedAreaForColumn = exports.getNamedAreaForRow = exports.findNamedAreaByPosition = exports.validateNamedArea = exports.validateNamedAreaName = exports.getNamedArea = exports.getAllNamedAreas = exports.extractTextFromTemplateTextData = exports.toggleCellFillPattern = exports.setCellAsTemplate = exports.setCellAsParameter = exports.convertParameterToTemplate = exports.parseTemplateParameters = exports.extractParameterFromTemplate = exports.getCellFillPattern = exports.extractStringValue = exports.findCellByPosition = exports.updateTemplateDocument = void 0;
 /**
  * Обновляет документ макета с изменениями
  */
@@ -16,13 +16,15 @@ function updateTemplateDocument(original, changes) {
 }
 exports.updateTemplateDocument = updateTemplateDocument;
 /**
- * Находит ячейку по позиции (row, col)
+ * Находит ячейку по позиции (row, col).
+ * row — логический индекс строки (row.index), не индекс в массиве.
  */
 function findCellByPosition(template, row, col) {
-    if (!template.rowsItem || row < 0 || row >= template.rowsItem.length) {
+    if (!template.rowsItem) {
         return null;
     }
-    const templateRow = template.rowsItem[row];
+    // Ищем строку по row.index (логический индекс)
+    const templateRow = template.rowsItem.find(r => (r.index !== undefined ? r.index : template.rowsItem.indexOf(r)) === row);
     if (!templateRow || !templateRow.row || !templateRow.row.c) {
         return null;
     }
@@ -48,6 +50,21 @@ function findCellByPosition(template, row, col) {
 }
 exports.findCellByPosition = findCellByPosition;
 /**
+ * Извлекает строку из значения (может быть строка или объект парсера { "#text": "..." }).
+ * Экспорт для использования при отображении содержимого ячеек.
+ */
+function extractStringValue(val) {
+    if (val == null)
+        return '';
+    if (typeof val === 'string')
+        return val;
+    if (typeof val === 'object') {
+        return val['#text'] ?? val.text ?? val.content ?? String(val);
+    }
+    return String(val);
+}
+exports.extractStringValue = extractStringValue;
+/**
  * Определяет формат заполнения ячейки
  * Возвращает 'parameter' если есть <parameter>, 'template' если есть <tl> с текстом, 'none' если пустая
  */
@@ -57,8 +74,9 @@ function getCellFillPattern(template, row, col) {
         return 'none';
     }
     const cellData = cell.c;
-    // Если есть parameter, но нет tl или tl пустой - формат "параметр"
-    if (cellData.parameter && cellData.parameter.trim() !== '') {
+    // Если есть parameter (строка или объект парсера) - формат "параметр"
+    const paramStr = extractStringValue(cellData.parameter);
+    if (paramStr.trim() !== '') {
         return 'parameter';
     }
     // Если нет parameter, но есть tl с текстом - формат "шаблон"
@@ -395,14 +413,26 @@ function getAllNamedAreas(template) {
     }
     template.namedItem.forEach(item => {
         if (item.name && item.area) {
+            const area = item.area;
+            const beginRow = area.beginRow ?? 0;
+            const beginCol = area.beginColumn ?? -1;
+            const endRow = area.endRow ?? 0;
+            const endCol = area.endColumn ?? -1;
+            // Если type не задан, но колонки = -1 — это область типа Rows
+            let areaType = area.type;
+            if (!areaType && beginCol === -1 && endCol === -1) {
+                areaType = 'Rows';
+            }
+            if (!areaType)
+                areaType = 'Rectangle';
             namedAreas.set(item.name, {
                 name: item.name,
-                areaType: item.area.type || 'Rectangle',
-                startRow: item.area.beginRow,
-                startCol: item.area.beginColumn,
-                endRow: item.area.endRow,
-                endCol: item.area.endColumn,
-                columnsID: item.area.columnsID // Сохраняем columnsID из области
+                areaType,
+                startRow: beginRow,
+                startCol: beginCol,
+                endRow,
+                endCol,
+                columnsID: area.columnsID
             });
         }
     });
@@ -849,8 +879,9 @@ function getEffectiveFormat(template, row, col) {
         }
     }
     // Если у ячейки нет явного formatIndex, проверяем формат строки
-    if (template.rowsItem && template.rowsItem[row] && template.rowsItem[row].row) {
-        const rowFormatIndex = template.rowsItem[row].row.formatIndex;
+    const templateRow = template.rowsItem?.find(r => (r.index !== undefined ? r.index : template.rowsItem.indexOf(r)) === row);
+    if (templateRow && templateRow.row) {
+        const rowFormatIndex = templateRow.row.formatIndex;
         // formatIndex в XML начинается с 1, в массиве с 0
         if (rowFormatIndex !== undefined && template.format && template.format[rowFormatIndex - 1]) {
             return template.format[rowFormatIndex - 1];
@@ -1549,8 +1580,9 @@ function calculateColumnWidth(template, col, columnsGroup) {
     const columnsWithWidth = [];
     for (let i = 0; i <= col; i++) {
         const columnItem = columnsGroup.columnsItem.find(item => item.index === i);
-        if (columnItem && columnItem.column && columnItem.column.formatIndex !== undefined) {
-            const formatIndex = columnItem.column.formatIndex - 1; // formatIndex начинается с 1
+        const formatIndexVal = columnItem?.column?.formatIndex ?? columnItem?.formatIndex;
+        if (columnItem && formatIndexVal !== undefined) {
+            const formatIndex = formatIndexVal - 1; // formatIndex начинается с 1
             if (formatIndex >= 0 && formatIndex < template.format.length) {
                 const format = template.format[formatIndex];
                 if (format && format.width !== undefined && format.width !== null) {
@@ -1605,7 +1637,6 @@ function calculateRowHeight(template, rowIndex) {
         return undefined;
     }
     // Ищем все строки с индексом <= rowIndex, которые имеют формат с height
-    // Сортируем по индексу строки (от меньшего к большему)
     const rowsWithHeight = [];
     for (let i = 0; i <= rowIndex && i < template.rowsItem.length; i++) {
         const row = template.rowsItem[i];
@@ -1622,8 +1653,12 @@ function calculateRowHeight(template, rowIndex) {
             }
         }
     }
-    // Если не найдено ни одного формата с height, возвращаем undefined (высота по умолчанию)
+    // Если не найдено ни одного формата с height, используем document.height (высота по умолчанию)
     if (rowsWithHeight.length === 0) {
+        const docHeight = template.height;
+        if (docHeight !== undefined && docHeight !== null && docHeight !== 0) {
+            return docHeight;
+        }
         return undefined;
     }
     // Берем последний найденный height (последняя строка с измененной высотой)
@@ -1636,17 +1671,14 @@ function calculateRowHeight(template, rowIndex) {
     if (typeof lastHeight === 'number') {
         return lastHeight;
     }
-    // Если строка, проверяем, содержит ли она "px"
     if (typeof lastHeight === 'string') {
         if (lastHeight.includes('px')) {
             return lastHeight;
         }
-        // Если число в строке, преобразуем в число
         const numValue = parseFloat(lastHeight);
         if (!isNaN(numValue)) {
-            if (numValue === 0) {
-                return undefined; // height=0 означает высоту по умолчанию
-            }
+            if (numValue === 0)
+                return undefined;
             return numValue;
         }
     }

@@ -19,6 +19,7 @@ const SCHEMA_FILES = {
     dcs: 'data-composition-system_schema.json',
     predefined: 'xcf_predef.json',
     dumpinfo: 'xcf_dumpinfo.json',
+    spreadsheet: 'spreadsheet_schema.json',
 } as const;
 
 /**
@@ -43,6 +44,9 @@ export function getJsonSchemaNameForXml(
     }
     if (rootTag === 'DataCompositionSchema' || (filePath.includes('Report') && filePath.endsWith('Template.xml'))) {
         return SCHEMA_FILES.dcs;
+    }
+    if (filePath.endsWith('Template.xml') && !filePath.includes('Report')) {
+        return SCHEMA_FILES.spreadsheet;
     }
     if (rootTag === 'PredefinedData' || filePath.endsWith('Predefined.xml')) {
         return SCHEMA_FILES.predefined;

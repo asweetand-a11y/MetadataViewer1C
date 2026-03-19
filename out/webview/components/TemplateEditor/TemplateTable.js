@@ -54,7 +54,7 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
                         const key = `${rowIndex}_${colIndex}`;
                         const fillPattern = (0, templateUtils_2.getCellFillPattern)(templateDocument, rowIndex, colIndex);
                         if (fillPattern === 'parameter' && cell.c && cell.c.parameter) {
-                            contents.set(key, `[${cell.c.parameter}]`);
+                            contents.set(key, `[${(0, templateUtils_2.extractStringValue)(cell.c.parameter)}]`);
                         }
                         else if (fillPattern === 'template' && cell.c && cell.c.tl) {
                             const text = (0, templateUtils_2.extractTextFromTemplateTextData)(cell.c.tl);
@@ -117,17 +117,19 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
         return getColumnWidth(col, currentColumnsGroup);
     }, [getColumnWidth, getColumnsForRow]);
     // Функция для получения высоты строки из формата
-    // Использует алгоритм 1С: ищем все теги <height>, последний найденный определяет последнюю строку с измененной высотой
     const getRowHeight = react_1.default.useCallback((rowIndex) => {
         const height = (0, templateUtils_1.calculateRowHeight)(templateDocument, rowIndex);
         if (height === undefined) {
-            return undefined;
+            const defaultHeight = templateDocument.height;
+            if (defaultHeight !== undefined && defaultHeight !== null && defaultHeight !== 0) {
+                return typeof defaultHeight === 'number' ? `${defaultHeight}px` : String(defaultHeight);
+            }
+            return '20px';
         }
-        // Нормализуем значение: если число, преобразуем в строку с px
         if (typeof height === 'number') {
             return `${height}px`;
         }
-        return height;
+        return String(height).includes('px') ? String(height) : `${height}px`;
     }, [templateDocument]);
     // Функция для преобразования типа линии, толщины и цвета в CSS border
     const getBorderStyle = react_1.default.useCallback((borderType, lineType, width, color) => {
@@ -157,7 +159,7 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
         const borderColor = color || 'var(--vscode-panel-border)';
         return `${borderWidth} ${borderStyle} ${borderColor}`;
     }, []);
-    // Вычисление максимального количества колонок
+    // Вычисление максимального количества колонок (учитываем все группы колонок)
     const maxColumns = react_1.default.useMemo(() => {
         let max = 0;
         if (templateDocument.rowsItem) {
@@ -165,7 +167,6 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
                 if (row.row && row.row.c) {
                     let currentColIndex = 0;
                     row.row.c.forEach(cell => {
-                        // Определяем индекс колонки: если есть i, используем его, иначе порядковый номер
                         const colIndex = cell.i !== undefined ? cell.i : currentColIndex;
                         if (colIndex >= max) {
                             max = colIndex + 1;
@@ -175,22 +176,21 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
                 }
             });
         }
-        // Учитываем количество колонок из columns.size
         if (templateDocument.columns && templateDocument.columns.length > 0) {
-            const columnsGroup = templateDocument.columns[0];
-            if (columnsGroup.size !== undefined) {
-                max = Math.max(max, columnsGroup.size);
-            }
-            // Также проверяем максимальный индекс в columnsItem
-            if (columnsGroup.columnsItem) {
-                columnsGroup.columnsItem.forEach(item => {
-                    if (item.index !== undefined && item.index >= max) {
-                        max = item.index + 1;
-                    }
-                });
-            }
+            templateDocument.columns.forEach((columnsGroup) => {
+                if (columnsGroup.size !== undefined) {
+                    max = Math.max(max, columnsGroup.size);
+                }
+                if (columnsGroup.columnsItem) {
+                    columnsGroup.columnsItem.forEach(item => {
+                        if (item.index !== undefined && item.index >= max) {
+                            max = item.index + 1;
+                        }
+                    });
+                }
+            });
         }
-        return Math.max(max, 10); // Минимум 10 колонок для пустого макета
+        return Math.max(max, 10);
     }, [templateDocument]);
     // Получение содержимого ячейки
     const getCellContent = (0, react_1.useCallback)((row, col) => {
@@ -464,9 +464,7 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
         react_1.default.createElement("table", { ref: tableRef, className: `template-table ${showGrid ? 'show-grid' : ''} ${showHeaders ? 'show-headers' : ''}`, style: { tableLayout: 'fixed' } },
             react_1.default.createElement("colgroup", null,
                 react_1.default.createElement("col", { style: { width: '150px' } }),
-                " ",
                 react_1.default.createElement("col", { style: { width: '40px' } }),
-                " ",
                 Array.from({ length: maxColumns }, (_, col) => {
                     // Заголовки колонок используют формат по умолчанию
                     const defaultColumnsGroup = getDefaultColumnsGroup();
@@ -564,10 +562,10 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
                 // Показываем название именованной области только в первой строке области (чтобы избежать дублей)
                 const areasToShow = namedAreasForRow.filter(area => area.startRow === rowIndex);
                 const areaNames = areasToShow.map(area => area.name).join(', ');
-                const rowHeight = getRowHeight(rowIndex);
-                const heightValue = rowHeight ? (rowHeight.includes('px') ? rowHeight : `${rowHeight}px`) : undefined;
+                const heightValue = getRowHeight(rowIndex);
                 return (react_1.default.createElement("tr", { key: rowIndex, className: `${isFrozenRow(rowIndex) ? 'frozen' : ''} ${isActive ? 'active-row' : ''}`, style: {
-                        ...(heightValue ? { height: heightValue } : {}),
+                        height: heightValue,
+                        minHeight: heightValue,
                         overflow: 'visible' // Разрешаем перекрытие содержимого
                     }, onMouseEnter: () => handleRowMouseEnter(rowIndex), onMouseLeave: handleRowMouseLeave },
                     react_1.default.createElement("td", { className: "template-table-named-area-cell" }, areaNames && (react_1.default.createElement("span", { className: "named-area-label" }, areaNames))),

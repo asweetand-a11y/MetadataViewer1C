@@ -3,7 +3,6 @@ import * as glob from 'fast-glob';
 import * as vscode from 'vscode';
 import { posix, join as pathJoin, relative as pathRelative, basename as pathBasename, isAbsolute as pathIsAbsolute, sep as pathSep } from 'path';
 import { MetadataFile, MetadataItemForTree, VersionMetadata } from './metadataInterfaces';
-import { TemplatePanel } from './templatePanel';
 import { TemplateFile } from './templatInterfaces';
 import { TemplateEditorPanel } from './panels/TemplateEditorPanel';
 import { PredefinedDataFile } from './predefinedDataInterfaces';
@@ -720,20 +719,26 @@ export class MetadataView {
       
       const arrayPaths = [
         'document.columns',
+        'document.columns.columnsItem',
+        'document.rowsItem',
         'document.rowsItem.row.c',
-        'document.namedItem',  // Парсинг именованных областей
-        'document.format',     // Парсинг форматов (массив элементов format)
-        'document.font',       // Парсинг шрифтов (массив элементов font)
-        'document.merge',      // Парсинг объединений (массив элементов merge)
-        'document.line',       // Парсинг линий для границ (массив элементов line)
+        'document.namedItem',
+        'document.format',
+        'document.font',
+        'document.merge',
+        'document.line',
+        'document.drawing',
+        'document.picture',
+        'document.vg',
       ];
 
       const parser = new XMLParser({
         ignoreAttributes : false,
         attributeNamePrefix: '$_',
         isArray: (name, jpath, isLeafNode, isAttribute) => { 
-          if(arrayPaths.indexOf(jpath) !== -1) return true;
-
+          if (arrayPaths.indexOf(jpath) !== -1) return true;
+          // columnsItem может иметь путь document.columns.0.columnsItem при нескольких группах
+          if (jpath.includes('columnsItem')) return true;
           return false;
         },
       });
@@ -754,6 +759,35 @@ export class MetadataView {
       if (!typedResult.document) {
         // Это макет, но другого типа. Для него нужно писать свою панель
         return;
+      }
+
+      // Нормализация rowsItem: приведение к массиву (один элемент — оборачиваем)
+      const doc = typedResult.document;
+      if (doc.rowsItem && !Array.isArray(doc.rowsItem)) {
+        const ri = doc.rowsItem as any;
+        doc.rowsItem = ri.index !== undefined && ri.row
+          ? [{ index: Number(ri.index), row: ri.row }]
+          : [];
+      }
+
+      // Нормализация columns: приведение к массиву (один элемент — оборачиваем)
+      if (doc.columns && !Array.isArray(doc.columns)) {
+        doc.columns = [doc.columns as any];
+      }
+      // Нормализация columnsItem в каждой группе колонок
+      if (doc.columns && Array.isArray(doc.columns)) {
+        doc.columns.forEach((colGroup: any) => {
+          if (colGroup.columnsItem && !Array.isArray(colGroup.columnsItem)) {
+            colGroup.columnsItem = [colGroup.columnsItem];
+          }
+        });
+      }
+
+      // Нормализация format: если format имеет item (структура 1С), используем format.item как массив форматов
+      if (doc.format && typeof doc.format === 'object' && !Array.isArray(doc.format) && (doc.format as any).item) {
+        doc.format = (doc.format as any).item;
+      } else if (doc.format && !Array.isArray(doc.format)) {
+        doc.format = [doc.format as any];
       }
 
       // Нормализуем структуру макета после парсинга

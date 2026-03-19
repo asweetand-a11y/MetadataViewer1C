@@ -76,6 +76,20 @@ export const TemplateEditorApp: React.FC<TemplateEditorAppProps> = ({ vscode }) 
         vscode.postMessage({ type: 'requestRefresh' });
     }, [vscode]);
 
+    // Горячая клавиша Ctrl+S / Cmd+S для сохранения
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                if (templateDocument) {
+                    vscode.postMessage({ type: 'save', payload: templateDocument });
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [templateDocument, vscode]);
+
     const handleSave = useCallback(() => {
         if (!templateDocument) {
             return;
@@ -606,7 +620,10 @@ export const TemplateEditorApp: React.FC<TemplateEditorAppProps> = ({ vscode }) 
     if (!templateDocument) {
         return (
             <div className="template-editor-loading">
-                <div>Загрузка макета...</div>
+                <div className="template-editor-loading-content">
+                    <div className="template-editor-loading-spinner" />
+                    <div>Загрузка макета...</div>
+                </div>
             </div>
         );
     }
@@ -619,6 +636,7 @@ export const TemplateEditorApp: React.FC<TemplateEditorAppProps> = ({ vscode }) 
                     {isDirty && <span className="dirty-indicator">*</span>}
                 </div>
                 <div className="template-editor-actions">
+                    <span className="template-editor-save-hint">Ctrl+S</span>
                     <button onClick={handleSave} disabled={!isDirty}>
                         Сохранить
                     </button>

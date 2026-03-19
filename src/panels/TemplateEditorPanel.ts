@@ -157,7 +157,7 @@ export class TemplateEditorPanel {
             }
 
             // Сохраняем макет через templateXmlSaver
-            saveTemplateToXml(templateDocument, this.originalXml, this.templatePath, this.configRoot);
+            saveTemplateToXml(templateDocument, this.originalXml, this.templatePath, this.configRoot, this.extensionUri.fsPath);
             
             // Обновляем состояние
             this.templateDocument = templateDocument;

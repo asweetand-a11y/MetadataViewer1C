@@ -644,18 +644,26 @@ class MetadataView {
                 const originalXml = configXml;
                 const arrayPaths = [
                     'document.columns',
+                    'document.columns.columnsItem',
+                    'document.rowsItem',
                     'document.rowsItem.row.c',
                     'document.namedItem',
                     'document.format',
                     'document.font',
                     'document.merge',
-                    'document.line', // Парсинг линий для границ (массив элементов line)
+                    'document.line',
+                    'document.drawing',
+                    'document.picture',
+                    'document.vg',
                 ];
                 const parser = new fast_xml_parser_1.XMLParser({
                     ignoreAttributes: false,
                     attributeNamePrefix: '$_',
                     isArray: (name, jpath, isLeafNode, isAttribute) => {
                         if (arrayPaths.indexOf(jpath) !== -1)
+                            return true;
+                        // columnsItem может иметь путь document.columns.0.columnsItem при нескольких группах
+                        if (jpath.includes('columnsItem'))
                             return true;
                         return false;
                     },
@@ -674,6 +682,33 @@ class MetadataView {
                 if (!typedResult.document) {
                     // Это макет, но другого типа. Для него нужно писать свою панель
                     return;
+                }
+                // Нормализация rowsItem: приведение к массиву (один элемент — оборачиваем)
+                const doc = typedResult.document;
+                if (doc.rowsItem && !Array.isArray(doc.rowsItem)) {
+                    const ri = doc.rowsItem;
+                    doc.rowsItem = ri.index !== undefined && ri.row
+                        ? [{ index: Number(ri.index), row: ri.row }]
+                        : [];
+                }
+                // Нормализация columns: приведение к массиву (один элемент — оборачиваем)
+                if (doc.columns && !Array.isArray(doc.columns)) {
+                    doc.columns = [doc.columns];
+                }
+                // Нормализация columnsItem в каждой группе колонок
+                if (doc.columns && Array.isArray(doc.columns)) {
+                    doc.columns.forEach((colGroup) => {
+                        if (colGroup.columnsItem && !Array.isArray(colGroup.columnsItem)) {
+                            colGroup.columnsItem = [colGroup.columnsItem];
+                        }
+                    });
+                }
+                // Нормализация format: если format имеет item (структура 1С), используем format.item как массив форматов
+                if (doc.format && typeof doc.format === 'object' && !Array.isArray(doc.format) && doc.format.item) {
+                    doc.format = doc.format.item;
+                }
+                else if (doc.format && !Array.isArray(doc.format)) {
+                    doc.format = [doc.format];
                 }
                 // Нормализуем структуру макета после парсинга
                 // Определяем формат заполнения ячеек (параметр/шаблон) и обрабатываем новые элементы

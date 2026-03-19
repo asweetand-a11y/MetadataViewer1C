@@ -76,6 +76,19 @@ const TemplateEditorApp = ({ vscode }) => {
     (0, react_1.useEffect)(() => {
         vscode.postMessage({ type: 'requestRefresh' });
     }, [vscode]);
+    // Горячая клавиша Ctrl+S / Cmd+S для сохранения
+    (0, react_1.useEffect)(() => {
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                if (templateDocument) {
+                    vscode.postMessage({ type: 'save', payload: templateDocument });
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [templateDocument, vscode]);
     const handleSave = (0, react_1.useCallback)(() => {
         if (!templateDocument) {
             return;
@@ -453,7 +466,9 @@ const TemplateEditorApp = ({ vscode }) => {
     }, [templateDocument, selectedRange]);
     if (!templateDocument) {
         return (react_1.default.createElement("div", { className: "template-editor-loading" },
-            react_1.default.createElement("div", null, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043C\u0430\u043A\u0435\u0442\u0430...")));
+            react_1.default.createElement("div", { className: "template-editor-loading-content" },
+                react_1.default.createElement("div", { className: "template-editor-loading-spinner" }),
+                react_1.default.createElement("div", null, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043C\u0430\u043A\u0435\u0442\u0430..."))));
     }
     return (react_1.default.createElement("div", { className: "template-editor" },
         react_1.default.createElement("div", { className: "template-editor-header" },
@@ -461,6 +476,7 @@ const TemplateEditorApp = ({ vscode }) => {
                 "\u0420\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u043C\u0430\u043A\u0435\u0442\u043E\u0432 1\u0421",
                 isDirty && react_1.default.createElement("span", { className: "dirty-indicator" }, "*")),
             react_1.default.createElement("div", { className: "template-editor-actions" },
+                react_1.default.createElement("span", { className: "template-editor-save-hint" }, "Ctrl+S"),
                 react_1.default.createElement("button", { onClick: handleSave, disabled: !isDirty }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C"))),
         react_1.default.createElement(TemplateToolbar_1.TemplateToolbar, { onAddRow: handleAddRow, onDeleteRow: handleDeleteRow, onAddColumn: handleAddColumn, onDeleteColumn: handleDeleteColumn, onMergeCells: selectedRange ? handleMergeCells : undefined, onUnmergeCells: selectedCell ? handleUnmergeCells : undefined, showGrid: showGrid, onToggleGrid: () => setShowGrid(!showGrid), showHeaders: showHeaders, onToggleHeaders: () => setShowHeaders(!showHeaders), zoom: zoom, onZoomIn: () => {
                 const newZoom = Math.min(zoom + 0.25, 2.0);

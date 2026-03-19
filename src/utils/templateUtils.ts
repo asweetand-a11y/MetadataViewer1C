@@ -32,18 +32,20 @@ export function updateTemplateDocument(
 }
 
 /**
- * Находит ячейку по позиции (row, col)
+ * Находит ячейку по позиции (row, col).
+ * row — логический индекс строки (row.index), не индекс в массиве.
  */
 export function findCellByPosition(
     template: TemplateDocument, 
     row: number, 
     col: number
 ): TemplateCell | null {
-    if (!template.rowsItem || row < 0 || row >= template.rowsItem.length) {
+    if (!template.rowsItem) {
         return null;
     }
 
-    const templateRow = template.rowsItem[row];
+    // Ищем строку по row.index (логический индекс)
+    const templateRow = template.rowsItem.find(r => (r.index !== undefined ? r.index : template.rowsItem!.indexOf(r)) === row);
     if (!templateRow || !templateRow.row || !templateRow.row.c) {
         return null;
     }
@@ -70,6 +72,19 @@ export function findCellByPosition(
 }
 
 /**
+ * Извлекает строку из значения (может быть строка или объект парсера { "#text": "..." }).
+ * Экспорт для использования при отображении содержимого ячеек.
+ */
+export function extractStringValue(val: any): string {
+    if (val == null) return '';
+    if (typeof val === 'string') return val;
+    if (typeof val === 'object') {
+        return val['#text'] ?? val.text ?? val.content ?? String(val);
+    }
+    return String(val);
+}
+
+/**
  * Определяет формат заполнения ячейки
  * Возвращает 'parameter' если есть <parameter>, 'template' если есть <tl> с текстом, 'none' если пустая
  */
@@ -85,8 +100,9 @@ export function getCellFillPattern(
 
     const cellData = cell.c;
 
-    // Если есть parameter, но нет tl или tl пустой - формат "параметр"
-    if (cellData.parameter && cellData.parameter.trim() !== '') {
+    // Если есть parameter (строка или объект парсера) - формат "параметр"
+    const paramStr = extractStringValue(cellData.parameter);
+    if (paramStr.trim() !== '') {
         return 'parameter';
     }
 
@@ -473,14 +489,25 @@ export function getAllNamedAreas(template: TemplateDocument): Map<string, NamedA
 
     template.namedItem.forEach(item => {
         if (item.name && item.area) {
+            const area = item.area;
+            const beginRow = area.beginRow ?? 0;
+            const beginCol = area.beginColumn ?? -1;
+            const endRow = area.endRow ?? 0;
+            const endCol = area.endColumn ?? -1;
+            // Если type не задан, но колонки = -1 — это область типа Rows
+            let areaType = area.type;
+            if (!areaType && beginCol === -1 && endCol === -1) {
+                areaType = 'Rows';
+            }
+            if (!areaType) areaType = 'Rectangle';
             namedAreas.set(item.name, {
                 name: item.name,
-                areaType: item.area.type || 'Rectangle',
-                startRow: item.area.beginRow,
-                startCol: item.area.beginColumn,
-                endRow: item.area.endRow,
-                endCol: item.area.endColumn,
-                columnsID: item.area.columnsID // Сохраняем columnsID из области
+                areaType,
+                startRow: beginRow,
+                startCol: beginCol,
+                endRow,
+                endCol,
+                columnsID: area.columnsID
             });
         }
     });
@@ -1023,8 +1050,9 @@ export function getEffectiveFormat(
     }
     
     // Если у ячейки нет явного formatIndex, проверяем формат строки
-    if (template.rowsItem && template.rowsItem[row] && template.rowsItem[row].row) {
-        const rowFormatIndex = template.rowsItem[row].row.formatIndex;
+    const templateRow = template.rowsItem?.find(r => (r.index !== undefined ? r.index : template.rowsItem!.indexOf(r)) === row);
+    if (templateRow && templateRow.row) {
+        const rowFormatIndex = templateRow.row.formatIndex;
         // formatIndex в XML начинается с 1, в массиве с 0
         if (rowFormatIndex !== undefined && template.format && template.format[rowFormatIndex - 1]) {
             return template.format[rowFormatIndex - 1];
@@ -1898,8 +1926,9 @@ export function calculateColumnWidth(
     
     for (let i = 0; i <= col; i++) {
         const columnItem = columnsGroup.columnsItem.find(item => item.index === i);
-        if (columnItem && columnItem.column && columnItem.column.formatIndex !== undefined) {
-            const formatIndex = columnItem.column.formatIndex - 1; // formatIndex начинается с 1
+        const formatIndexVal = columnItem?.column?.formatIndex ?? (columnItem as any)?.formatIndex;
+        if (columnItem && formatIndexVal !== undefined) {
+            const formatIndex = formatIndexVal - 1; // formatIndex начинается с 1
             if (formatIndex >= 0 && formatIndex < template.format.length) {
                 const format = template.format[formatIndex];
                 if (format && format.width !== undefined && format.width !== null) {
@@ -1965,7 +1994,6 @@ export function calculateRowHeight(
     }
     
     // Ищем все строки с индексом <= rowIndex, которые имеют формат с height
-    // Сортируем по индексу строки (от меньшего к большему)
     const rowsWithHeight: Array<{ index: number; height: string | number }> = [];
     
     for (let i = 0; i <= rowIndex && i < template.rowsItem.length; i++) {
@@ -1984,8 +2012,12 @@ export function calculateRowHeight(
         }
     }
     
-    // Если не найдено ни одного формата с height, возвращаем undefined (высота по умолчанию)
+    // Если не найдено ни одного формата с height, используем document.height (высота по умолчанию)
     if (rowsWithHeight.length === 0) {
+        const docHeight = template.height;
+        if (docHeight !== undefined && docHeight !== null && docHeight !== 0) {
+            return docHeight;
+        }
         return undefined;
     }
     
@@ -2002,17 +2034,13 @@ export function calculateRowHeight(
         return lastHeight;
     }
     
-    // Если строка, проверяем, содержит ли она "px"
     if (typeof lastHeight === 'string') {
         if (lastHeight.includes('px')) {
             return lastHeight;
         }
-        // Если число в строке, преобразуем в число
         const numValue = parseFloat(lastHeight);
         if (!isNaN(numValue)) {
-            if (numValue === 0) {
-                return undefined; // height=0 означает высоту по умолчанию
-            }
+            if (numValue === 0) return undefined;
             return numValue;
         }
     }

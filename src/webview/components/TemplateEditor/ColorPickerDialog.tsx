@@ -1,6 +1,7 @@
 /**
  * Диалог выбора цвета для текста или фона ячейки
- * Поддерживает HEX коды и стили 1С (style:NegativeTextColor)
+ * Поддерживает HEX коды и стили 1С (StyleColors)
+ * Список стилей по схеме ЦветаСтиля платформы 1С:Предприятие
  */
 
 import React, { useState, useEffect } from 'react';
@@ -23,19 +24,36 @@ const COLOR_PALETTE = [
     '#FF8080', '#80FF80', '#8080FF', '#FFCC00'
 ];
 
-// Популярные стили 1С (из анализа макетов)
-const STYLE_COLORS = [
-    'style:NegativeTextColor',
-    'style:SpecialTextColor',
-    'style:ButtonTextColor',
-    'style:ToolTipBackColor',
-    'style:ToolTipForeground',
-    'style:SelectionBackColor',
-    'style:SelectionForeground',
-    'style:WindowBackColor',
-    'style:WindowForeground',
-    'style:FieldBackColor',
-    'style:FieldForeground'
+/** Стили 1С (StyleColors) с русским переводом. Источник: ЦветаСтиля платформы 1С */
+const STYLE_COLORS: Array<{ id: string; label: string }> = [
+    { id: 'style:FormTextColor', label: 'Цвет текста формы' },
+    { id: 'style:FormBackColor', label: 'Цвет фона формы' },
+    { id: 'style:FieldTextColor', label: 'Цвет текста поля' },
+    { id: 'style:FieldBackColor', label: 'Цвет фона поля' },
+    { id: 'style:ToolTipTextColor', label: 'Цвет текста подсказки' },
+    { id: 'style:ToolTipBackColor', label: 'Цвет фона подсказки' },
+    { id: 'style:NegativeTextColor', label: 'Цвет отрицательного числа' },
+    { id: 'style:SpecialTextColor', label: 'Цвет особого текста' },
+    { id: 'style:FieldSelectedTextColor', label: 'Цвет текста выделения поля' },
+    { id: 'style:FieldSelectionBackColor', label: 'Цвет фона выделения поля' },
+    { id: 'style:ButtonTextColor', label: 'Цвет текста кнопки' },
+    { id: 'style:ButtonBackColor', label: 'Цвет фона кнопки' },
+    { id: 'style:TableHeaderTextColor', label: 'Цвет текста шапки таблицы' },
+    { id: 'style:TableHeaderBackColor', label: 'Цвет фона шапки таблицы' },
+    { id: 'style:TableFooterTextColor', label: 'Цвет текста подвала таблицы' },
+    { id: 'style:TableFooterBackColor', label: 'Цвет фона подвала таблицы' },
+    { id: 'style:FieldAlternativeBackColor', label: 'Альтернативный цвет фона поля' },
+    { id: 'style:ReportHeaderBackColor', label: 'Цвет фона шапки отчёта' },
+    { id: 'style:ReportGroup1BackColor', label: 'Цвет фона группировки отчёта 1' },
+    { id: 'style:ReportGroup2BackColor', label: 'Цвет фона группировки отчёта 2' },
+    { id: 'style:BorderColor', label: 'Цвет рамки' },
+    { id: 'style:ButtonBorderColor', label: 'Цвет рамки кнопки' },
+    { id: 'style:ReportLineColor', label: 'Цвет линии отчёта' },
+    { id: 'style:AccentColor', label: 'Цвет акцента' },
+    { id: 'style:ActivityColor', label: 'Цвет активности' },
+    { id: 'style:NavigationColor', label: 'Цвет навигации' },
+    { id: 'style:AuxiliaryNavigationColor', label: 'Вспомогательный цвет навигации' },
+    { id: 'style:ImportantColor', label: 'Важный цвет' }
 ];
 
 export const ColorPickerDialog: React.FC<ColorPickerDialogProps> = ({
@@ -99,9 +117,9 @@ export const ColorPickerDialog: React.FC<ColorPickerDialogProps> = ({
         setError(null);
     };
 
-    const handleStyleClick = (style: string) => {
+    const handleStyleClick = (styleId: string) => {
         setMode('style');
-        setStyleColor(style);
+        setStyleColor(styleId);
         setHexColor('');
         setError(null);
     };
@@ -237,21 +255,22 @@ export const ColorPickerDialog: React.FC<ColorPickerDialogProps> = ({
                                         setStyleColor(e.target.value);
                                         setError(null);
                                     }}
-                                    placeholder="style:NegativeTextColor"
+                                    placeholder="style:FormTextColor"
                                     className="color-picker-input"
                                 />
                             </div>
 
                             <div className="color-picker-style-list">
-                                <label>Популярные стили:</label>
+                                <label>Стили 1С (ЦветаСтиля):</label>
                                 <div className="color-picker-style-buttons">
                                     {STYLE_COLORS.map((style) => (
                                         <button
-                                            key={style}
-                                            className={`color-picker-style-button ${styleColor === style ? 'selected' : ''}`}
-                                            onClick={() => handleStyleClick(style)}
+                                            key={style.id}
+                                            className={`color-picker-style-button ${styleColor === style.id ? 'selected' : ''}`}
+                                            onClick={() => handleStyleClick(style.id)}
+                                            title={style.id}
                                         >
-                                            {style}
+                                            {style.label}
                                         </button>
                                     ))}
                                 </div>

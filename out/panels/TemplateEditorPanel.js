@@ -144,7 +144,7 @@ class TemplateEditorPanel {
                 throw new Error('Invalid file path: possible path traversal attack');
             }
             // Сохраняем макет через templateXmlSaver
-            (0, templateXmlSaver_1.saveTemplateToXml)(templateDocument, this.originalXml, this.templatePath, this.configRoot);
+            (0, templateXmlSaver_1.saveTemplateToXml)(templateDocument, this.originalXml, this.templatePath, this.configRoot, this.extensionUri.fsPath);
             // Обновляем состояние
             this.templateDocument = templateDocument;
             this.originalXml = ''; // Обновим при следующем чтении файла

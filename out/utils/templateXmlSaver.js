@@ -33,14 +33,16 @@ const fs = __importStar(require("fs"));
 const commitFileLogger_1 = require("./commitFileLogger");
 const fileUtils_1 = require("./fileUtils");
 const xmlUtils_1 = require("./xmlUtils");
+const xmlStructureValidator_1 = require("../validation/xmlStructureValidator");
 /**
  * Сохраняет макет в XML файл с сохранением структуры через xmldom
  * @param templateDocument - Документ макета для сохранения
  * @param originalXml - Исходный XML для сохранения структуры
  * @param templatePath - Путь к файлу Template.xml
  * @param configRoot - Корневая папка конфигурации (для валидации пути)
+ * @param extensionPath - Путь к расширению (для загрузки схемы валидации)
  */
-function saveTemplateToXml(templateDocument, originalXml, templatePath, configRoot) {
+function saveTemplateToXml(templateDocument, originalXml, templatePath, configRoot, extensionPath) {
     if (!(0, fileUtils_1.validatePath)(configRoot, templatePath)) {
         throw new Error('Invalid file path: possible path traversal attack');
     }
@@ -66,6 +68,13 @@ function saveTemplateToXml(templateDocument, originalXml, templatePath, configRo
     const validation = (0, xmlUtils_1.validateXML)(updatedXml);
     if (!validation.valid) {
         throw new Error(validation.error ?? 'Результат сохранения не является валидным XML');
+    }
+    const structureValidation = (0, xmlStructureValidator_1.validateXmlStructure)(updatedXml, {
+        filePath: templatePath,
+        extensionPath
+    });
+    if (!structureValidation.valid && structureValidation.errors?.length) {
+        throw new Error('Структура XML не соответствует схеме: ' + structureValidation.errors.join('; '));
     }
     // Сохраняем файл с BOM (как в оригинальных файлах 1С)
     // ВАЖНО: 1С конфигуратор требует UTF-8 с BOM (EF BB BF)
@@ -97,135 +106,116 @@ function updateTemplateInDom(documentElement, templateDocument) {
     updateColumnsInDom(documentElement, templateDocument, doc);
 }
 /**
- * Обновляет rowsItem (строки и ячейки) в DOM
+ * Обновляет rowsItem (строки и ячейки) в DOM.
+ * По XSD: каждый rowsItem содержит ровно один index и один row.
  */
 function updateRowsItemInDom(documentElement, templateDocument, doc) {
-    // Находим элемент rowsItem
-    const rowsItemElements = Array.from(documentElement.getElementsByTagName('rowsItem'));
-    let rowsItemElement = null;
-    if (rowsItemElements.length > 0) {
-        rowsItemElement = rowsItemElements[0];
-    }
-    else {
-        // Создаем новый элемент rowsItem
-        rowsItemElement = doc.createElement('rowsItem');
-        documentElement.appendChild(rowsItemElement);
-    }
-    if (!rowsItemElement || !templateDocument.rowsItem) {
+    if (!templateDocument.rowsItem || templateDocument.rowsItem.length === 0) {
         return;
     }
-    // Удаляем все существующие строки
-    while (rowsItemElement.firstChild) {
-        rowsItemElement.removeChild(rowsItemElement.firstChild);
+    // Удаляем все существующие rowsItem
+    const existingRowsItems = Array.from(documentElement.getElementsByTagName('rowsItem'));
+    let insertBeforeRef = null;
+    if (existingRowsItems.length > 0) {
+        insertBeforeRef = existingRowsItems[existingRowsItems.length - 1].nextElementSibling;
+        existingRowsItems.forEach(item => {
+            if (item.parentNode) {
+                item.parentNode.removeChild(item);
+            }
+        });
     }
-    // Добавляем новые строки
-    templateDocument.rowsItem.forEach((templateRow, rowIndex) => {
-        // Создаем элемент для строки rowsItem
-        // В XML структура: <rowsItem><index>0</index><row>...</row></rowsItem>
-        // Но парсер создает массив rowsItem, где каждый элемент имеет index и row
-        if (!rowsItemElement) {
-            return; // Элемент rowsItem не найден
-        }
-        // Элемент index (внутри rowsItem)
+    else {
+        const firstFormat = documentElement.getElementsByTagName('format')[0];
+        const firstMerge = documentElement.getElementsByTagName('merge')[0];
+        insertBeforeRef = (firstFormat || firstMerge || null);
+    }
+    templateDocument.rowsItem.forEach((templateRow) => {
+        const rowsItemElement = doc.createElement('rowsItem');
         const indexElement = doc.createElement('index');
         indexElement.textContent = templateRow.index.toString();
         rowsItemElement.appendChild(indexElement);
         if (templateRow.row) {
-            // Элемент row (внутри rowsItem)
             const rowElement = doc.createElement('row');
-            // Проверяем, не является ли строка пустой
             if (templateRow.row.empty === true) {
                 const emptyElement = doc.createElement('empty');
                 emptyElement.textContent = 'true';
                 rowElement.appendChild(emptyElement);
-                rowsItemElement.appendChild(rowElement);
-                return;
             }
-            // formatIndex - опциональный (элемент внутри row)
-            if (templateRow.row.formatIndex !== undefined) {
-                const formatIndexElement = doc.createElement('formatIndex');
-                formatIndexElement.textContent = templateRow.row.formatIndex.toString();
-                rowElement.appendChild(formatIndexElement);
-            }
-            // columnsID - опциональный (элемент внутри row)
-            if (templateRow.row.columnsID) {
-                const columnsIdElement = doc.createElement('columnsID');
-                columnsIdElement.textContent = templateRow.row.columnsID;
-                rowElement.appendChild(columnsIdElement);
-            }
-            if (templateRow.row.c && templateRow.row.c.length > 0) {
-                templateRow.row.c.forEach(cell => {
-                    // Внешний элемент c (может содержать i)
-                    const cellElement = doc.createElement('c');
-                    // i - опциональный (элемент внутри c)
-                    if (cell.i !== undefined) {
-                        const iElement = doc.createElement('i');
-                        iElement.textContent = cell.i.toString();
-                        cellElement.appendChild(iElement);
-                    }
-                    if (cell.c) {
-                        // Внутренний элемент c (содержит данные ячейки: f, parameter, tl, note и т.д.)
-                        const innerCElement = doc.createElement('c');
-                        // Добавляем формат
-                        if (cell.c.f !== undefined) {
-                            const formatElement = doc.createElement('f');
-                            formatElement.textContent = cell.c.f.toString();
-                            innerCElement.appendChild(formatElement);
+            else {
+                if (templateRow.row.formatIndex !== undefined) {
+                    const formatIndexElement = doc.createElement('formatIndex');
+                    formatIndexElement.textContent = templateRow.row.formatIndex.toString();
+                    rowElement.appendChild(formatIndexElement);
+                }
+                if (templateRow.row.columnsID) {
+                    const columnsIdElement = doc.createElement('columnsID');
+                    columnsIdElement.textContent = templateRow.row.columnsID;
+                    rowElement.appendChild(columnsIdElement);
+                }
+                if (templateRow.row.c && templateRow.row.c.length > 0) {
+                    templateRow.row.c.forEach(cell => {
+                        const cellElement = doc.createElement('c');
+                        if (cell.i !== undefined) {
+                            const iElement = doc.createElement('i');
+                            iElement.textContent = cell.i.toString();
+                            cellElement.appendChild(iElement);
                         }
-                        // Добавляем параметр (формат "параметр")
-                        if (cell.c.parameter) {
-                            const parameterElement = doc.createElement('parameter');
-                            parameterElement.textContent = cell.c.parameter;
-                            innerCElement.appendChild(parameterElement);
-                        }
-                        // Добавляем детальный параметр
-                        if (cell.c.detailParameter) {
-                            const detailParameterElement = doc.createElement('detailParameter');
-                            detailParameterElement.textContent = cell.c.detailParameter;
-                            innerCElement.appendChild(detailParameterElement);
-                        }
-                        // Добавляем текст (формат "шаблон")
-                        if (cell.c.tl) {
-                            const tlElement = doc.createElement('tl');
-                            const itemElement = doc.createElement('v8:item');
-                            const langElement = doc.createElement('v8:lang');
-                            langElement.textContent = 'ru';
-                            itemElement.appendChild(langElement);
-                            const contentElement = doc.createElement('v8:content');
-                            // Извлекаем текст из TemplateTextData
-                            if (typeof cell.c.tl === 'object' && cell.c.tl['v8:item']) {
-                                const item = cell.c.tl['v8:item'];
-                                if (Array.isArray(item)) {
-                                    const firstItem = item.find(i => i['v8:content']);
-                                    if (firstItem && firstItem['v8:content']) {
-                                        contentElement.textContent = firstItem['v8:content'];
+                        if (cell.c) {
+                            const innerCElement = doc.createElement('c');
+                            if (cell.c.f !== undefined) {
+                                const formatElement = doc.createElement('f');
+                                formatElement.textContent = cell.c.f.toString();
+                                innerCElement.appendChild(formatElement);
+                            }
+                            if (cell.c.parameter) {
+                                const parameterElement = doc.createElement('parameter');
+                                parameterElement.textContent = cell.c.parameter;
+                                innerCElement.appendChild(parameterElement);
+                            }
+                            if (cell.c.detailParameter) {
+                                const detailParameterElement = doc.createElement('detailParameter');
+                                detailParameterElement.textContent = cell.c.detailParameter;
+                                innerCElement.appendChild(detailParameterElement);
+                            }
+                            if (cell.c.tl) {
+                                const tlElement = doc.createElement('tl');
+                                const itemElement = doc.createElement('v8:item');
+                                const langElement = doc.createElement('v8:lang');
+                                langElement.textContent = 'ru';
+                                itemElement.appendChild(langElement);
+                                const contentElement = doc.createElement('v8:content');
+                                if (typeof cell.c.tl === 'object' && cell.c.tl['v8:item']) {
+                                    const item = cell.c.tl['v8:item'];
+                                    if (Array.isArray(item)) {
+                                        const firstItem = item.find(i => i['v8:content']);
+                                        if (firstItem && firstItem['v8:content']) {
+                                            contentElement.textContent = firstItem['v8:content'];
+                                        }
+                                    }
+                                    else if (item && item['v8:content']) {
+                                        contentElement.textContent = item['v8:content'];
                                     }
                                 }
-                                else if (item && item['v8:content']) {
-                                    contentElement.textContent = item['v8:content'];
+                                else if (typeof cell.c.tl === 'string') {
+                                    contentElement.textContent = cell.c.tl;
                                 }
+                                itemElement.appendChild(contentElement);
+                                tlElement.appendChild(itemElement);
+                                innerCElement.appendChild(tlElement);
                             }
-                            else if (typeof cell.c.tl === 'string') {
-                                contentElement.textContent = cell.c.tl;
+                            if (cell.c.note) {
+                                const noteElement = createNoteElement(doc, cell.c.note);
+                                innerCElement.appendChild(noteElement);
                             }
-                            itemElement.appendChild(contentElement);
-                            tlElement.appendChild(itemElement);
-                            innerCElement.appendChild(tlElement);
+                            cellElement.appendChild(innerCElement);
                         }
-                        // Добавляем примечание
-                        if (cell.c.note) {
-                            const noteElement = createNoteElement(doc, cell.c.note);
-                            innerCElement.appendChild(noteElement);
-                        }
-                        cellElement.appendChild(innerCElement);
-                    }
-                    rowElement.appendChild(cellElement);
-                });
+                        rowElement.appendChild(cellElement);
+                    });
+                }
             }
-            if (rowsItemElement) {
-                rowsItemElement.appendChild(rowElement);
-            }
+            rowsItemElement.appendChild(rowElement);
         }
+        documentElement.insertBefore(rowsItemElement, insertBeforeRef);
     });
 }
 /**

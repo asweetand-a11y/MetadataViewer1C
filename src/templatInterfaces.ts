@@ -8,7 +8,23 @@ export interface TemplateDocument {
 	format: TemplateFormat[];
 	merge: TemplateMergeCells[];
 	font: TemplateFont[];
-	namedItem?: NamedItem[];  // Массив именованных областей
+	namedItem?: NamedItem[];
+	languageSettings?: unknown;
+	templateMode?: unknown;
+	defaultFormatIndex?: number;
+	height?: number;
+	vgRows?: number;
+	drawing?: unknown[];
+	picture?: unknown[];
+	printSettings?: unknown;
+	printArea?: unknown;
+	line?: unknown[];
+	leftHeader?: unknown;
+	centerHeader?: unknown;
+	rightHeader?: unknown;
+	leftFooter?: unknown;
+	centerFooter?: unknown;
+	rightFooter?: unknown;
 }
 
 export interface TemplateColumns {
