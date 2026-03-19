@@ -120,11 +120,9 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
     const getRowHeight = react_1.default.useCallback((rowIndex) => {
         const height = (0, templateUtils_1.calculateRowHeight)(templateDocument, rowIndex);
         if (height === undefined) {
-            const defaultHeight = templateDocument.height;
-            if (defaultHeight !== undefined && defaultHeight !== null && defaultHeight !== 0) {
-                return typeof defaultHeight === 'number' ? `${defaultHeight}px` : String(defaultHeight);
-            }
-            return '20px';
+            const baseHeight = templateDocument.height ?? 20;
+            const defaultHeight = typeof baseHeight === 'number' ? baseHeight / 3 : 20 / 3;
+            return `${Math.round(defaultHeight)}px`;
         }
         if (typeof height === 'number') {
             return `${height}px`;
@@ -283,29 +281,27 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
     const handleColumnHeaderClick = (0, react_1.useCallback)((col, event) => {
         event.stopPropagation();
         event.preventDefault();
-        // Используем фактическое количество строк из rowsItem
-        const rowsCount = templateDocument.rowsItem?.length || 0;
+        const minRow = (0, templateUtils_1.getMinRowIndex)(templateDocument);
+        const maxRow = (0, templateUtils_1.getMaxRowIndex)(templateDocument);
         if (event.shiftKey && selectedRange) {
-            // Расширяем выделение от текущего диапазона до новой колонки
             const newRange = {
-                startRow: 0,
+                startRow: minRow,
                 startCol: Math.min(selectedRange.startCol, col),
-                endRow: rowsCount > 0 ? rowsCount - 1 : 0,
+                endRow: maxRow,
                 endCol: Math.max(selectedRange.endCol, col)
             };
             onRangeSelect(newRange);
-            onCellSelect({ row: 0, col: newRange.startCol });
+            onCellSelect({ row: minRow, col: newRange.startCol });
         }
         else {
-            // Обычное выделение одной колонки
             const range = {
-                startRow: 0,
+                startRow: minRow,
                 startCol: col,
-                endRow: rowsCount > 0 ? rowsCount - 1 : 0,
+                endRow: maxRow,
                 endCol: col
             };
             onRangeSelect(range);
-            onCellSelect({ row: 0, col });
+            onCellSelect({ row: minRow, col });
         }
     }, [templateDocument, onCellSelect, onRangeSelect, selectedRange]);
     // Обработка начала перетаскивания
@@ -558,10 +554,10 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
                         displayColumnsID = activeRowData.row.columnsID;
                     }
                 }
-                const namedAreasForRow = (0, templateUtils_2.getNamedAreasForRow)(templateDocument, rowIndex, displayColumnsID);
-                // Показываем название именованной области только в первой строке области (чтобы избежать дублей)
-                const areasToShow = namedAreasForRow.filter(area => area.startRow === rowIndex);
-                const areaNames = areasToShow.map(area => area.name).join(', ');
+                // Для подписей используем columnsID текущей строки (не активной), чтобы области всегда отображались
+                const namedAreasForRow = (0, templateUtils_2.getNamedAreasForRow)(templateDocument, rowIndex, rowColumnsID);
+                // Показываем все области, содержащие эту строку (для ясности на каждой строке)
+                const areaNames = namedAreasForRow.map(area => area.name).join(', ');
                 const heightValue = getRowHeight(rowIndex);
                 return (react_1.default.createElement("tr", { key: rowIndex, className: `${isFrozenRow(rowIndex) ? 'frozen' : ''} ${isActive ? 'active-row' : ''}`, style: {
                         height: heightValue,

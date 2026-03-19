@@ -478,6 +478,60 @@ export function extractTextFromTemplateTextData(tl: any): string {
 }
 
 /**
+ * Возвращает максимальный индекс колонки в макете
+ */
+export function getMaxColumns(template: TemplateDocument): number {
+    let max = 0;
+    if (template.rowsItem) {
+        template.rowsItem.forEach(row => {
+            if (row.row?.c) {
+                let currentColIndex = 0;
+                row.row.c.forEach((cell: { i?: number }) => {
+                    const colIndex = cell.i !== undefined ? cell.i : currentColIndex;
+                    if (colIndex >= max) max = colIndex + 1;
+                    currentColIndex = colIndex + 1;
+                });
+            }
+        });
+    }
+    if (template.columns?.length) {
+        template.columns.forEach((cg: { size?: number; columnsItem?: Array<{ index?: number }> }) => {
+            if (cg.size !== undefined) max = Math.max(max, cg.size);
+            cg.columnsItem?.forEach(item => {
+                if (item.index !== undefined && item.index >= max) max = item.index + 1;
+            });
+        });
+    }
+    return Math.max(max, 1);
+}
+
+/**
+ * Возвращает минимальный индекс строки в макете
+ */
+export function getMinRowIndex(template: TemplateDocument): number {
+    if (!template.rowsItem?.length) return 0;
+    let min = template.rowsItem[0].index ?? 0;
+    template.rowsItem.forEach((row, idx) => {
+        const rIndex = row.index !== undefined ? row.index : idx;
+        if (rIndex < min) min = rIndex;
+    });
+    return min;
+}
+
+/**
+ * Возвращает максимальный индекс строки в макете
+ */
+export function getMaxRowIndex(template: TemplateDocument): number {
+    if (!template.rowsItem?.length) return 0;
+    let max = 0;
+    template.rowsItem.forEach((row, idx) => {
+        const rIndex = row.index !== undefined ? row.index : idx;
+        if (rIndex > max) max = rIndex;
+    });
+    return max;
+}
+
+/**
  * Получает все именованные области из документа макета
  */
 export function getAllNamedAreas(template: TemplateDocument): Map<string, NamedArea> {
@@ -789,14 +843,12 @@ export function isCellOnNamedAreaBoundary(
     };
     
     if (area.areaType === 'Rows') {
-        // Для типа Rows: границы ТОЛЬКО на первой и последней строке области
-        // beginColumn=-1 и endColumn=-1 означает все колонки
+        // Для типа Rows: верхняя граница на первой строке, нижняя на последней
+        // Левая и правая границы — на всех строках области для полного контура
+        const inArea = rowIndex >= area.startRow && rowIndex <= area.endRow;
         result.top = rowIndex === area.startRow;
         result.bottom = rowIndex === area.endRow;
-        // Для типа Rows левая и правая границы должны быть на всех строках области
-        // Но только на первой и последней строке области
-        if (result.top || result.bottom) {
-            // Определяем максимальное количество колонок для определения правой границы
+        if (inArea) {
             let maxCol = 0;
             if (template.rowsItem) {
                 template.rowsItem.forEach(row => {
@@ -812,12 +864,8 @@ export function isCellOnNamedAreaBoundary(
                     }
                 });
             }
-            // Левая граница на первой колонке (0), правая на последней (maxCol - 1)
             result.left = colIndex === 0;
             result.right = colIndex === maxCol - 1;
-        } else {
-            result.left = false;
-            result.right = false;
         }
     } else if (area.areaType === 'Columns') {
         // Для типа Columns: границы ТОЛЬКО на первой и последней колонке области
@@ -863,7 +911,8 @@ export function createNamedArea(
     startRow: number,
     startCol: number,
     endRow: number,
-    endCol: number
+    endCol: number,
+    columnsID?: string
 ): TemplateDocument {
     // Валидация
     const validation = validateNamedAreaName(template, name);
@@ -887,7 +936,6 @@ export function createNamedArea(
         finalEndRow = -1;
     }
 
-    // Создаем новый namedItem
     const newNamedItem: NamedItem = {
         'xsi:type': 'NamedItemCells',
         name,
@@ -896,7 +944,8 @@ export function createNamedArea(
             beginRow: finalStartRow,
             endRow: finalEndRow,
             beginColumn: finalStartCol,
-            endColumn: finalEndCol
+            endColumn: finalEndCol,
+            ...(columnsID && { columnsID })
         }
     };
 
@@ -909,15 +958,17 @@ export function createNamedArea(
 }
 
 /**
- * Создает именованную область для строк (тип "Rows")
+ * Создает именованную область для строк (тип "Rows").
+ * columnsID — привязка к формату строк (для отображения в строках с этим columnsID)
  */
 export function createNamedRows(
     template: TemplateDocument,
     name: string,
     startRow: number,
-    endRow: number
+    endRow: number,
+    columnsID?: string
 ): TemplateDocument {
-    return createNamedArea(template, name, 'Rows', startRow, -1, endRow, -1);
+    return createNamedArea(template, name, 'Rows', startRow, -1, endRow, -1, columnsID);
 }
 
 /**
@@ -1496,7 +1547,15 @@ export function isEmptyRow(
 }
 
 /**
- * Добавляет строку в макет
+ * Находит позицию в массиве rowsItem для строки с указанным индексом
+ */
+function findRowArrayIndex(rowsItem: TemplateRow[], rowIndex: number): number {
+    return rowsItem.findIndex((r, idx) => (r.index !== undefined ? r.index : idx) === rowIndex);
+}
+
+/**
+ * Добавляет строку в макет.
+ * Вставка по позиции в массиве (не по индексу строки), новый индекс = maxRowIndex + 1.
  */
 export function addRow(
     template: TemplateDocument, 
@@ -1504,11 +1563,17 @@ export function addRow(
     position: 'above' | 'below'
 ): TemplateDocument {
     const newRowsItem = [...(template.rowsItem || [])];
-    const insertIndex = position === 'above' ? index : index + 1;
-    
-    // Создаем новую пустую строку
+    const arrayIndex = findRowArrayIndex(newRowsItem, index);
+    if (arrayIndex < 0) {
+        return template;
+    }
+    // «Ниже» — вставляем в конец массива, чтобы новые строки шли по порядку (75, 76, 77…)
+    // «Выше» — вставляем перед выбранной строкой
+    const insertArrayIndex = position === 'above' ? arrayIndex : newRowsItem.length;
+    const newRowIndex = getMaxRowIndex(template) + 1;
+
     const newRow: TemplateRow = {
-        index: insertIndex,
+        index: newRowIndex,
         row: {
             columnsID: template.columns?.[0]?.id || '',
             formatIndex: 0,
@@ -1516,13 +1581,7 @@ export function addRow(
         }
     };
 
-    // Вставляем строку
-    newRowsItem.splice(insertIndex, 0, newRow);
-
-    // Обновляем индексы последующих строк
-    for (let i = insertIndex + 1; i < newRowsItem.length; i++) {
-        newRowsItem[i] = { ...newRowsItem[i], index: i };
-    }
+    newRowsItem.splice(insertArrayIndex, 0, newRow);
 
     return {
         ...template,
@@ -1531,25 +1590,19 @@ export function addRow(
 }
 
 /**
- * Удаляет строку из макета
+ * Удаляет строку из макета по индексу строки (не по позиции в массиве)
  */
 export function deleteRow(
     template: TemplateDocument, 
     index: number
 ): TemplateDocument {
     const newRowsItem = [...(template.rowsItem || [])];
-    
-    if (index < 0 || index >= newRowsItem.length) {
+    const arrayIndex = findRowArrayIndex(newRowsItem, index);
+    if (arrayIndex < 0) {
         return template;
     }
 
-    // Удаляем строку
-    newRowsItem.splice(index, 1);
-
-    // Обновляем индексы последующих строк
-    for (let i = index; i < newRowsItem.length; i++) {
-        newRowsItem[i] = { ...newRowsItem[i], index: i };
-    }
+    newRowsItem.splice(arrayIndex, 1);
 
     return {
         ...template,
@@ -1975,77 +2028,48 @@ export function calculateColumnWidth(
 }
 
 /**
- * Вычисляет высоту строки по алгоритму 1С:
- * Ищем все теги <height>, последний найденный определяет последнюю строку с измененной высотой.
- * Если height=0, это высота по умолчанию.
+ * Вычисляет высоту строки.
+ * Используется высота формата ТЕКУЩЕЙ строки (не каскад от предыдущих).
+ * Если у формата нет height или height=0 — возвращаем undefined (автовысота / document.height).
  * 
  * @param template - Документ шаблона
  * @param rowIndex - Индекс строки (начиная с 0)
- * @returns Высота строки в пикселях (строка с "px" или число), или undefined для высоты по умолчанию
+ * @returns Высота в px (число/строка) или undefined для высоты по умолчанию
  */
 export function calculateRowHeight(
     template: TemplateDocument,
     rowIndex: number
 ): string | number | undefined {
-    const DEFAULT_HEIGHT = 0; // Высота по умолчанию в 1С (0 означает авто)
-    
+    const defaultHeight = (template.height ?? 20) / 3;
+
     if (!template.rowsItem || !template.format) {
-        return undefined;
+        return defaultHeight;
     }
-    
-    // Ищем все строки с индексом <= rowIndex, которые имеют формат с height
-    const rowsWithHeight: Array<{ index: number; height: string | number }> = [];
-    
-    for (let i = 0; i <= rowIndex && i < template.rowsItem.length; i++) {
-        const row = template.rowsItem[i];
-        if (row && row.row && row.row.formatIndex !== undefined) {
-            const formatIndex = row.row.formatIndex - 1; // formatIndex начинается с 1
-            if (formatIndex >= 0 && formatIndex < template.format.length) {
-                const format = template.format[formatIndex];
-                if (format && format.height !== undefined && format.height !== null) {
-                    rowsWithHeight.push({
-                        index: i,
-                        height: format.height
-                    });
-                }
-            }
-        }
+
+    const templateRow = template.rowsItem.find(r => (r.index !== undefined ? r.index : template.rowsItem!.indexOf(r)) === rowIndex);
+    if (!templateRow || !templateRow.row || templateRow.row.formatIndex === undefined) {
+        return defaultHeight;
     }
-    
-    // Если не найдено ни одного формата с height, используем document.height (высота по умолчанию)
-    if (rowsWithHeight.length === 0) {
-        const docHeight = template.height;
-        if (docHeight !== undefined && docHeight !== null && docHeight !== 0) {
-            return docHeight;
-        }
-        return undefined;
+
+    const formatIndex = templateRow.row.formatIndex - 1;
+    if (formatIndex < 0 || formatIndex >= template.format.length) {
+        return defaultHeight;
     }
-    
-    // Берем последний найденный height (последняя строка с измененной высотой)
-    const lastHeight = rowsWithHeight[rowsWithHeight.length - 1].height;
-    
-    // Если height=0, это высота по умолчанию
-    if (lastHeight === 0 || lastHeight === '0' || lastHeight === '0px') {
-        return undefined;
+
+    const format = template.format[formatIndex];
+    if (!format || format.height === undefined || format.height === null) {
+        return defaultHeight;
     }
-    
-    // Нормализуем значение: если число, возвращаем как есть, иначе возвращаем строку
-    if (typeof lastHeight === 'number') {
-        return lastHeight;
+
+    const h = format.height;
+    if (h === 0 || h === '0' || h === '0px') {
+        return defaultHeight;
     }
-    
-    if (typeof lastHeight === 'string') {
-        if (lastHeight.includes('px')) {
-            return lastHeight;
-        }
-        const numValue = parseFloat(lastHeight);
-        if (!isNaN(numValue)) {
-            if (numValue === 0) return undefined;
-            return numValue;
-        }
-    }
-    
-    return undefined;
+
+    if (typeof h === 'number') return h;
+    if (typeof h === 'string' && h.includes('px')) return h;
+    const num = parseFloat(String(h));
+    return !isNaN(num) && num !== 0 ? num : defaultHeight;
 }
 
 /**

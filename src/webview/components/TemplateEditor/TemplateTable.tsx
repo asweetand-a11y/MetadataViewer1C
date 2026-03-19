@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TemplateDocument, TemplateRow, TemplateCell, CellPosition, CellRange, TemplateColumns } from '../../../templatInterfaces';
-import { calculateColumnWidth, calculateRowHeight } from '../../../utils/templateUtils';
+import { calculateColumnWidth, calculateRowHeight, getMinRowIndex, getMaxRowIndex } from '../../../utils/templateUtils';
 import { findCellByPosition, getCellFillPattern, extractTextFromTemplateTextData, extractStringValue, getEffectiveFormat, getEffectiveFont, getAllNamedAreas, findNamedAreaByPosition, getNamedAreaForRow, getNamedAreaForColumn, getNamedAreasForRow, getNamedAreasForColumn, isCellOnNamedAreaBoundary } from '../../../utils/templateUtils';
 import { NamedArea } from '../../../templatInterfaces';
 import './template-editor.css';
@@ -139,11 +139,9 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
         const height = calculateRowHeight(templateDocument, rowIndex);
         
         if (height === undefined) {
-            const defaultHeight = templateDocument.height;
-            if (defaultHeight !== undefined && defaultHeight !== null && defaultHeight !== 0) {
-                return typeof defaultHeight === 'number' ? `${defaultHeight}px` : String(defaultHeight);
-            }
-            return '20px';
+            const baseHeight = templateDocument.height ?? 20;
+            const defaultHeight = typeof baseHeight === 'number' ? baseHeight / 3 : 20 / 3;
+            return `${Math.round(defaultHeight)}px`;
         }
         
         if (typeof height === 'number') {
@@ -319,30 +317,28 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
     const handleColumnHeaderClick = useCallback((col: number, event: React.MouseEvent) => {
         event.stopPropagation();
         event.preventDefault();
-        
-        // Используем фактическое количество строк из rowsItem
-        const rowsCount = templateDocument.rowsItem?.length || 0;
-        
+
+        const minRow = getMinRowIndex(templateDocument);
+        const maxRow = getMaxRowIndex(templateDocument);
+
         if (event.shiftKey && selectedRange) {
-            // Расширяем выделение от текущего диапазона до новой колонки
             const newRange: CellRange = {
-                startRow: 0,
+                startRow: minRow,
                 startCol: Math.min(selectedRange.startCol, col),
-                endRow: rowsCount > 0 ? rowsCount - 1 : 0,
+                endRow: maxRow,
                 endCol: Math.max(selectedRange.endCol, col)
             };
             onRangeSelect(newRange);
-            onCellSelect({ row: 0, col: newRange.startCol });
+            onCellSelect({ row: minRow, col: newRange.startCol });
         } else {
-            // Обычное выделение одной колонки
             const range: CellRange = {
-                startRow: 0,
+                startRow: minRow,
                 startCol: col,
-                endRow: rowsCount > 0 ? rowsCount - 1 : 0,
+                endRow: maxRow,
                 endCol: col
             };
             onRangeSelect(range);
-            onCellSelect({ row: 0, col });
+            onCellSelect({ row: minRow, col });
         }
     }, [templateDocument, onCellSelect, onRangeSelect, selectedRange]);
 
@@ -662,10 +658,10 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                             }
                         }
                         
-                        const namedAreasForRow = getNamedAreasForRow(templateDocument, rowIndex, displayColumnsID);
-                        // Показываем название именованной области только в первой строке области (чтобы избежать дублей)
-                        const areasToShow = namedAreasForRow.filter(area => area.startRow === rowIndex);
-                        const areaNames = areasToShow.map(area => area.name).join(', ');
+                        // Для подписей используем columnsID текущей строки (не активной), чтобы области всегда отображались
+                        const namedAreasForRow = getNamedAreasForRow(templateDocument, rowIndex, rowColumnsID);
+                        // Показываем все области, содержащие эту строку (для ясности на каждой строке)
+                        const areaNames = namedAreasForRow.map(area => area.name).join(', ');
                         const heightValue = getRowHeight(rowIndex);
                         return (
                             <tr 

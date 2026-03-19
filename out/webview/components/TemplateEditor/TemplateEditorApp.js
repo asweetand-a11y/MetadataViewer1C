@@ -374,53 +374,40 @@ const TemplateEditorApp = ({ vscode }) => {
             return;
         }
         try {
-            // Определяем тип выделения: строки или колонки
-            // Если выделены несколько строк (startRow !== endRow) - это именованные строки
-            // Если выделены несколько колонок (startCol !== endCol) - это именованные колонки
-            // Если выделена одна строка (startRow === endRow) - это тоже именованная строка
-            // Если выделена одна колонка (startCol === endCol) - это тоже именованная колонка
-            const isSingleRow = selectedRange.startRow === selectedRange.endRow;
-            const isSingleCol = selectedRange.startCol === selectedRange.endCol;
-            if (isSingleRow && !isSingleCol) {
-                // Выделена одна строка (не одна колонка) - создаем именованную область типа "Rows"
-                const name = (0, templateUtils_1.generateNamedAreaName)(templateDocument, 'Rows', selectedRange.startRow, selectedRange.endRow);
-                const updated = (0, templateUtils_1.createNamedRows)(templateDocument, name, selectedRange.startRow, selectedRange.endRow);
-                setTemplateDocument(updated);
-                setIsDirty(true);
+            const maxCol = (0, templateUtils_1.getMaxColumns)(templateDocument);
+            const minRow = (0, templateUtils_1.getMinRowIndex)(templateDocument);
+            const maxRow = (0, templateUtils_1.getMaxRowIndex)(templateDocument);
+            const isFullWidth = selectedRange.startCol === 0 && selectedRange.endCol >= maxCol - 1;
+            const isFullHeight = selectedRange.startRow === minRow && selectedRange.endRow >= maxRow;
+            const rowSpan = selectedRange.endRow - selectedRange.startRow + 1;
+            const colSpan = selectedRange.endCol - selectedRange.startCol + 1;
+            // Выбор типа: Rows или Columns по форме выделения
+            // Полная ширина (выбор по заголовкам строк) → Rows
+            // Полная высота (выбор по заголовкам колонок) → Columns
+            // Прямоугольник (перетаскивание) → по соотношению rowSpan/colSpan
+            let createRows;
+            if (isFullWidth && !isFullHeight) {
+                createRows = true;
             }
-            else if (isSingleCol && !isSingleRow) {
-                // Выделена одна колонка (не одна строка) - создаем именованную область типа "Columns"
-                const name = (0, templateUtils_1.generateNamedAreaName)(templateDocument, 'Columns', selectedRange.startCol, selectedRange.endCol);
-                const updated = (0, templateUtils_1.createNamedColumns)(templateDocument, name, selectedRange.startCol, selectedRange.endCol);
-                setTemplateDocument(updated);
-                setIsDirty(true);
+            else if (isFullHeight && !isFullWidth) {
+                createRows = false;
             }
-            else if (isSingleRow && isSingleCol) {
-                // Выделена одна ячейка - по умолчанию создаем именованную строку
+            else {
+                createRows = rowSpan >= colSpan;
+            }
+            if (createRows) {
                 const name = (0, templateUtils_1.generateNamedAreaName)(templateDocument, 'Rows', selectedRange.startRow, selectedRange.endRow);
-                const updated = (0, templateUtils_1.createNamedRows)(templateDocument, name, selectedRange.startRow, selectedRange.endRow);
+                const startRowData = templateDocument.rowsItem?.find((r, idx) => (r.index !== undefined ? r.index : idx) === selectedRange.startRow);
+                const columnsID = startRowData?.row?.columnsID;
+                const updated = (0, templateUtils_1.createNamedRows)(templateDocument, name, selectedRange.startRow, selectedRange.endRow, columnsID);
                 setTemplateDocument(updated);
                 setIsDirty(true);
             }
             else {
-                // Выделен диапазон - нужно определить приоритет
-                // Если больше строк, чем колонок, или равное количество - создаем именованные строки
-                const rowSpan = selectedRange.endRow - selectedRange.startRow + 1;
-                const colSpan = selectedRange.endCol - selectedRange.startCol + 1;
-                if (rowSpan >= colSpan) {
-                    // Создаем именованные строки
-                    const name = (0, templateUtils_1.generateNamedAreaName)(templateDocument, 'Rows', selectedRange.startRow, selectedRange.endRow);
-                    const updated = (0, templateUtils_1.createNamedRows)(templateDocument, name, selectedRange.startRow, selectedRange.endRow);
-                    setTemplateDocument(updated);
-                    setIsDirty(true);
-                }
-                else {
-                    // Создаем именованные колонки
-                    const name = (0, templateUtils_1.generateNamedAreaName)(templateDocument, 'Columns', selectedRange.startCol, selectedRange.endCol);
-                    const updated = (0, templateUtils_1.createNamedColumns)(templateDocument, name, selectedRange.startCol, selectedRange.endCol);
-                    setTemplateDocument(updated);
-                    setIsDirty(true);
-                }
+                const name = (0, templateUtils_1.generateNamedAreaName)(templateDocument, 'Columns', selectedRange.startCol, selectedRange.endCol);
+                const updated = (0, templateUtils_1.createNamedColumns)(templateDocument, name, selectedRange.startCol, selectedRange.endCol);
+                setTemplateDocument(updated);
+                setIsDirty(true);
             }
         }
         catch (error) {

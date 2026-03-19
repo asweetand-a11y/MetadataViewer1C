@@ -334,21 +334,21 @@
     opacity: 1;
 }
 
-/* Красные границы именованных областей */
+/* Границы именованных областей — толстые линии для чёткого выделения */
 .template-table-cell.named-area-border-top {
-    border-top: 2px solid #ff0000 !important;
+    border-top: 3px solid #e53935 !important;
 }
 
 .template-table-cell.named-area-border-bottom {
-    border-bottom: 2px solid #ff0000 !important;
+    border-bottom: 3px solid #e53935 !important;
 }
 
 .template-table-cell.named-area-border-left {
-    border-left: 2px solid #ff0000 !important;
+    border-left: 3px solid #e53935 !important;
 }
 
 .template-table-cell.named-area-border-right {
-    border-right: 2px solid #ff0000 !important;
+    border-right: 3px solid #e53935 !important;
 }
 
 /* Области для подписей именованных областей */
@@ -410,9 +410,9 @@
 
 .template-table-named-area-cell .named-area-label,
 .template-table-named-area-column-header .named-area-label {
-    font-size: calc(var(--vscode-font-size) - 3px);
-    color: #ff0000;
-    font-weight: 500;
+    font-size: calc(var(--vscode-font-size) - 2px);
+    color: #e53935;
+    font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

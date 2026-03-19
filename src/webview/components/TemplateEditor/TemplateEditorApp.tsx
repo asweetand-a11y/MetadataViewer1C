@@ -8,7 +8,7 @@ import { TemplateDocument, CellPosition, CellRange } from '../../../templatInter
 import { TemplateTable } from './TemplateTable';
 import { TemplateToolbar } from './TemplateToolbar';
 import { TemplatePropertiesPanel } from './TemplatePropertiesPanel';
-import { updateCellText, addRow, deleteRow, addColumn, deleteColumn, setCellAsParameter, setCellAsTemplate, findCellByPosition, mergeCells, unmergeCells, createNamedArea, updateNamedArea, deleteNamedArea, renameNamedArea, createCellNote, updateCellNote, deleteCellNote, updateCellDetailParameter, updateCellAlignment, updateCellBorders, updateCellColors, updateCellFormat, updateCellFont, createNamedRows, createNamedColumns, generateNamedAreaName, getAllNamedAreas, findNamedAreaByPosition, getCellFillPattern, extractTextFromTemplateTextData, getEffectiveFont } from '../../../utils/templateUtils';
+import { updateCellText, addRow, deleteRow, addColumn, deleteColumn, setCellAsParameter, setCellAsTemplate, findCellByPosition, mergeCells, unmergeCells, createNamedArea, updateNamedArea, deleteNamedArea, renameNamedArea, createCellNote, updateCellNote, deleteCellNote, updateCellDetailParameter, updateCellAlignment, updateCellBorders, updateCellColors, updateCellFormat, updateCellFont, createNamedRows, createNamedColumns, generateNamedAreaName, getAllNamedAreas, findNamedAreaByPosition, getCellFillPattern, extractTextFromTemplateTextData, getEffectiveFont, getMaxColumns, getMinRowIndex, getMaxRowIndex } from '../../../utils/templateUtils';
 import { NamedAreasDialog } from './NamedAreasDialog';
 import { NamedArea } from '../../../templatInterfaces';
 import './template-editor.css';
@@ -499,27 +499,43 @@ export const TemplateEditorApp: React.FC<TemplateEditorAppProps> = ({ vscode }) 
         }
 
         try {
-            // Определяем тип выделения: строки или колонки
-            // Если выделены несколько строк (startRow !== endRow) - это именованные строки
-            // Если выделены несколько колонок (startCol !== endCol) - это именованные колонки
-            // Если выделена одна строка (startRow === endRow) - это тоже именованная строка
-            // Если выделена одна колонка (startCol === endCol) - это тоже именованная колонка
-            const isSingleRow = selectedRange.startRow === selectedRange.endRow;
-            const isSingleCol = selectedRange.startCol === selectedRange.endCol;
+            const maxCol = getMaxColumns(templateDocument);
+            const minRow = getMinRowIndex(templateDocument);
+            const maxRow = getMaxRowIndex(templateDocument);
+            const isFullWidth = selectedRange.startCol === 0 && selectedRange.endCol >= maxCol - 1;
+            const isFullHeight = selectedRange.startRow === minRow && selectedRange.endRow >= maxRow;
+            const rowSpan = selectedRange.endRow - selectedRange.startRow + 1;
+            const colSpan = selectedRange.endCol - selectedRange.startCol + 1;
 
-            if (isSingleRow && !isSingleCol) {
-                // Выделена одна строка (не одна колонка) - создаем именованную область типа "Rows"
+            // Выбор типа: Rows или Columns по форме выделения
+            // Полная ширина (выбор по заголовкам строк) → Rows
+            // Полная высота (выбор по заголовкам колонок) → Columns
+            // Прямоугольник (перетаскивание) → по соотношению rowSpan/colSpan
+            let createRows: boolean;
+            if (isFullWidth && !isFullHeight) {
+                createRows = true;
+            } else if (isFullHeight && !isFullWidth) {
+                createRows = false;
+            } else {
+                createRows = rowSpan >= colSpan;
+            }
+
+            if (createRows) {
                 const name = generateNamedAreaName(templateDocument, 'Rows', selectedRange.startRow, selectedRange.endRow);
+                const startRowData = templateDocument.rowsItem?.find(
+                    (r, idx) => (r.index !== undefined ? r.index : idx) === selectedRange.startRow
+                );
+                const columnsID = startRowData?.row?.columnsID;
                 const updated = createNamedRows(
                     templateDocument,
                     name,
                     selectedRange.startRow,
-                    selectedRange.endRow
+                    selectedRange.endRow,
+                    columnsID
                 );
                 setTemplateDocument(updated);
                 setIsDirty(true);
-            } else if (isSingleCol && !isSingleRow) {
-                // Выделена одна колонка (не одна строка) - создаем именованную область типа "Columns"
+            } else {
                 const name = generateNamedAreaName(templateDocument, 'Columns', selectedRange.startCol, selectedRange.endCol);
                 const updated = createNamedColumns(
                     templateDocument,
@@ -529,46 +545,6 @@ export const TemplateEditorApp: React.FC<TemplateEditorAppProps> = ({ vscode }) 
                 );
                 setTemplateDocument(updated);
                 setIsDirty(true);
-            } else if (isSingleRow && isSingleCol) {
-                // Выделена одна ячейка - по умолчанию создаем именованную строку
-                const name = generateNamedAreaName(templateDocument, 'Rows', selectedRange.startRow, selectedRange.endRow);
-                const updated = createNamedRows(
-                    templateDocument,
-                    name,
-                    selectedRange.startRow,
-                    selectedRange.endRow
-                );
-                setTemplateDocument(updated);
-                setIsDirty(true);
-            } else {
-                // Выделен диапазон - нужно определить приоритет
-                // Если больше строк, чем колонок, или равное количество - создаем именованные строки
-                const rowSpan = selectedRange.endRow - selectedRange.startRow + 1;
-                const colSpan = selectedRange.endCol - selectedRange.startCol + 1;
-                
-                if (rowSpan >= colSpan) {
-                    // Создаем именованные строки
-                    const name = generateNamedAreaName(templateDocument, 'Rows', selectedRange.startRow, selectedRange.endRow);
-                    const updated = createNamedRows(
-                        templateDocument,
-                        name,
-                        selectedRange.startRow,
-                        selectedRange.endRow
-                    );
-                    setTemplateDocument(updated);
-                    setIsDirty(true);
-                } else {
-                    // Создаем именованные колонки
-                    const name = generateNamedAreaName(templateDocument, 'Columns', selectedRange.startCol, selectedRange.endCol);
-                    const updated = createNamedColumns(
-                        templateDocument,
-                        name,
-                        selectedRange.startCol,
-                        selectedRange.endCol
-                    );
-                    setTemplateDocument(updated);
-                    setIsDirty(true);
-                }
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
