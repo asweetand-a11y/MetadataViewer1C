@@ -1,0 +1,3892 @@
+{
+  "roots": [
+    "DataCompositionSchema",
+    "appearance",
+    "attributeUseRestriction",
+    "autoFillFields",
+    "availableAsField",
+    "availableValue",
+    "calculatedField",
+    "condition",
+    "dataPath",
+    "dataSet",
+    "dataSetLink",
+    "dataSource",
+    "dataSourceType",
+    "denyIncompleteValues",
+    "destinationDataSet",
+    "destinationExpression",
+    "expression",
+    "field",
+    "fieldTemplate",
+    "functionalOptionsParameter",
+    "group",
+    "groupField",
+    "groupField1",
+    "groupField2",
+    "groupHeaderTemplate",
+    "groupName",
+    "groupName1",
+    "groupTemplate",
+    "inputParameters",
+    "item",
+    "linkConditionExpression",
+    "name",
+    "nestedSchema",
+    "objectName",
+    "order",
+    "orderExpression",
+    "parameter",
+    "parameterListAllowed",
+    "presentation",
+    "presentationExpression",
+    "query",
+    "required",
+    "role",
+    "schema",
+    "settings",
+    "settingsVariant",
+    "sourceDataSet",
+    "sourceExpression",
+    "startExpression",
+    "template",
+    "templateType",
+    "templateType1",
+    "templateType2",
+    "title",
+    "totalField",
+    "totalFieldsTemplate",
+    "use",
+    "useQueryGroupIfPossible",
+    "useRestriction",
+    "value",
+    "valueListAllowed",
+    "valueType"
+  ],
+  "elements": {
+    "DataCompositionSchema": {
+      "children": [
+        "dataSource",
+        "dataSet",
+        "parameter",
+        "settingsVariant",
+        "calculatedField",
+        "totalField",
+        "dataSetLink",
+        "template",
+        "groupHeaderTemplate",
+        "groupTemplate",
+        "totalFieldsTemplate",
+        "fieldTemplate",
+        "nestedSchema"
+      ],
+      "childMin": {
+        "dataSource": 0,
+        "dataSet": 0,
+        "parameter": 0,
+        "settingsVariant": 1,
+        "calculatedField": 0,
+        "totalField": 0,
+        "dataSetLink": 0,
+        "template": 0,
+        "groupHeaderTemplate": 0,
+        "groupTemplate": 0,
+        "totalFieldsTemplate": 0,
+        "fieldTemplate": 0,
+        "nestedSchema": 0
+      },
+      "childMax": {
+        "dataSource": 1,
+        "dataSet": -1,
+        "parameter": -1,
+        "settingsVariant": -1,
+        "calculatedField": -1,
+        "totalField": -1,
+        "dataSetLink": -1,
+        "template": -1,
+        "groupHeaderTemplate": -1,
+        "groupTemplate": -1,
+        "totalFieldsTemplate": -1,
+        "fieldTemplate": -1,
+        "nestedSchema": -1
+      },
+      "allowAny": false
+    },
+    "appearance": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": true
+    },
+    "attributeUseRestriction": {
+      "children": [
+        "field",
+        "condition",
+        "group",
+        "order"
+      ],
+      "childMin": {
+        "field": 0,
+        "condition": 0,
+        "group": 0,
+        "order": 0
+      },
+      "childMax": {
+        "field": 1,
+        "condition": 1,
+        "group": 1,
+        "order": 1
+      },
+      "allowAny": false
+    },
+    "autoFillFields": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "availableAsField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "availableValue": {
+      "children": [
+        "value",
+        "presentation"
+      ],
+      "childMin": {
+        "value": 1,
+        "presentation": 0
+      },
+      "childMax": {
+        "value": 1,
+        "presentation": 1
+      },
+      "allowAny": false
+    },
+    "calculatedField": {
+      "children": [
+        "dataPath",
+        "expression",
+        "title",
+        "valueType",
+        "orderExpression",
+        "useRestriction",
+        "appearance",
+        "availableValue",
+        "presentationExpression"
+      ],
+      "childMin": {
+        "dataPath": 1,
+        "expression": 1,
+        "title": 0,
+        "valueType": 0,
+        "orderExpression": 0,
+        "useRestriction": 0,
+        "appearance": 0,
+        "availableValue": 0,
+        "presentationExpression": 0
+      },
+      "childMax": {
+        "dataPath": 1,
+        "expression": 1,
+        "title": 1,
+        "valueType": 1,
+        "orderExpression": 1,
+        "useRestriction": 1,
+        "appearance": 1,
+        "availableValue": -1,
+        "presentationExpression": 1
+      },
+      "allowAny": false
+    },
+    "condition": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "dataPath": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "dataSet": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "dataSetLink": {
+      "children": [
+        "sourceDataSet",
+        "destinationDataSet",
+        "sourceExpression",
+        "destinationExpression",
+        "startExpression",
+        "parameter",
+        "parameterListAllowed",
+        "linkConditionExpression",
+        "required"
+      ],
+      "childMin": {
+        "sourceDataSet": 1,
+        "destinationDataSet": 1,
+        "sourceExpression": 1,
+        "destinationExpression": 1,
+        "startExpression": 0,
+        "parameter": 0,
+        "parameterListAllowed": 0,
+        "linkConditionExpression": 0,
+        "required": 0
+      },
+      "childMax": {
+        "sourceDataSet": 1,
+        "destinationDataSet": 1,
+        "sourceExpression": 1,
+        "destinationExpression": 1,
+        "startExpression": 1,
+        "parameter": 1,
+        "parameterListAllowed": 1,
+        "linkConditionExpression": 1,
+        "required": 1
+      },
+      "allowAny": false
+    },
+    "dataSource": {
+      "children": [
+        "name",
+        "dataSourceType"
+      ],
+      "childMin": {
+        "name": 0,
+        "dataSourceType": 0
+      },
+      "childMax": {
+        "name": 1,
+        "dataSourceType": 1
+      },
+      "allowAny": false
+    },
+    "dataSourceType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "denyIncompleteValues": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "destinationDataSet": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "destinationExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "expression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "field": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "fieldTemplate": {
+      "children": [
+        "field",
+        "template"
+      ],
+      "childMin": {
+        "field": 1,
+        "template": 1
+      },
+      "childMax": {
+        "field": 1,
+        "template": 1
+      },
+      "allowAny": false
+    },
+    "functionalOptionsParameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "group": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "groupField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "groupField1": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "groupField2": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "groupHeaderTemplate": {
+      "children": [
+        "groupName",
+        "templateType",
+        "template",
+        "groupField"
+      ],
+      "childMin": {
+        "groupName": 0,
+        "templateType": 1,
+        "template": 1,
+        "groupField": 0
+      },
+      "childMax": {
+        "groupName": 1,
+        "templateType": 1,
+        "template": 1,
+        "groupField": -1
+      },
+      "allowAny": false
+    },
+    "groupName": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "groupName1": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "groupTemplate": {
+      "children": [
+        "groupName",
+        "templateType",
+        "template",
+        "groupField"
+      ],
+      "childMin": {
+        "groupName": 0,
+        "templateType": 1,
+        "template": 1,
+        "groupField": 0
+      },
+      "childMax": {
+        "groupName": 1,
+        "templateType": 1,
+        "template": 1,
+        "groupField": -1
+      },
+      "allowAny": false
+    },
+    "inputParameters": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": true
+    },
+    "item": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "linkConditionExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "name": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "nestedSchema": {
+      "children": [
+        "name",
+        "title",
+        "schema",
+        "settings"
+      ],
+      "childMin": {
+        "name": 1,
+        "title": 1,
+        "schema": 1,
+        "settings": 1
+      },
+      "childMax": {
+        "name": 1,
+        "title": 1,
+        "schema": 1,
+        "settings": 1
+      },
+      "allowAny": false
+    },
+    "objectName": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "order": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "orderExpression": {
+      "children": [
+        "expression",
+        "orderType",
+        "autoOrder"
+      ],
+      "childMin": {
+        "expression": 1,
+        "orderType": 1,
+        "autoOrder": 1
+      },
+      "childMax": {
+        "expression": 1,
+        "orderType": 1,
+        "autoOrder": 1
+      },
+      "allowAny": false
+    },
+    "parameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "parameterListAllowed": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "presentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "presentationExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "query": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "required": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "role": {
+      "children": [
+        "dimension",
+        "required",
+        "periodNumber",
+        "periodType",
+        "ignoreNullValues",
+        "balance",
+        "balanceGroupName",
+        "balanceType",
+        "parentDimension"
+      ],
+      "childMin": {
+        "dimension": 0,
+        "required": 0,
+        "periodNumber": 0,
+        "periodType": 0,
+        "ignoreNullValues": 0,
+        "balance": 0,
+        "balanceGroupName": 0,
+        "balanceType": 0,
+        "parentDimension": 0
+      },
+      "childMax": {
+        "dimension": 1,
+        "required": 1,
+        "periodNumber": 1,
+        "periodType": 1,
+        "ignoreNullValues": 1,
+        "balance": 1,
+        "balanceGroupName": 1,
+        "balanceType": 1,
+        "parentDimension": 1
+      },
+      "allowAny": false
+    },
+    "schema": {
+      "children": [
+        "dataSource",
+        "dataSet",
+        "calculatedField",
+        "totalField",
+        "parameter",
+        "settingsVariant"
+      ],
+      "childMin": {
+        "dataSource": 1,
+        "dataSet": 1,
+        "calculatedField": 2,
+        "totalField": 8,
+        "parameter": 0,
+        "settingsVariant": 1
+      },
+      "childMax": {
+        "dataSource": 1,
+        "dataSet": 1,
+        "calculatedField": -1,
+        "totalField": -1,
+        "parameter": -1,
+        "settingsVariant": 1
+      },
+      "allowAny": false
+    },
+    "settings": {
+      "children": [
+        "filter",
+        "selection",
+        "order",
+        "structure",
+        "dataParameters",
+        "conditionalAppearance",
+        "outputParameters",
+        "item"
+      ],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": true
+    },
+    "settingsVariant": {
+      "children": [
+        "name",
+        "presentation",
+        "settings"
+      ],
+      "childMin": {
+        "name": 1,
+        "presentation": 1,
+        "settings": 1
+      },
+      "childMax": {
+        "name": 1,
+        "presentation": 1,
+        "settings": 1
+      },
+      "allowAny": false
+    },
+    "sourceDataSet": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "sourceExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "startExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "template": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "templateType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "templateType1": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "templateType2": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "title": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "totalField": {
+      "children": [
+        "dataPath",
+        "expression",
+        "group"
+      ],
+      "childMin": {
+        "dataPath": 1,
+        "expression": 1,
+        "group": 0
+      },
+      "childMax": {
+        "dataPath": 1,
+        "expression": 1,
+        "group": -1
+      },
+      "allowAny": false
+    },
+    "totalFieldsTemplate": {
+      "children": [
+        "groupName1",
+        "templateType1",
+        "groupField2",
+        "templateType2",
+        "template",
+        "groupField1"
+      ],
+      "childMin": {
+        "groupName1": 0,
+        "templateType1": 1,
+        "groupField2": 1,
+        "templateType2": 1,
+        "template": 1,
+        "groupField1": 0
+      },
+      "childMax": {
+        "groupName1": 1,
+        "templateType1": 1,
+        "groupField2": 1,
+        "templateType2": 1,
+        "template": 1,
+        "groupField1": 1
+      },
+      "allowAny": false
+    },
+    "use": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useQueryGroupIfPossible": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useRestriction": {
+      "children": [
+        "field",
+        "condition",
+        "group",
+        "order"
+      ],
+      "childMin": {
+        "field": 0,
+        "condition": 0,
+        "group": 0,
+        "order": 0
+      },
+      "childMax": {
+        "field": 1,
+        "condition": 1,
+        "group": 1,
+        "order": 1
+      },
+      "allowAny": false
+    },
+    "value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "valueListAllowed": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "valueType": {
+      "children": [
+        "Type",
+        "NumberQualifiers",
+        "DateQualifiers",
+        "StringQualifiers",
+        "TypeId",
+        "TypeSet"
+      ],
+      "childMin": {
+        "Type": 0,
+        "NumberQualifiers": 0,
+        "DateQualifiers": 0,
+        "StringQualifiers": 0,
+        "TypeId": 0,
+        "TypeSet": 0
+      },
+      "childMax": {
+        "Type": -1,
+        "NumberQualifiers": 1,
+        "DateQualifiers": 1,
+        "StringQualifiers": 1,
+        "TypeId": 1,
+        "TypeSet": -1
+      },
+      "allowAny": false
+    },
+    "fieldExpression": {
+      "children": [
+        "field",
+        "expression"
+      ],
+      "childMin": {
+        "field": 1,
+        "expression": 1
+      },
+      "childMax": {
+        "field": 1,
+        "expression": 1
+      },
+      "allowAny": false
+    },
+    "mainAction": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "tableCell": {
+      "children": [
+        "appearance",
+        "item"
+      ],
+      "childMin": {
+        "appearance": 0,
+        "item": 0
+      },
+      "childMax": {
+        "appearance": 1,
+        "item": -1
+      },
+      "allowAny": false
+    },
+    "autoOrder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "balance": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "balanceGroupName": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "balanceType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "dimension": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "ignoreNullValues": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "orderType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "parentDimension": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "periodNumber": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "periodType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "AllowedLength": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "AllowedSign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "DateFractions": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "DateQualifiers": {
+      "children": [
+        "DateFractions"
+      ],
+      "childMin": {
+        "DateFractions": 1
+      },
+      "childMax": {
+        "DateFractions": 1
+      },
+      "allowAny": false
+    },
+    "Digits": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "FractionDigits": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "Length": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "NumberQualifiers": {
+      "children": [
+        "Digits",
+        "FractionDigits",
+        "AllowedSign"
+      ],
+      "childMin": {
+        "Digits": 1,
+        "FractionDigits": 1,
+        "AllowedSign": 1
+      },
+      "childMax": {
+        "Digits": 1,
+        "FractionDigits": 1,
+        "AllowedSign": 1
+      },
+      "allowAny": false
+    },
+    "Property": {
+      "children": [
+        "Value"
+      ],
+      "childMin": {
+        "Value": 1
+      },
+      "childMax": {
+        "Value": 1
+      },
+      "allowAny": false
+    },
+    "StringQualifiers": {
+      "children": [
+        "Length",
+        "AllowedLength"
+      ],
+      "childMin": {
+        "Length": 1,
+        "AllowedLength": 1
+      },
+      "childMax": {
+        "Length": 1,
+        "AllowedLength": 1
+      },
+      "allowAny": false
+    },
+    "Type": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "TypeId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "TypeSet": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "Value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "content": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "date": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "endDate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "lang": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "lastId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "startDate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "variant": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "style": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "animation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "autoFullInterval": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "autoMaxValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "autoMinValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "autoText": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "autoTransposition": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "backColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "backIntervals": {
+      "children": [
+        "collection",
+        "ticks"
+      ],
+      "childMin": {
+        "collection": 1,
+        "ticks": 1
+      },
+      "childMax": {
+        "collection": 1,
+        "ticks": 1
+      },
+      "allowAny": false
+    },
+    "baseData": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "baseVal": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "beginGaugeAngle": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "bkgColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "border": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false
+    },
+    "borderColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "bottom": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "cacheKey": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "chBorder": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false
+    },
+    "chBorderColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "chColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "chFont": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "chTxtColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "chart": {
+      "children": [
+        "seriesCurId",
+        "pointsCurId",
+        "isSeriesDesign",
+        "realSeriesCount",
+        "realExSeriesData",
+        "isPointsDesign",
+        "realPointCount",
+        "curSeries",
+        "curPoint",
+        "chartType",
+        "circleLabelType",
+        "labelsDelimiter",
+        "labelsLocation",
+        "lbFormat",
+        "lbpFormat",
+        "labelsColor",
+        "labelsFont",
+        "transparentLabelsBkg",
+        "labelsBkgColor",
+        "labelsBorder",
+        "labelsBorderColor",
+        "circleExpandMode",
+        "chart3Dcrd",
+        "title",
+        "isShowTitle",
+        "isShowLegend",
+        "ttlBorder",
+        "ttlBorderColor",
+        "lgBorder",
+        "lgBorderColor",
+        "chBorder",
+        "chBorderColor",
+        "transparent",
+        "bkgColor",
+        "isTrnspTtl",
+        "ttlColor",
+        "isTrnspLeg",
+        "legColor",
+        "isTrnspCh",
+        "chColor",
+        "ttlTxtColor",
+        "legTxtColor",
+        "chTxtColor",
+        "ttlFont",
+        "legFont",
+        "chFont",
+        "isShowScale",
+        "isShowScaleVL",
+        "isShowSeriesScale",
+        "isShowPointsScale",
+        "isShowValuesScale",
+        "vsFormat",
+        "xLabelsOrientation",
+        "scaleLine",
+        "scaleColor",
+        "isAutoSeriesName",
+        "isAutoPointName",
+        "maxMode",
+        "maxSeries",
+        "maxSeriesPrc",
+        "spaceMode",
+        "baseVal",
+        "isOutline",
+        "realPiePoint",
+        "realStockSeries",
+        "isLight",
+        "isGradient",
+        "isTransposition",
+        "hideBaseVal",
+        "dataTable",
+        "dtVerLines",
+        "dtHorLines",
+        "dtHAlign",
+        "dtFormat",
+        "dtKeys",
+        "paletteKind",
+        "animation",
+        "rebuildTime",
+        "isTransposed",
+        "autoTransposition",
+        "legendScrollEnable",
+        "surfaceColor",
+        "radarScaleType",
+        "gaugeValuesPresentation",
+        "gaugeQualityBands",
+        "beginGaugeAngle",
+        "endGaugeAngle",
+        "gaugeThickness",
+        "gaugeLabelsLocation",
+        "gaugeLabelsArcDirection",
+        "gaugeBushThickness",
+        "gaugeBushColor",
+        "autoMaxValue",
+        "userMaxValue",
+        "autoMinValue",
+        "userMinValue",
+        "elementsIsInit",
+        "titleIsInit",
+        "legendIsInit",
+        "chartIsInit",
+        "elementsChart",
+        "elementsLegend",
+        "elementsTitle",
+        "borderColor",
+        "border",
+        "dataSourceDescription",
+        "isDataSourceMode",
+        "isRandomizedNewValues",
+        "splineStrain",
+        "translucencePercent",
+        "funnelNeckHeightPercent",
+        "funnelNeckWidthPercent",
+        "funnelGapSumPercent",
+        "multiStageLinkLine",
+        "multiStageLinkColor",
+        "valuesAxis",
+        "pointsAxis",
+        "valuesScale",
+        "legendPlacement",
+        "plotAreaPlacement",
+        "titleAreaPlacement",
+        "colorPaletteDescription"
+      ],
+      "childMin": {
+        "seriesCurId": 1,
+        "pointsCurId": 1,
+        "isSeriesDesign": 1,
+        "realSeriesCount": 1,
+        "realExSeriesData": 1,
+        "isPointsDesign": 1,
+        "realPointCount": 1,
+        "curSeries": 1,
+        "curPoint": 1,
+        "chartType": 1,
+        "circleLabelType": 1,
+        "labelsDelimiter": 1,
+        "labelsLocation": 1,
+        "lbFormat": 1,
+        "lbpFormat": 1,
+        "labelsColor": 1,
+        "labelsFont": 1,
+        "transparentLabelsBkg": 1,
+        "labelsBkgColor": 1,
+        "labelsBorder": 1,
+        "labelsBorderColor": 1,
+        "circleExpandMode": 1,
+        "chart3Dcrd": 1,
+        "title": 1,
+        "isShowTitle": 1,
+        "isShowLegend": 1,
+        "ttlBorder": 1,
+        "ttlBorderColor": 1,
+        "lgBorder": 1,
+        "lgBorderColor": 1,
+        "chBorder": 1,
+        "chBorderColor": 1,
+        "transparent": 1,
+        "bkgColor": 1,
+        "isTrnspTtl": 1,
+        "ttlColor": 1,
+        "isTrnspLeg": 1,
+        "legColor": 1,
+        "isTrnspCh": 1,
+        "chColor": 1,
+        "ttlTxtColor": 1,
+        "legTxtColor": 1,
+        "chTxtColor": 1,
+        "ttlFont": 1,
+        "legFont": 1,
+        "chFont": 1,
+        "isShowScale": 1,
+        "isShowScaleVL": 1,
+        "isShowSeriesScale": 1,
+        "isShowPointsScale": 1,
+        "isShowValuesScale": 1,
+        "vsFormat": 1,
+        "xLabelsOrientation": 1,
+        "scaleLine": 1,
+        "scaleColor": 1,
+        "isAutoSeriesName": 1,
+        "isAutoPointName": 1,
+        "maxMode": 1,
+        "maxSeries": 1,
+        "maxSeriesPrc": 1,
+        "spaceMode": 1,
+        "baseVal": 1,
+        "isOutline": 1,
+        "realPiePoint": 1,
+        "realStockSeries": 1,
+        "isLight": 1,
+        "isGradient": 1,
+        "isTransposition": 1,
+        "hideBaseVal": 1,
+        "dataTable": 1,
+        "dtVerLines": 1,
+        "dtHorLines": 1,
+        "dtHAlign": 1,
+        "dtFormat": 1,
+        "dtKeys": 1,
+        "paletteKind": 1,
+        "animation": 1,
+        "rebuildTime": 1,
+        "isTransposed": 1,
+        "autoTransposition": 1,
+        "legendScrollEnable": 1,
+        "surfaceColor": 1,
+        "radarScaleType": 1,
+        "gaugeValuesPresentation": 1,
+        "gaugeQualityBands": 1,
+        "beginGaugeAngle": 1,
+        "endGaugeAngle": 1,
+        "gaugeThickness": 1,
+        "gaugeLabelsLocation": 1,
+        "gaugeLabelsArcDirection": 1,
+        "gaugeBushThickness": 1,
+        "gaugeBushColor": 1,
+        "autoMaxValue": 1,
+        "userMaxValue": 1,
+        "autoMinValue": 1,
+        "userMinValue": 1,
+        "elementsIsInit": 1,
+        "titleIsInit": 1,
+        "legendIsInit": 1,
+        "chartIsInit": 1,
+        "elementsChart": 1,
+        "elementsLegend": 1,
+        "elementsTitle": 1,
+        "borderColor": 1,
+        "border": 1,
+        "dataSourceDescription": 1,
+        "isDataSourceMode": 1,
+        "isRandomizedNewValues": 1,
+        "splineStrain": 1,
+        "translucencePercent": 1,
+        "funnelNeckHeightPercent": 1,
+        "funnelNeckWidthPercent": 1,
+        "funnelGapSumPercent": 1,
+        "multiStageLinkLine": 1,
+        "multiStageLinkColor": 1,
+        "valuesAxis": 1,
+        "pointsAxis": 1,
+        "valuesScale": 0,
+        "legendPlacement": 0,
+        "plotAreaPlacement": 0,
+        "titleAreaPlacement": 0,
+        "colorPaletteDescription": 0
+      },
+      "childMax": {
+        "seriesCurId": 1,
+        "pointsCurId": 1,
+        "isSeriesDesign": 1,
+        "realSeriesCount": 1,
+        "realExSeriesData": 1,
+        "isPointsDesign": 1,
+        "realPointCount": 1,
+        "curSeries": 1,
+        "curPoint": 1,
+        "chartType": 1,
+        "circleLabelType": 1,
+        "labelsDelimiter": 1,
+        "labelsLocation": 1,
+        "lbFormat": 1,
+        "lbpFormat": 1,
+        "labelsColor": 1,
+        "labelsFont": 1,
+        "transparentLabelsBkg": 1,
+        "labelsBkgColor": 1,
+        "labelsBorder": 1,
+        "labelsBorderColor": 1,
+        "circleExpandMode": 1,
+        "chart3Dcrd": 1,
+        "title": 1,
+        "isShowTitle": 1,
+        "isShowLegend": 1,
+        "ttlBorder": 1,
+        "ttlBorderColor": 1,
+        "lgBorder": 1,
+        "lgBorderColor": 1,
+        "chBorder": 1,
+        "chBorderColor": 1,
+        "transparent": 1,
+        "bkgColor": 1,
+        "isTrnspTtl": 1,
+        "ttlColor": 1,
+        "isTrnspLeg": 1,
+        "legColor": 1,
+        "isTrnspCh": 1,
+        "chColor": 1,
+        "ttlTxtColor": 1,
+        "legTxtColor": 1,
+        "chTxtColor": 1,
+        "ttlFont": 1,
+        "legFont": 1,
+        "chFont": 1,
+        "isShowScale": 1,
+        "isShowScaleVL": 1,
+        "isShowSeriesScale": 1,
+        "isShowPointsScale": 1,
+        "isShowValuesScale": 1,
+        "vsFormat": 1,
+        "xLabelsOrientation": 1,
+        "scaleLine": 1,
+        "scaleColor": 1,
+        "isAutoSeriesName": 1,
+        "isAutoPointName": 1,
+        "maxMode": 1,
+        "maxSeries": 1,
+        "maxSeriesPrc": 1,
+        "spaceMode": 1,
+        "baseVal": 1,
+        "isOutline": 1,
+        "realPiePoint": 1,
+        "realStockSeries": 1,
+        "isLight": 1,
+        "isGradient": 1,
+        "isTransposition": 1,
+        "hideBaseVal": 1,
+        "dataTable": 1,
+        "dtVerLines": 1,
+        "dtHorLines": 1,
+        "dtHAlign": 1,
+        "dtFormat": 1,
+        "dtKeys": 1,
+        "paletteKind": 1,
+        "animation": 1,
+        "rebuildTime": 1,
+        "isTransposed": 1,
+        "autoTransposition": 1,
+        "legendScrollEnable": 1,
+        "surfaceColor": 1,
+        "radarScaleType": 1,
+        "gaugeValuesPresentation": 1,
+        "gaugeQualityBands": 1,
+        "beginGaugeAngle": 1,
+        "endGaugeAngle": 1,
+        "gaugeThickness": 1,
+        "gaugeLabelsLocation": 1,
+        "gaugeLabelsArcDirection": 1,
+        "gaugeBushThickness": 1,
+        "gaugeBushColor": 1,
+        "autoMaxValue": 1,
+        "userMaxValue": 1,
+        "autoMinValue": 1,
+        "userMinValue": 1,
+        "elementsIsInit": 1,
+        "titleIsInit": 1,
+        "legendIsInit": 1,
+        "chartIsInit": 1,
+        "elementsChart": 1,
+        "elementsLegend": 1,
+        "elementsTitle": 1,
+        "borderColor": 1,
+        "border": 1,
+        "dataSourceDescription": 1,
+        "isDataSourceMode": 1,
+        "isRandomizedNewValues": 1,
+        "splineStrain": 1,
+        "translucencePercent": 1,
+        "funnelNeckHeightPercent": 1,
+        "funnelNeckWidthPercent": 1,
+        "funnelGapSumPercent": 1,
+        "multiStageLinkLine": 1,
+        "multiStageLinkColor": 1,
+        "valuesAxis": 1,
+        "pointsAxis": 1,
+        "valuesScale": 1,
+        "legendPlacement": 1,
+        "plotAreaPlacement": 1,
+        "titleAreaPlacement": 1,
+        "colorPaletteDescription": 1
+      },
+      "allowAny": false
+    },
+    "chart3Dcrd": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "chartIsInit": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "chartType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "circleExpandMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "circleLabelType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "collection": {
+      "children": [
+        "ticks"
+      ],
+      "childMin": {
+        "ticks": 1
+      },
+      "childMax": {
+        "ticks": 1
+      },
+      "allowAny": false
+    },
+    "color": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "colorPalette": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "colorPaletteDescription": {
+      "children": [
+        "colorPalette"
+      ],
+      "childMin": {
+        "colorPalette": 1
+      },
+      "childMax": {
+        "colorPalette": 1
+      },
+      "allowAny": false
+    },
+    "colorPriority": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "contentCacheItem": {
+      "children": [
+        "mainColor",
+        "secondColor",
+        "backColor",
+        "textColor",
+        "hatchBetweenIntervalsColor"
+      ],
+      "childMin": {
+        "mainColor": 1,
+        "secondColor": 1,
+        "backColor": 0,
+        "textColor": 0,
+        "hatchBetweenIntervalsColor": 0
+      },
+      "childMax": {
+        "mainColor": 1,
+        "secondColor": 1,
+        "backColor": 1,
+        "textColor": 1,
+        "hatchBetweenIntervalsColor": 1
+      },
+      "allowAny": false
+    },
+    "curPoint": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "curSeries": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "currentLevel": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "dataSourceDescription": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "dataTable": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "dayFormatRule": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "drawEmpty": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "dtFormat": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "dtHAlign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "dtHorLines": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "dtKeys": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "dtVerLines": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "elementsChart": {
+      "children": [
+        "left",
+        "right",
+        "top",
+        "bottom"
+      ],
+      "childMin": {
+        "left": 1,
+        "right": 1,
+        "top": 1,
+        "bottom": 1
+      },
+      "childMax": {
+        "left": 1,
+        "right": 1,
+        "top": 1,
+        "bottom": 1
+      },
+      "allowAny": false
+    },
+    "elementsIsInit": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "elementsLegend": {
+      "children": [
+        "left",
+        "right",
+        "top",
+        "bottom"
+      ],
+      "childMin": {
+        "left": 1,
+        "right": 1,
+        "top": 1,
+        "bottom": 1
+      },
+      "childMax": {
+        "left": 1,
+        "right": 1,
+        "top": 1,
+        "bottom": 1
+      },
+      "allowAny": false
+    },
+    "elementsTitle": {
+      "children": [
+        "left",
+        "right",
+        "top",
+        "bottom"
+      ],
+      "childMin": {
+        "left": 1,
+        "right": 1,
+        "top": 1,
+        "bottom": 1
+      },
+      "childMax": {
+        "left": 1,
+        "right": 1,
+        "top": 1,
+        "bottom": 1
+      },
+      "allowAny": false
+    },
+    "endGaugeAngle": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "extKey": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "extTitle": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "fixedVariantInterval": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "fixedVariantMeasure": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "font": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "format": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false
+    },
+    "fullIntervalBegin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "fullIntervalEnd": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "funnelGapSumPercent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "funnelNeckHeightPercent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "funnelNeckWidthPercent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "gaugeBushColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "gaugeBushThickness": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "gaugeLabelsArcDirection": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "gaugeLabelsLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "gaugeQualityBands": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "gaugeThickness": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "gaugeValuesPresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "gridLinesShowMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "hatchBetweenIntervalsColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "hideBaseVal": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "id": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "interval": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "intervalDrawType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "intervalTextRepresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isAutoPointName": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isAutoSeriesName": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isDataSourceMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isExpand": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isGradient": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isIndicator": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isLight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isOutline": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isPointsDesign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isRandomizedNewValues": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isSeriesDesign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isShowLegend": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isShowPointsScale": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isShowScale": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isShowScaleVL": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isShowSeriesScale": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isShowTitle": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isShowValuesScale": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isTransposed": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isTransposition": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isTrnspCh": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isTrnspLeg": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "isTrnspTtl": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "itemKey": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "keepScaleVariant": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "key": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "labelArea": {
+      "children": [
+        "font",
+        "textColor",
+        "backColor",
+        "border",
+        "borderColor"
+      ],
+      "childMin": {
+        "font": 1,
+        "textColor": 1,
+        "backColor": 1,
+        "border": 1,
+        "borderColor": 1
+      },
+      "childMax": {
+        "font": 1,
+        "textColor": 1,
+        "backColor": 1,
+        "border": 1,
+        "borderColor": 1
+      },
+      "allowAny": false
+    },
+    "labelFont": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "labelOrientation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "labelText": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false
+    },
+    "labels": {
+      "children": [
+        "ticks"
+      ],
+      "childMin": {
+        "ticks": 1
+      },
+      "childMax": {
+        "ticks": 1
+      },
+      "allowAny": false
+    },
+    "labelsBkgColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "labelsBorder": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false
+    },
+    "labelsBorderColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "labelsColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "labelsDelimiter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "labelsFont": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "labelsLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "lbFormat": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "lbpFormat": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "left": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "leftKey": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "legColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "legFont": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "legTxtColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "legendIsInit": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "legendPlacement": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "legendScrollEnable": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "level": {
+      "children": [
+        "measure",
+        "interval",
+        "show",
+        "line",
+        "scaleColor",
+        "dayFormatRule",
+        "format",
+        "labels",
+        "backColor",
+        "textColor",
+        "showPereodicalLabels"
+      ],
+      "childMin": {
+        "measure": 1,
+        "interval": 1,
+        "show": 1,
+        "line": 1,
+        "scaleColor": 1,
+        "dayFormatRule": 1,
+        "format": 1,
+        "labels": 1,
+        "backColor": 1,
+        "textColor": 1,
+        "showPereodicalLabels": 1
+      },
+      "childMax": {
+        "measure": 1,
+        "interval": 1,
+        "show": 1,
+        "line": 1,
+        "scaleColor": 1,
+        "dayFormatRule": 1,
+        "format": 1,
+        "labels": 1,
+        "backColor": 1,
+        "textColor": 1,
+        "showPereodicalLabels": 1
+      },
+      "allowAny": false
+    },
+    "lgBorder": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false
+    },
+    "lgBorderColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "line": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false
+    },
+    "linksColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "linksLine": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false
+    },
+    "location": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "mainColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "marker": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "maxMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "maxSeries": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "maxSeriesPrc": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "measure": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "minValueDetectionMethod": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "multiStageLinkColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "multiStageLinkLine": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false
+    },
+    "noneVariantChars": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "noneVariantMeasure": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "outboundColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "paletteKind": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "parentKey": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "picture": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "placement": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "plotAreaPlacement": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "points": {
+      "children": [
+        "testMode",
+        "value",
+        "contentCacheItem",
+        "autoText",
+        "useValuesReverseBehavior"
+      ],
+      "childMin": {
+        "testMode": 1,
+        "value": 1,
+        "contentCacheItem": 1,
+        "autoText": 1,
+        "useValuesReverseBehavior": 1
+      },
+      "childMax": {
+        "testMode": 1,
+        "value": 1,
+        "contentCacheItem": 1,
+        "autoText": 1,
+        "useValuesReverseBehavior": 1
+      },
+      "allowAny": false
+    },
+    "pointsAxis": {
+      "children": [
+        "minValueDetectionMethod"
+      ],
+      "childMin": {
+        "minValueDetectionMethod": 0
+      },
+      "childMax": {
+        "minValueDetectionMethod": 1
+      },
+      "allowAny": false
+    },
+    "pointsConnection": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "pointsCurId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "radarScaleType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "realDataItems": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 375
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false
+    },
+    "realExSeriesData": {
+      "children": [
+        "id",
+        "color",
+        "line",
+        "marker",
+        "text",
+        "strIsChanged",
+        "isExpand",
+        "isIndicator",
+        "colorPriority"
+      ],
+      "childMin": {
+        "id": 1,
+        "color": 1,
+        "line": 1,
+        "marker": 1,
+        "text": 1,
+        "strIsChanged": 1,
+        "isExpand": 1,
+        "isIndicator": 1,
+        "colorPriority": 1
+      },
+      "childMax": {
+        "id": 1,
+        "color": 1,
+        "line": 1,
+        "marker": 1,
+        "text": 1,
+        "strIsChanged": 1,
+        "isExpand": 1,
+        "isIndicator": 1,
+        "colorPriority": 1
+      },
+      "allowAny": false
+    },
+    "realPiePoint": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "realPointCount": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "realPointData": {
+      "children": [
+        "id",
+        "color",
+        "line",
+        "marker",
+        "text",
+        "strIsChanged",
+        "isExpand",
+        "isIndicator",
+        "colorPriority"
+      ],
+      "childMin": {
+        "id": 1,
+        "color": 1,
+        "line": 1,
+        "marker": 1,
+        "text": 1,
+        "strIsChanged": 1,
+        "isExpand": 1,
+        "isIndicator": 1,
+        "colorPriority": 1
+      },
+      "childMax": {
+        "id": 1,
+        "color": 1,
+        "line": 1,
+        "marker": 1,
+        "text": 1,
+        "strIsChanged": 1,
+        "isExpand": 1,
+        "isIndicator": 1,
+        "colorPriority": 1
+      },
+      "allowAny": false
+    },
+    "realSeriesCount": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "realSeriesData": {
+      "children": [
+        "id",
+        "color",
+        "line",
+        "marker",
+        "text",
+        "strIsChanged",
+        "isExpand",
+        "isIndicator",
+        "colorPriority"
+      ],
+      "childMin": {
+        "id": 1,
+        "color": 1,
+        "line": 1,
+        "marker": 1,
+        "text": 1,
+        "strIsChanged": 1,
+        "isExpand": 1,
+        "isIndicator": 1,
+        "colorPriority": 1
+      },
+      "childMax": {
+        "id": 1,
+        "color": 1,
+        "line": 1,
+        "marker": 1,
+        "text": 1,
+        "strIsChanged": 1,
+        "isExpand": 1,
+        "isIndicator": 1,
+        "colorPriority": 1
+      },
+      "allowAny": false
+    },
+    "realStockSeries": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "rebuildTime": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "referenceBand": {
+      "children": [
+        "labelArea"
+      ],
+      "childMin": {
+        "labelArea": 1
+      },
+      "childMax": {
+        "labelArea": 1
+      },
+      "allowAny": false
+    },
+    "referenceLine": {
+      "children": [
+        "value",
+        "labelText",
+        "labelArea",
+        "color",
+        "semitransparencyPercent",
+        "line",
+        "valueIsPointNumber"
+      ],
+      "childMin": {
+        "value": 0,
+        "labelText": 0,
+        "labelArea": 1,
+        "color": 0,
+        "semitransparencyPercent": 0,
+        "line": 0,
+        "valueIsPointNumber": 0
+      },
+      "childMax": {
+        "value": 1,
+        "labelText": 1,
+        "labelArea": 1,
+        "color": 1,
+        "semitransparencyPercent": 1,
+        "line": 1,
+        "valueIsPointNumber": 1
+      },
+      "allowAny": false
+    },
+    "right": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "rightKey": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "scaleColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "scaleLabelLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "scaleLine": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false
+    },
+    "scaleStep": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "secondColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "semitransparencyPercent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "series": {
+      "children": [
+        "groupItems",
+        "order",
+        "selection",
+        "userSettingID",
+        "userSettingPresentation",
+        "filter",
+        "conditionalAppearance"
+      ],
+      "childMin": {
+        "groupItems": 1,
+        "order": 1,
+        "selection": 1,
+        "userSettingID": 0,
+        "userSettingPresentation": 0,
+        "filter": 0,
+        "conditionalAppearance": 0
+      },
+      "childMax": {
+        "groupItems": 1,
+        "order": 1,
+        "selection": 1,
+        "userSettingID": 1,
+        "userSettingPresentation": 1,
+        "filter": 1,
+        "conditionalAppearance": 1
+      },
+      "allowAny": false
+    },
+    "seriesCurId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "show": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "showData": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "showPereodicalLabels": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "showPointsText": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "showTitle": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "showValueText": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "spaceMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "splineStrain": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "strIsChanged": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "surfaceColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "testMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "text": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false
+    },
+    "textColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "textPlacement": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "ticks": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "timeScale": {
+      "children": [
+        "placement",
+        "level",
+        "transparent",
+        "backColor",
+        "textColor",
+        "currentLevel"
+      ],
+      "childMin": {
+        "placement": 1,
+        "level": 1,
+        "transparent": 1,
+        "backColor": 1,
+        "textColor": 1,
+        "currentLevel": 1
+      },
+      "childMax": {
+        "placement": 1,
+        "level": 1,
+        "transparent": 1,
+        "backColor": 1,
+        "textColor": 1,
+        "currentLevel": 1
+      },
+      "allowAny": false
+    },
+    "titleArea": {
+      "children": [
+        "font",
+        "textColor",
+        "backColor",
+        "border",
+        "borderColor",
+        "location",
+        "marker"
+      ],
+      "childMin": {
+        "font": 1,
+        "textColor": 1,
+        "backColor": 1,
+        "border": 1,
+        "borderColor": 1,
+        "location": 0,
+        "marker": 0
+      },
+      "childMax": {
+        "font": 1,
+        "textColor": 1,
+        "backColor": 1,
+        "border": 1,
+        "borderColor": 1,
+        "location": 1,
+        "marker": 1
+      },
+      "allowAny": false
+    },
+    "titleAreaPlacement": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "titleIsInit": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "titleText": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false
+    },
+    "titleTextSource": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "toolTip": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "top": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "translucencePercent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "transparent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "transparentLabelsBkg": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "ttlBorder": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false
+    },
+    "ttlBorderColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "ttlColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "ttlFont": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "ttlTxtColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useValuesReverseBehavior": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "userMaxValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "userMinValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "valData": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "valInfo": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "valueIsPointNumber": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "valuesAxis": {
+      "children": [
+        "minValueDetectionMethod"
+      ],
+      "childMin": {
+        "minValueDetectionMethod": 0
+      },
+      "childMax": {
+        "minValueDetectionMethod": 1
+      },
+      "allowAny": false
+    },
+    "valuesScale": {
+      "children": [
+        "titleArea",
+        "gridLinesShowMode"
+      ],
+      "childMin": {
+        "titleArea": 1,
+        "gridLinesShowMode": 1
+      },
+      "childMax": {
+        "titleArea": 1,
+        "gridLinesShowMode": 1
+      },
+      "allowAny": false
+    },
+    "verticalScrollEnable": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "verticalStretch": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "visualBegin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "vsFormat": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "xLabelsOrientation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "choiceParameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "mode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "additionalProperties": {
+      "children": [
+        "Property"
+      ],
+      "childMin": {
+        "Property": 1
+      },
+      "childMax": {
+        "Property": -1
+      },
+      "allowAny": false
+    },
+    "application": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "cases": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false
+    },
+    "column": {
+      "children": [
+        "name",
+        "groupItems",
+        "order",
+        "selection",
+        "outputParameters",
+        "filter",
+        "item",
+        "conditionalAppearance",
+        "userSettingID",
+        "userSettingPresentation",
+        "use",
+        "viewMode"
+      ],
+      "childMin": {
+        "name": 0,
+        "groupItems": 0,
+        "order": 1,
+        "selection": 1,
+        "outputParameters": 0,
+        "filter": 0,
+        "item": 0,
+        "conditionalAppearance": 0,
+        "userSettingID": 0,
+        "userSettingPresentation": 0,
+        "use": 0,
+        "viewMode": 0
+      },
+      "childMax": {
+        "name": 1,
+        "groupItems": 1,
+        "order": 1,
+        "selection": 1,
+        "outputParameters": 1,
+        "filter": 1,
+        "item": 1,
+        "conditionalAppearance": 1,
+        "userSettingID": 1,
+        "userSettingPresentation": 1,
+        "use": 1,
+        "viewMode": 1
+      },
+      "allowAny": false
+    },
+    "comparisonType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "conditionalAppearance": {
+      "children": [
+        "viewMode",
+        "userSettingID",
+        "item"
+      ],
+      "childMin": {
+        "viewMode": 0,
+        "userSettingID": 0,
+        "item": 0
+      },
+      "childMax": {
+        "viewMode": 1,
+        "userSettingID": 1,
+        "item": -1
+      },
+      "allowAny": false
+    },
+    "dataParameters": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false
+    },
+    "detailExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "detailExpressionPresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "filter": {
+      "children": [
+        "item",
+        "viewMode",
+        "userSettingID"
+      ],
+      "childMin": {
+        "item": 0,
+        "viewMode": 0,
+        "userSettingID": 0
+      },
+      "childMax": {
+        "item": -1,
+        "viewMode": 1,
+        "userSettingID": 1
+      },
+      "allowAny": false
+    },
+    "groupItems": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false
+    },
+    "groupType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "itemsUserSettingID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "itemsViewMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "lwsPresentationValue": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false
+    },
+    "lwsTitle": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false
+    },
+    "objectID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "outputParameters": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false
+    },
+    "periodAdditionBegin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "periodAdditionEnd": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "periodAdditionType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "point": {
+      "children": [
+        "groupItems",
+        "order",
+        "selection",
+        "conditionalAppearance",
+        "outputParameters",
+        "filter",
+        "use"
+      ],
+      "childMin": {
+        "groupItems": 0,
+        "order": 1,
+        "selection": 1,
+        "conditionalAppearance": 0,
+        "outputParameters": 0,
+        "filter": 0,
+        "use": 0
+      },
+      "childMax": {
+        "groupItems": 1,
+        "order": 1,
+        "selection": 1,
+        "conditionalAppearance": 1,
+        "outputParameters": 1,
+        "filter": 1,
+        "use": 1
+      },
+      "allowAny": false
+    },
+    "presentationValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "row": {
+      "children": [
+        "groupItems",
+        "order",
+        "selection",
+        "item",
+        "name",
+        "filter",
+        "conditionalAppearance",
+        "outputParameters",
+        "userSettingID",
+        "userSettingPresentation",
+        "viewMode",
+        "use"
+      ],
+      "childMin": {
+        "groupItems": 0,
+        "order": 1,
+        "selection": 0,
+        "item": 0,
+        "name": 0,
+        "filter": 0,
+        "conditionalAppearance": 0,
+        "outputParameters": 0,
+        "userSettingID": 0,
+        "userSettingPresentation": 0,
+        "viewMode": 0,
+        "use": 0
+      },
+      "childMax": {
+        "groupItems": 1,
+        "order": 1,
+        "selection": 1,
+        "item": -1,
+        "name": 1,
+        "filter": 1,
+        "conditionalAppearance": 1,
+        "outputParameters": 1,
+        "userSettingID": 1,
+        "userSettingPresentation": 1,
+        "viewMode": 1,
+        "use": 1
+      },
+      "allowAny": false
+    },
+    "selection": {
+      "children": [
+        "item",
+        "viewMode",
+        "userSettingID"
+      ],
+      "childMin": {
+        "item": 0,
+        "viewMode": 0,
+        "userSettingID": 0
+      },
+      "childMax": {
+        "item": -1,
+        "viewMode": 1,
+        "userSettingID": 1
+      },
+      "allowAny": false
+    },
+    "seriesUserSettingID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "seriesUserSettingPresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "totalExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "totalExpressionPresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useInFieldsHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useInFilter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useInGroup": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useInHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useInHierarchicalGroup": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useInOverall": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useInOverallHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useInOverallResourceFieldsHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useInParameters": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "useInResourceFieldsHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "userFields": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false
+    },
+    "userSettingID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "userSettingPresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "viewMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    }
+  },
+  "source": "http_v8.1c.ru_8.1_data-composition-system_schema.xsd"
+}

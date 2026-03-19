@@ -172,11 +172,18 @@ export class QueryStringEditor {
   }
 
   /**
-   * Загрузка дерева метаданных для редактора
+   * Загрузка дерева метаданных для редактора.
+   * @param onProgress — при указании используется прогрессивная загрузка: колбэк вызывается после каждого типа.
    */
-  private async loadMetadataTreeForWebview(configRoot: string): Promise<QueryMetadataNode | null> {
+  private async loadMetadataTreeForWebview(
+    configRoot: string,
+    onProgress?: (partialTree: QueryMetadataNode) => void
+  ): Promise<QueryMetadataNode | null> {
     const cached = this.metadataTreeCacheByRoot.get(configRoot);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined) {
+      if (onProgress && cached) onProgress(cached);
+      return cached;
+    }
 
     // Только типы, используемые в запросах 1С
     const typeDirToQuery: Record<string, { typeLabel: string; prefix: string }> = {
@@ -228,14 +235,10 @@ export class QueryStringEditor {
       Members: 'Состав',
     };
 
-    try {
-      const { tree } = await this.metadataRepository.load(configRoot);
+    const config = vscode.workspace.getConfiguration();
+    const debugMode = config.get<boolean>('metadataViewer.debugMode', false);
 
-      // Получаем debugMode из настроек один раз для всей функции
-      const config = vscode.workspace.getConfiguration();
-      const debugMode = config.get<boolean>('metadataViewer.debugMode', false);
-      
-      const toWeb = (
+    const toWeb = (
         n: MetadataTreeNode,
         ctx: { prefix?: string; objectName?: string; tabularSectionName?: string } = {}
       ): QueryMetadataNode | null => {
@@ -479,6 +482,26 @@ export class QueryStringEditor {
         };
       };
 
+    try {
+      const rootNode: QueryMetadataNode = {
+        id: 'root',
+        label: 'Configuration',
+        kind: 'root',
+        children: [],
+      };
+
+      const onTypeLoaded = (typeNode: MetadataTreeNode) => {
+        const converted = toWeb(typeNode, {});
+        if (converted && converted.kind === 'type') {
+          rootNode.children!.push(converted);
+          onProgress?.({ ...rootNode, children: [...rootNode.children!] });
+        }
+      };
+
+      const { tree } = onProgress
+        ? await this.metadataRepository.loadProgressive(configRoot, onTypeLoaded)
+        : await this.metadataRepository.load(configRoot);
+
       const mapped = toWeb(tree, {});
       if (!mapped) {
         const emptyTree: QueryMetadataNode = {
@@ -640,7 +663,15 @@ export class QueryStringEditor {
       // Игнорируем ошибки сканирования — редактор уже открыт с пустыми метаданными
     });
 
-    void this.loadMetadataTreeForWebview(configRoot).then((metadataTree) => {
+    const sendTree = (tree: QueryMetadataNode | null) => {
+      if (!this.webpanel) return;
+      if (this.webviewReady) {
+        this.webpanel.webview.postMessage({ type: "metadataTreeReady", metadataTree: tree });
+      } else {
+        this.pendingMetadataTree = tree;
+      }
+    };
+    void this.loadMetadataTreeForWebview(configRoot, sendTree).then((metadataTree) => {
       if (!this.webpanel) return;
       this.pendingMetadataTree = metadataTree;
       if (this.webviewReady) {

@@ -10,6 +10,7 @@ import { TreeItem } from './ConfigurationFormats/utils';
 import { initBslCursorFeatures } from './autogen-bsl/init';
 import { CommitFileLogger } from './utils/commitFileLogger';
 import { BookmarkManager } from './utils/bookmarkManager';
+import { validateMetadataXmlFile } from './validation/metadataXmlValidator';
 
 // Output channel для логов расширения
 export const outputChannel = vscode.window.createOutputChannel('1C Metadata Viewer');
@@ -19,6 +20,32 @@ export const statusBarProgress = vscode.window.createStatusBarItem(vscode.Status
 
 /** Контекстный StatusBarItem: выбранный узел дерева или активная панель (СКД, макет, форма, предопределённые) */
 export const contextStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 101);
+
+async function runValidateMetadataXml(filePath: string, extensionPath: string): Promise<void> {
+	const result = validateMetadataXmlFile(filePath, extensionPath);
+	const channel = outputChannel;
+	channel.clear();
+	channel.appendLine(`=== Валидация XML: ${filePath} ===\n`);
+	if (result.errors.length > 0) {
+		channel.appendLine('ОШИБКИ:');
+		result.errors.forEach(e => channel.appendLine(`  ✗ ${e}`));
+		channel.appendLine('');
+	}
+	if (result.warnings.length > 0) {
+		channel.appendLine('ПРЕДУПРЕЖДЕНИЯ:');
+		result.warnings.forEach(w => channel.appendLine(`  ⚠ ${w}`));
+		channel.appendLine('');
+	}
+	channel.appendLine(result.valid ? 'Результат: OK' : `Результат: ОШИБКА (${result.errors.length} ошибок)`);
+	channel.show();
+	if (!result.valid) {
+		vscode.window.showErrorMessage(`Валидация XML: ${result.errors[0] ?? 'обнаружены ошибки'}`);
+	} else if (result.warnings.length > 0) {
+		vscode.window.showInformationMessage(`Валидация XML: OK, ${result.warnings.length} предупреждений`);
+	} else {
+		vscode.window.showInformationMessage('Валидация XML: OK');
+	}
+}
 
 export function activate(context: vscode.ExtensionContext) {
 	try {
@@ -172,6 +199,25 @@ export function activate(context: vscode.ExtensionContext) {
 		const editor = new DcsEditor(sourceRoot, reportXmlPath);
 		editor.openEditor(context.extensionUri, node.label);
 	});
+
+	/**
+	 * Валидация XML файла метаданных (проверка на совместимость с XDTO при загрузке в 1С)
+	 */
+	vscode.commands.registerCommand('metadataViewer.validateMetadataXml', async (uri?: vscode.Uri) => {
+		const fileUri = uri ?? vscode.window.activeTextEditor?.document?.uri;
+		if (!fileUri || fileUri.scheme !== 'file') {
+			const picked = await vscode.window.showOpenDialog({
+				title: 'Выберите XML файл метаданных для валидации',
+				filters: { 'XML': ['xml'] },
+				canSelectMany: false,
+			});
+			if (!picked?.[0]) return;
+			await runValidateMetadataXml(picked[0].fsPath, context.extensionUri.fsPath);
+			return;
+		}
+		await runValidateMetadataXml(fileUri.fsPath, context.extensionUri.fsPath);
+	});
+
 	vscode.commands.registerCommand('metadataViewer.openModule', (node: TreeItem) => {
 		let filePath = '';
 		if (node.configType === 'xml') {

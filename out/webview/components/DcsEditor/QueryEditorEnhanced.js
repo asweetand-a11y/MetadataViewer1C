@@ -388,6 +388,8 @@ const QueryEditorEnhanced = ({ isOpen, queryText, rightPanel, onSave, onCancel, 
     const [condDraft, setCondDraft] = (0, react_1.useState)('');
     const containerRef = (0, react_1.useRef)(null);
     const editorRef = (0, react_1.useRef)(null);
+    const queryTextRef = (0, react_1.useRef)(queryText);
+    queryTextRef.current = queryText;
     const [rightWidthPx, setRightWidthPx] = (0, react_1.useState)(360);
     const dragStateRef = (0, react_1.useRef)(null);
     // Синхронизировать состояние при открытии
@@ -405,50 +407,66 @@ const QueryEditorEnhanced = ({ isOpen, queryText, rightPanel, onSave, onCancel, 
             }
         }
     }, [isOpen, rightPanel]);
-    // Создание Monaco editor (только когда модалка открыта)
+    // Создание Monaco editor (только когда модалка открыта).
+    // КРИТИЧНО: Откладываем создание на следующий тик — иначе Monaco fallback (workers отключены)
+    // блокирует main thread и сообщение metadataTreeReady не успевает обработаться.
     (0, react_1.useEffect)(() => {
         if (!isOpen)
             return;
         if (!containerRef.current)
             return;
-        (0, monacoQueryLanguage_1.register1cQueryLanguage)();
-        const editor = monaco.editor.create(containerRef.current, {
-            value: editedQuery || '',
-            language: '1c-query',
-            theme: 'vs-dark',
-            automaticLayout: true,
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            wordWrap: 'on',
-            fontSize: 13,
-            unicodeHighlight: {
-                ambiguousCharacters: false,
-            },
-        });
-        editorRef.current = editor;
-        const disposable = editor.onDidChangeModelContent(() => {
-            const v = editor.getValue();
-            setEditedQuery(v);
-        });
-        const cursorDisposable = editor.onDidChangeCursorPosition(() => {
-            const model = editor.getModel();
-            const pos = editor.getPosition();
-            if (!model || !pos)
+        let cancelled = false;
+        let cleanup = null;
+        const run = () => {
+            if (cancelled || !containerRef.current)
                 return;
-            const off = model.getOffsetAt(pos);
-            setCursorOffset(off);
-            setVtInfo(detectVirtualCall(model.getValue(), off));
-        });
-        // Горячие клавиши
-        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-            onSave(editor.getValue());
-        });
-        // Escape не закрывает редактор (как в редакторе СКД)
+            (0, monacoQueryLanguage_1.register1cQueryLanguage)();
+            // Используем ref: editedQuery из замыкания устаревает при задержке
+            const initialValue = queryTextRef.current || editedQuery || '';
+            const editor = monaco.editor.create(containerRef.current, {
+                value: initialValue,
+                language: '1c-query',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+                fontSize: 13,
+                unicodeHighlight: {
+                    ambiguousCharacters: false,
+                },
+            });
+            editorRef.current = editor;
+            const disposable = editor.onDidChangeModelContent(() => {
+                const v = editor.getValue();
+                setEditedQuery(v);
+            });
+            const cursorDisposable = editor.onDidChangeCursorPosition(() => {
+                const model = editor.getModel();
+                const pos = editor.getPosition();
+                if (!model || !pos)
+                    return;
+                const off = model.getOffsetAt(pos);
+                setCursorOffset(off);
+                setVtInfo(detectVirtualCall(model.getValue(), off));
+            });
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+                onSave(editor.getValue());
+            });
+            cleanup = () => {
+                disposable.dispose();
+                cursorDisposable.dispose();
+                editor.dispose();
+                editorRef.current = null;
+            };
+        };
+        // Откладываем, чтобы metadataTreeReady успел обработаться до блокировки main thread.
+        // 150ms даёт время на обработку сообщений и requestMetadataTree (300ms) при необходимости.
+        const id = window.setTimeout(run, 150);
         return () => {
-            disposable.dispose();
-            cursorDisposable.dispose();
-            editor.dispose();
-            editorRef.current = null;
+            cancelled = true;
+            window.clearTimeout(id);
+            cleanup?.();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);

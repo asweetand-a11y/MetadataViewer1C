@@ -193,7 +193,7 @@ exports.catalogSchema = {
         HierarchyType: {
             type: 'string',
             title: 'Тип иерархии',
-            enum: ['HierarchyFoldersAndItems', 'HierarchyItems'],
+            enum: ['HierarchyFoldersAndItems', 'HierarchyOfItems'],
             default: 'HierarchyFoldersAndItems'
         },
         FoldersOnTop: {
@@ -231,8 +231,14 @@ exports.catalogSchema = {
         CodeSeries: {
             type: 'string',
             title: 'Серия кода',
-            enum: ['WholeCatalog', 'WithinOwnerSubordination', 'WithinOwnerHierarchy'],
+            enum: ['WholeCatalog', 'WithinOwnerSubordination', 'WithinOwnerHierarchy', 'WholeCharacteristicKind'],
             default: 'WholeCatalog'
+        },
+        SubordinationUse: {
+            type: 'string',
+            title: 'Подчинение',
+            enum: ['ToItems', 'ToFolders', 'ToFoldersAndItems'],
+            default: 'ToItems'
         },
         DescriptionLength: {
             type: 'string',
@@ -347,7 +353,7 @@ exports.informationRegisterSchema = {
         InformationRegisterPeriodicity: {
             type: 'string',
             title: 'InformationRegisterPeriodicity',
-            enum: ["Nonperiodical", "Month", "Second", "RecorderPosition"]
+            enum: ["Nonperiodical", "Month", "Second", "Day", "Year", "Quarter", "RecorderPosition"]
         },
         WriteMode: {
             type: 'string',

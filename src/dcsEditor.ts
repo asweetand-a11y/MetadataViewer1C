@@ -12,6 +12,8 @@ import { MetadataRepository, type MetadataTreeNode } from "./metadata_utils/Meta
 import { parseReportXmlForDcs, ParsedReportDcs, type ParsedDcsNode } from "./xmlParsers/dcsParserXmldom";
 import { XmlDiffMerge } from "./utils/xmlDiffMerge";
 import { serializeToXml } from "./xmlParsers/dcsSerializerXmldom";
+import { normalizeXML, validateXML } from "./utils/xmlUtils";
+import { validateXmlStructure } from "./validation/xmlStructureValidator";
 import { CommitFileLogger } from "./utils/commitFileLogger";
 import { statusBarProgress, contextStatusBar } from "./extension";
 
@@ -113,8 +115,18 @@ export class DcsEditor {
     return this.metadataCache;
   }
 
-  private async loadMetadataTreeForWebview(): Promise<QueryMetadataNode | null> {
-    if (this.metadataTreeCache) return this.metadataTreeCache;
+  /**
+   * Загрузка дерева метаданных для редактора запросов.
+   * @param onProgress — при указании используется прогрессивная загрузка: колбэк вызывается после каждого типа.
+   *   Позволяет отображать дерево по мере готовности на больших конфигурациях.
+   */
+  private async loadMetadataTreeForWebview(
+    onProgress?: (partialTree: QueryMetadataNode) => void
+  ): Promise<QueryMetadataNode | null> {
+    if (this.metadataTreeCache) {
+      if (onProgress) onProgress(this.metadataTreeCache);
+      return this.metadataTreeCache;
+    }
 
     // Только типы, используемые в запросах 1С
     const typeDirToQuery: Record<string, { typeLabel: string; prefix: string }> = {
@@ -166,10 +178,7 @@ export class DcsEditor {
       Members: 'Состав',
     };
 
-    try {
-      const { tree } = await this.metadataRepository.load(this.sourceRoot);
-
-      const toWeb = (
+    const toWeb = (
         n: MetadataTreeNode,
         ctx: { prefix?: string; objectName?: string; tabularSectionName?: string } = {}
       ): QueryMetadataNode | null => {
@@ -348,6 +357,26 @@ export class DcsEditor {
         };
       };
 
+    try {
+      const rootNode: QueryMetadataNode = {
+        id: 'root',
+        label: 'Configuration',
+        kind: 'root',
+        children: [],
+      };
+
+      const onTypeLoaded = (typeNode: MetadataTreeNode) => {
+        const converted = toWeb(typeNode, {});
+        if (converted && converted.kind === 'type') {
+          rootNode.children!.push(converted);
+          onProgress?.({ ...rootNode, children: [...rootNode.children!] });
+        }
+      };
+
+      const { tree } = onProgress
+        ? await this.metadataRepository.loadProgressive(this.sourceRoot, onTypeLoaded)
+        : await this.metadataRepository.load(this.sourceRoot);
+
       const mapped = toWeb(tree, {});
       this.metadataTreeCache = mapped;
       return mapped;
@@ -366,6 +395,7 @@ export class DcsEditor {
   private currentRootTag: string = 'DataCompositionSchema';
   private currentDomDocument: Document | null = null; // DOM документ для сохранения
   private currentRootAttrs: Record<string, any> | undefined = undefined; // Атрибуты корня
+  private extensionUri: vscode.Uri | undefined = undefined;
 
   constructor(sourceRoot: string, reportXmlPath: string) {
     this.sourceRoot = sourceRoot;
@@ -373,6 +403,7 @@ export class DcsEditor {
   }
 
   public async openEditor(extensionUri: vscode.Uri, title?: string | vscode.TreeItemLabel) {
+    this.extensionUri = extensionUri;
     if (!fs.existsSync(this.reportXmlPath)) {
       vscode.window.showInformationMessage(`File ${this.reportXmlPath} does not exist.`);
       return;
@@ -436,6 +467,15 @@ export class DcsEditor {
         
         if (message.type === 'saveDcs') {
           await this.handleSaveDcs(message.payload, panel!);
+          return;
+        }
+
+        // Запрос дерева метаданных (fallback при потере metadataTreeReady)
+        if (message.type === 'requestMetadataTree' && panel) {
+          const tree = this.metadataTreeCache ?? (await this.loadMetadataTreeForWebview());
+          if (tree) {
+            panel.webview.postMessage({ type: "metadataTreeReady", metadataTree: tree });
+          }
         }
       });
     }
@@ -484,9 +524,13 @@ export class DcsEditor {
         panel.webview.postMessage(initMessage);
       }
 
-      // Дерево метаданных загружаем в фоне и отправляем отдельным сообщением
-      void this.loadMetadataTreeForWebview().then((metadataTree) => {
+      // Дерево метаданных загружаем в фоне с прогрессивной отдачей — UI обновляется по мере готовности типов
+      void this.loadMetadataTreeForWebview((partialTree) => {
         if (this.webpanel) {
+          this.webpanel.webview.postMessage({ type: "metadataTreeReady", metadataTree: partialTree });
+        }
+      }).then((metadataTree) => {
+        if (this.webpanel && metadataTree) {
           this.webpanel.webview.postMessage({ type: "metadataTreeReady", metadataTree });
         }
       });
@@ -699,7 +743,26 @@ export class DcsEditor {
 
       // Сериализуем изменения напрямую в XML через xmldom
       // Без XmlDiffMerge - xmldom сохраняет структуру автоматически
-      const updatedXml = serializeToXml(this.currentDomDocument, rootTag, schemaChildren, rootAttrs);
+      let updatedXml = serializeToXml(this.currentDomDocument, rootTag, schemaChildren, rootAttrs);
+      updatedXml = normalizeXML(updatedXml);
+
+      const validation = validateXML(updatedXml);
+      if (!validation.valid) {
+        throw new Error(validation.error ?? 'Результат сохранения не является валидным XML');
+      }
+
+      const structureValidationEnabled = vscode.workspace.getConfiguration('metadataViewer').get<boolean>('structureValidationEnabled', true);
+      if (structureValidationEnabled && this.extensionUri) {
+        const structureResult = validateXmlStructure(updatedXml, {
+          extensionPath: this.extensionUri.fsPath,
+          filePath: templatePath,
+          rootTag: 'DataCompositionSchema'
+        });
+        if (!structureResult.valid && structureResult.errors?.length) {
+          const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+          throw new Error(`Ошибка структуры XML СКД: ${errorMessage}`);
+        }
+      }
 
       // Сохранить Template.xml с BOM (как в оригинальных файлах 1С)
       // ВАЖНО: 1С конфигуратор требует UTF-8 с BOM (EF BB BF)

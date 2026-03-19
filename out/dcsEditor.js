@@ -36,6 +36,8 @@ const MetadataScanner_1 = require("./metadata_utils/MetadataScanner");
 const MetadataRepository_1 = require("./metadata_utils/MetadataRepository");
 const dcsParserXmldom_1 = require("./xmlParsers/dcsParserXmldom");
 const dcsSerializerXmldom_1 = require("./xmlParsers/dcsSerializerXmldom");
+const xmlUtils_1 = require("./utils/xmlUtils");
+const xmlStructureValidator_1 = require("./validation/xmlStructureValidator");
 const commitFileLogger_1 = require("./utils/commitFileLogger");
 const extension_1 = require("./extension");
 class DcsEditor {
@@ -109,9 +111,17 @@ class DcsEditor {
         this.metadataCache = { registers, referenceTypes };
         return this.metadataCache;
     }
-    async loadMetadataTreeForWebview() {
-        if (this.metadataTreeCache)
+    /**
+     * Загрузка дерева метаданных для редактора запросов.
+     * @param onProgress — при указании используется прогрессивная загрузка: колбэк вызывается после каждого типа.
+     *   Позволяет отображать дерево по мере готовности на больших конфигурациях.
+     */
+    async loadMetadataTreeForWebview(onProgress) {
+        if (this.metadataTreeCache) {
+            if (onProgress)
+                onProgress(this.metadataTreeCache);
             return this.metadataTreeCache;
+        }
         // Только типы, используемые в запросах 1С
         const typeDirToQuery = {
             FilterCriteria: { typeLabel: 'КритерииОтбора', prefix: 'КритерийОтбора' },
@@ -159,160 +169,175 @@ class DcsEditor {
             Predefined: 'Предопределенные',
             Members: 'Состав',
         };
-        try {
-            const { tree } = await this.metadataRepository.load(this.sourceRoot);
-            const toWeb = (n, ctx = {}) => {
-                if (n.kind === 'type') {
-                    // Фильтруем только разрешенные типы метаданных
-                    if (!allowedTypes.has(n.label)) {
-                        return null; // Пропускаем этот тип
-                    }
-                    const m = typeDirToQuery[n.label];
-                    const typeLabel = m?.typeLabel || n.label;
-                    const prefix = m?.prefix;
-                    const children = (n.children || [])
-                        .map((c) => toWeb(c, { ...ctx, prefix: prefix || ctx.prefix }))
-                        .filter((c) => c !== null);
-                    // Если после фильтрации не осталось детей, пропускаем тип
-                    if (children.length === 0) {
+        const toWeb = (n, ctx = {}) => {
+            if (n.kind === 'type') {
+                // Фильтруем только разрешенные типы метаданных
+                if (!allowedTypes.has(n.label)) {
+                    return null; // Пропускаем этот тип
+                }
+                const m = typeDirToQuery[n.label];
+                const typeLabel = m?.typeLabel || n.label;
+                const prefix = m?.prefix;
+                const children = (n.children || [])
+                    .map((c) => toWeb(c, { ...ctx, prefix: prefix || ctx.prefix }))
+                    .filter((c) => c !== null);
+                // Если после фильтрации не осталось детей, пропускаем тип
+                if (children.length === 0) {
+                    return null;
+                }
+                return {
+                    id: n.id,
+                    label: typeLabel,
+                    kind: 'type',
+                    children,
+                };
+            }
+            if (n.kind === 'object') {
+                const obj = n.object;
+                const typeDir = obj?.objectTypeDir;
+                const m = (typeDir && typeDirToQuery[typeDir]) || undefined;
+                const prefix = m?.prefix || ctx.prefix || obj?.objectType || '';
+                const objectName = obj?.name || '';
+                const label = obj?.displayName || obj?.name || n.label;
+                const baseChildren = (n.children || [])
+                    .map((c) => toWeb(c, { prefix, objectName }))
+                    .filter((c) => c !== null);
+                const virtualGroup = (() => {
+                    if (!prefix || !objectName)
                         return null;
-                    }
-                    return {
-                        id: n.id,
-                        label: typeLabel,
-                        kind: 'type',
-                        children,
-                    };
-                }
-                if (n.kind === 'object') {
-                    const obj = n.object;
-                    const typeDir = obj?.objectTypeDir;
-                    const m = (typeDir && typeDirToQuery[typeDir]) || undefined;
-                    const prefix = m?.prefix || ctx.prefix || obj?.objectType || '';
-                    const objectName = obj?.name || '';
-                    const label = obj?.displayName || obj?.name || n.label;
-                    const baseChildren = (n.children || [])
-                        .map((c) => toWeb(c, { prefix, objectName }))
-                        .filter((c) => c !== null);
-                    const virtualGroup = (() => {
-                        if (!prefix || !objectName)
-                            return null;
-                        const tableKey = `${prefix}.${objectName}`;
-                        const makeVirtual = (idSuffix, label, insertText) => ({
-                            id: `${n.id}/virtual/${idSuffix}`,
-                            label,
-                            kind: 'member',
-                            insertText,
-                        });
-                        let members = [];
-                        if (prefix === 'РегистрНакопления') {
-                            members = [
-                                makeVirtual('ostatki', 'Остатки(...)', `${tableKey}.Остатки(`),
-                                makeVirtual('oboroty', 'Обороты(...)', `${tableKey}.Обороты(`),
-                                makeVirtual('ostatki_i_oboroty', 'ОстаткиИОбороты(...)', `${tableKey}.ОстаткиИОбороты(`),
-                            ];
-                        }
-                        if (prefix === 'РегистрБухгалтерии') {
-                            members = [
-                                makeVirtual('ostatki', 'Остатки(...)', `${tableKey}.Остатки(`),
-                                makeVirtual('oboroty', 'Обороты(...)', `${tableKey}.Обороты(`),
-                                makeVirtual('ostatki_i_oboroty', 'ОстаткиИОбороты(...)', `${tableKey}.ОстаткиИОбороты(`),
-                                makeVirtual('oboroty_dtkt', 'ОборотыДтКт(...)', `${tableKey}.ОборотыДтКт(`),
-                                makeVirtual('movements_subkonto', 'ДвиженияССубконто(...)', `${tableKey}.ДвиженияССубконто(`),
-                            ];
-                        }
-                        if (prefix === 'РегистрСведений') {
-                            members = [
-                                makeVirtual('srez_poslednih', 'СрезПоследних(...)', `${tableKey}.СрезПоследних(`),
-                                makeVirtual('srez_pervyh', 'СрезПервых(...)', `${tableKey}.СрезПервых(`),
-                            ];
-                        }
-                        if (prefix === 'РегистрРасчета') {
-                            members = [
-                                makeVirtual('dviheniya', 'Движения(...)', `${tableKey}.Движения(`),
-                                makeVirtual('period_deystviya', 'ПериодДействия(...)', `${tableKey}.ПериодДействия(`),
-                                makeVirtual('dannye_grafika', 'ДанныеГрафика(...)', `${tableKey}.ДанныеГрафика(`),
-                            ];
-                        }
-                        if (members.length === 0)
-                            return null;
-                        return {
-                            id: `${n.id}/virtual`,
-                            label: 'Виртуальные таблицы',
-                            kind: 'group',
-                            children: members,
-                        };
-                    })();
-                    const children = virtualGroup ? [...baseChildren, virtualGroup] : baseChildren;
-                    return {
-                        id: n.id,
+                    const tableKey = `${prefix}.${objectName}`;
+                    const makeVirtual = (idSuffix, label, insertText) => ({
+                        id: `${n.id}/virtual/${idSuffix}`,
                         label,
-                        kind: 'object',
-                        insertText: prefix && objectName ? `${prefix}.${objectName}` : undefined,
-                        children,
-                    };
-                }
-                if (n.kind === 'group') {
-                    const label = groupLabelMap[n.label] || n.label;
-                    const isTabularSectionsGroup = label === 'Табличные части' || n.label === 'TabularSections';
-                    // Передаем флаг в контекст для детей группы "Табличные части"
-                    const childCtx = isTabularSectionsGroup
-                        ? { ...ctx, inTabularSectionsGroup: true }
-                        : { ...ctx, inTabularSectionsGroup: false };
-                    const children = (n.children || [])
-                        .map((c) => toWeb(c, childCtx))
-                        .filter((c) => c !== null);
-                    return {
-                        id: n.id,
-                        label,
-                        kind: 'group',
-                        children,
-                    };
-                }
-                if (n.kind === 'member') {
-                    const memberName = String(n.member?.name || n.label || '').trim();
-                    // Если мы в группе "Табличные части" и у этого member есть дети (реквизиты),
-                    // то это табличная часть
-                    const isTabularSection = ctx.inTabularSectionsGroup &&
-                        ctx.prefix && ctx.objectName && !ctx.tabularSectionName &&
-                        (n.children || []).length > 0;
-                    let insertText;
-                    if (ctx.prefix && ctx.objectName && memberName) {
-                        if (ctx.tabularSectionName) {
-                            // Это реквизит табличной части: Prefix.Object.TabularSection.Field
-                            insertText = `${ctx.prefix}.${ctx.objectName}.${ctx.tabularSectionName}.${memberName}`;
-                        }
-                        else {
-                            // Это либо реквизит объекта, либо табличная часть: Prefix.Object.Member
-                            insertText = `${ctx.prefix}.${ctx.objectName}.${memberName}`;
-                        }
-                    }
-                    // Если это табличная часть, обновляем контекст для детей (реквизитов табличной части)
-                    const childCtx = isTabularSection
-                        ? { ...ctx, tabularSectionName: memberName, inTabularSectionsGroup: false }
-                        : ctx;
-                    const children = (n.children || [])
-                        .map((c) => toWeb(c, childCtx))
-                        .filter((c) => c !== null);
-                    return {
-                        id: n.id,
-                        label: memberName || n.label,
                         kind: 'member',
                         insertText,
-                        children,
+                    });
+                    let members = [];
+                    if (prefix === 'РегистрНакопления') {
+                        members = [
+                            makeVirtual('ostatki', 'Остатки(...)', `${tableKey}.Остатки(`),
+                            makeVirtual('oboroty', 'Обороты(...)', `${tableKey}.Обороты(`),
+                            makeVirtual('ostatki_i_oboroty', 'ОстаткиИОбороты(...)', `${tableKey}.ОстаткиИОбороты(`),
+                        ];
+                    }
+                    if (prefix === 'РегистрБухгалтерии') {
+                        members = [
+                            makeVirtual('ostatki', 'Остатки(...)', `${tableKey}.Остатки(`),
+                            makeVirtual('oboroty', 'Обороты(...)', `${tableKey}.Обороты(`),
+                            makeVirtual('ostatki_i_oboroty', 'ОстаткиИОбороты(...)', `${tableKey}.ОстаткиИОбороты(`),
+                            makeVirtual('oboroty_dtkt', 'ОборотыДтКт(...)', `${tableKey}.ОборотыДтКт(`),
+                            makeVirtual('movements_subkonto', 'ДвиженияССубконто(...)', `${tableKey}.ДвиженияССубконто(`),
+                        ];
+                    }
+                    if (prefix === 'РегистрСведений') {
+                        members = [
+                            makeVirtual('srez_poslednih', 'СрезПоследних(...)', `${tableKey}.СрезПоследних(`),
+                            makeVirtual('srez_pervyh', 'СрезПервых(...)', `${tableKey}.СрезПервых(`),
+                        ];
+                    }
+                    if (prefix === 'РегистрРасчета') {
+                        members = [
+                            makeVirtual('dviheniya', 'Движения(...)', `${tableKey}.Движения(`),
+                            makeVirtual('period_deystviya', 'ПериодДействия(...)', `${tableKey}.ПериодДействия(`),
+                            makeVirtual('dannye_grafika', 'ДанныеГрафика(...)', `${tableKey}.ДанныеГрафика(`),
+                        ];
+                    }
+                    if (members.length === 0)
+                        return null;
+                    return {
+                        id: `${n.id}/virtual`,
+                        label: 'Виртуальные таблицы',
+                        kind: 'group',
+                        children: members,
                     };
-                }
-                // root
-                const rootChildren = (n.children || [])
-                    .map((c) => toWeb(c, ctx))
+                })();
+                const children = virtualGroup ? [...baseChildren, virtualGroup] : baseChildren;
+                return {
+                    id: n.id,
+                    label,
+                    kind: 'object',
+                    insertText: prefix && objectName ? `${prefix}.${objectName}` : undefined,
+                    children,
+                };
+            }
+            if (n.kind === 'group') {
+                const label = groupLabelMap[n.label] || n.label;
+                const isTabularSectionsGroup = label === 'Табличные части' || n.label === 'TabularSections';
+                // Передаем флаг в контекст для детей группы "Табличные части"
+                const childCtx = isTabularSectionsGroup
+                    ? { ...ctx, inTabularSectionsGroup: true }
+                    : { ...ctx, inTabularSectionsGroup: false };
+                const children = (n.children || [])
+                    .map((c) => toWeb(c, childCtx))
                     .filter((c) => c !== null);
                 return {
                     id: n.id,
-                    label: n.label,
-                    kind: 'root',
-                    children: rootChildren,
+                    label,
+                    kind: 'group',
+                    children,
                 };
+            }
+            if (n.kind === 'member') {
+                const memberName = String(n.member?.name || n.label || '').trim();
+                // Если мы в группе "Табличные части" и у этого member есть дети (реквизиты),
+                // то это табличная часть
+                const isTabularSection = ctx.inTabularSectionsGroup &&
+                    ctx.prefix && ctx.objectName && !ctx.tabularSectionName &&
+                    (n.children || []).length > 0;
+                let insertText;
+                if (ctx.prefix && ctx.objectName && memberName) {
+                    if (ctx.tabularSectionName) {
+                        // Это реквизит табличной части: Prefix.Object.TabularSection.Field
+                        insertText = `${ctx.prefix}.${ctx.objectName}.${ctx.tabularSectionName}.${memberName}`;
+                    }
+                    else {
+                        // Это либо реквизит объекта, либо табличная часть: Prefix.Object.Member
+                        insertText = `${ctx.prefix}.${ctx.objectName}.${memberName}`;
+                    }
+                }
+                // Если это табличная часть, обновляем контекст для детей (реквизитов табличной части)
+                const childCtx = isTabularSection
+                    ? { ...ctx, tabularSectionName: memberName, inTabularSectionsGroup: false }
+                    : ctx;
+                const children = (n.children || [])
+                    .map((c) => toWeb(c, childCtx))
+                    .filter((c) => c !== null);
+                return {
+                    id: n.id,
+                    label: memberName || n.label,
+                    kind: 'member',
+                    insertText,
+                    children,
+                };
+            }
+            // root
+            const rootChildren = (n.children || [])
+                .map((c) => toWeb(c, ctx))
+                .filter((c) => c !== null);
+            return {
+                id: n.id,
+                label: n.label,
+                kind: 'root',
+                children: rootChildren,
             };
+        };
+        try {
+            const rootNode = {
+                id: 'root',
+                label: 'Configuration',
+                kind: 'root',
+                children: [],
+            };
+            const onTypeLoaded = (typeNode) => {
+                const converted = toWeb(typeNode, {});
+                if (converted && converted.kind === 'type') {
+                    rootNode.children.push(converted);
+                    onProgress?.({ ...rootNode, children: [...rootNode.children] });
+                }
+            };
+            const { tree } = onProgress
+                ? await this.metadataRepository.loadProgressive(this.sourceRoot, onTypeLoaded)
+                : await this.metadataRepository.load(this.sourceRoot);
             const mapped = toWeb(tree, {});
             this.metadataTreeCache = mapped;
             return mapped;
@@ -335,10 +360,12 @@ class DcsEditor {
         this.currentRootTag = 'DataCompositionSchema';
         this.currentDomDocument = null; // DOM документ для сохранения
         this.currentRootAttrs = undefined; // Атрибуты корня
+        this.extensionUri = undefined;
         this.sourceRoot = sourceRoot;
         this.reportXmlPath = reportXmlPath;
     }
     async openEditor(extensionUri, title) {
+        this.extensionUri = extensionUri;
         if (!fs.existsSync(this.reportXmlPath)) {
             vscode.window.showInformationMessage(`File ${this.reportXmlPath} does not exist.`);
             return;
@@ -392,6 +419,14 @@ class DcsEditor {
                 }
                 if (message.type === 'saveDcs') {
                     await this.handleSaveDcs(message.payload, panel);
+                    return;
+                }
+                // Запрос дерева метаданных (fallback при потере metadataTreeReady)
+                if (message.type === 'requestMetadataTree' && panel) {
+                    const tree = this.metadataTreeCache ?? (await this.loadMetadataTreeForWebview());
+                    if (tree) {
+                        panel.webview.postMessage({ type: "metadataTreeReady", metadataTree: tree });
+                    }
                 }
             });
         }
@@ -433,9 +468,13 @@ class DcsEditor {
             else {
                 panel.webview.postMessage(initMessage);
             }
-            // Дерево метаданных загружаем в фоне и отправляем отдельным сообщением
-            void this.loadMetadataTreeForWebview().then((metadataTree) => {
+            // Дерево метаданных загружаем в фоне с прогрессивной отдачей — UI обновляется по мере готовности типов
+            void this.loadMetadataTreeForWebview((partialTree) => {
                 if (this.webpanel) {
+                    this.webpanel.webview.postMessage({ type: "metadataTreeReady", metadataTree: partialTree });
+                }
+            }).then((metadataTree) => {
+                if (this.webpanel && metadataTree) {
                     this.webpanel.webview.postMessage({ type: "metadataTreeReady", metadataTree });
                 }
             });
@@ -638,7 +677,24 @@ class DcsEditor {
                 throw new Error('Не определён путь Template.xml');
             // Сериализуем изменения напрямую в XML через xmldom
             // Без XmlDiffMerge - xmldom сохраняет структуру автоматически
-            const updatedXml = (0, dcsSerializerXmldom_1.serializeToXml)(this.currentDomDocument, rootTag, schemaChildren, rootAttrs);
+            let updatedXml = (0, dcsSerializerXmldom_1.serializeToXml)(this.currentDomDocument, rootTag, schemaChildren, rootAttrs);
+            updatedXml = (0, xmlUtils_1.normalizeXML)(updatedXml);
+            const validation = (0, xmlUtils_1.validateXML)(updatedXml);
+            if (!validation.valid) {
+                throw new Error(validation.error ?? 'Результат сохранения не является валидным XML');
+            }
+            const structureValidationEnabled = vscode.workspace.getConfiguration('metadataViewer').get('structureValidationEnabled', true);
+            if (structureValidationEnabled && this.extensionUri) {
+                const structureResult = (0, xmlStructureValidator_1.validateXmlStructure)(updatedXml, {
+                    extensionPath: this.extensionUri.fsPath,
+                    filePath: templatePath,
+                    rootTag: 'DataCompositionSchema'
+                });
+                if (!structureResult.valid && structureResult.errors?.length) {
+                    const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+                    throw new Error(`Ошибка структуры XML СКД: ${errorMessage}`);
+                }
+            }
             // Сохранить Template.xml с BOM (как в оригинальных файлах 1С)
             // ВАЖНО: 1С конфигуратор требует UTF-8 с BOM (EF BB BF)
             const bomBuffer = Buffer.from([0xEF, 0xBB, 0xBF]);

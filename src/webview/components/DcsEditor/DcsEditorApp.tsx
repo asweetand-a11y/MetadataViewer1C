@@ -10,6 +10,7 @@ import { TypeWidget } from '../../widgets/TypeWidget';
 import { QueryEditorEnhanced } from './QueryEditorEnhanced';
 import { MetadataTreePanel, type QueryMetadataNode } from './MetadataTreePanel';
 import { setQueryMetadataCompletionTree } from '../../utils/monacoQueryLanguage';
+import { GROUPING_OUTPUT_PARAMS, GROUPING_PARAM_MAP } from './dcsGroupingParams';
 type DcsNode = {
   path: string;
   tag: string;
@@ -145,6 +146,23 @@ function findChildNodeByLocalTag(node: DcsNode | null | undefined, wantedLocalTa
 function getChildTextByLocalTag(node: DcsNode | null | undefined, wantedLocalTag: string): string {
   const ch = findChildNodeByLocalTag(node, wantedLocalTag);
   return String(ch?.text ?? '').trim();
+}
+
+/** Извлекает текст из узла value параметра (поддержка v8:LocalStringType и простого текста) */
+function extractValueFromParameterValue(valueNode: DcsNode | null | undefined): string {
+  if (!valueNode) return '';
+  let val = String(valueNode.text || '').trim();
+  if (val) return val;
+  if (!valueNode.children?.length) return '';
+  // v8:LocalStringType: value -> v8:item -> v8:content
+  const itemNode = findChildNodeByLocalTag(valueNode, 'item');
+  if (itemNode) {
+    const contentNode = findChildNodeByLocalTag(itemNode, 'content');
+    return String(contentNode?.text ?? '').trim();
+  }
+  // Прямой поиск content в детях (на случай другой структуры)
+  const contentNode = (valueNode.children || []).find((c) => localTag(c.tag) === 'content');
+  return contentNode ? String(contentNode.text ?? '').trim() : '';
 }
 
 function findAllNodes(root: DcsNode[]): Array<{ path: string; node: DcsNode }> {
@@ -306,6 +324,105 @@ function upsertChildTextByLocalTag(node: DcsNode, wantedLocalTag: string, value:
 function removeChildByLocalTag(node: DcsNode, wantedLocalTag: string): DcsNode {
   const nextChildren = (node.children || []).filter((c) => localTag(c.tag) !== wantedLocalTag);
   return { ...node, children: nextChildren };
+}
+
+/** Параметры, требующие v8:LocalStringType (Заголовок и др.) */
+const OUTPUT_PARAMS_LOCAL_STRING = new Set(['Заголовок']);
+
+/** Префиксы namespace для XDTO-совместимости 1С (dcscor=core, dcsset=settings) */
+const DCSCOR = 'dcscor';
+const DCSSET = 'dcsset';
+
+function makeOutputParameterValueNode(paramName: string, paramValue: string, valueTag = 'dcscor:value'): DcsNode {
+  if (OUTPUT_PARAMS_LOCAL_STRING.has(paramName)) {
+    return {
+      path: '',
+      tag: valueTag,
+      attrs: { '@_xsi:type': 'v8:LocalStringType' } as Record<string, string>,
+      children: [{
+        path: '',
+        tag: 'v8:item',
+        attrs: {},
+        children: [
+          makeTextNode('v8:lang', 'ru'),
+          makeTextNode('v8:content', paramValue),
+        ],
+      }],
+    };
+  }
+  return { ...makeTextNode('value', paramValue), tag: valueTag };
+}
+
+/** Добавляет или обновляет параметр в outputParameters группировки (use = включён) */
+function upsertOutputParameter(structNode: DcsNode, paramName: string, paramValue: string, use = true): DcsNode {
+  let outParamsNode = (structNode.children || []).find((c) => localTag(c.tag) === 'outputParameters');
+  const firstItem = outParamsNode?.children?.[0];
+  const paramTag = firstItem ? (findChildNodeByLocalTag(firstItem, 'parameter')?.tag as string) || `${DCSCOR}:parameter` : `${DCSCOR}:parameter`;
+  const valueTag = firstItem ? (findChildNodeByLocalTag(firstItem, 'value')?.tag as string) || `${DCSCOR}:value` : `${DCSCOR}:value`;
+  const useTag = firstItem ? (findChildNodeByLocalTag(firstItem, 'use')?.tag as string) || `${DCSCOR}:use` : `${DCSCOR}:use`;
+  const itemChildren = [
+    { ...makeTextNode('parameter', paramName), tag: paramTag },
+    makeOutputParameterValueNode(paramName, paramValue, valueTag),
+    { ...makeTextNode('use', use ? 'true' : 'false'), tag: useTag },
+  ];
+  if (!outParamsNode) {
+    const itemTag = `${DCSCOR}:item`;
+    const outParamsTag = `${DCSSET}:outputParameters`;
+    const newItem = { path: '', tag: itemTag, attrs: { '@_xsi:type': 'dcsset:SettingsParameterValue' } as Record<string, string>, children: itemChildren };
+    outParamsNode = { path: '', tag: outParamsTag, attrs: {} as Record<string, string>, children: [newItem] };
+    return { ...structNode, children: [...(structNode.children || []), outParamsNode] };
+  }
+  const items = outParamsNode.children || [];
+  const itemIdx = items.findIndex((it) => {
+    const p = findChildNodeByLocalTag(it, 'parameter');
+    return p && String(p.text || '').trim() === paramName;
+  });
+  const newItemNode = {
+    path: '',
+    tag: (items[0]?.tag as string) || `${DCSCOR}:item`,
+    attrs: (items[0]?.attrs as Record<string, string>) || { '@_xsi:type': 'dcsset:SettingsParameterValue' } as Record<string, string>,
+    children: itemChildren,
+  };
+  let nextItems: DcsNode[];
+  if (itemIdx >= 0) {
+    nextItems = items.slice();
+    nextItems[itemIdx] = newItemNode;
+  } else {
+    nextItems = [...items, newItemNode];
+  }
+  const nextOutParams = { ...outParamsNode, children: nextItems };
+  const outIdx = (structNode.children || []).findIndex((c) => localTag(c.tag) === 'outputParameters');
+  const nextChildren = (structNode.children || []).slice();
+  nextChildren[outIdx] = nextOutParams;
+  return { ...structNode, children: nextChildren };
+}
+
+/** Устанавливает флаг use для параметра outputParameters */
+function setOutputParameterUse(structNode: DcsNode, paramName: string, use: boolean): DcsNode {
+  const outParamsNode = (structNode.children || []).find((c) => localTag(c.tag) === 'outputParameters');
+  if (!outParamsNode?.children) return structNode;
+  const itemIdx = outParamsNode.children.findIndex((it) => {
+    const p = findChildNodeByLocalTag(it, 'parameter');
+    return p && String(p.text || '').trim() === paramName;
+  });
+  if (itemIdx < 0) return structNode;
+  const item = outParamsNode.children[itemIdx];
+  let useNode = findChildNodeByLocalTag(item, 'use');
+  const nextItemChildren = (item.children || []).slice();
+  if (useNode) {
+    const useIdx = nextItemChildren.findIndex((c) => localTag(c.tag) === 'use');
+    nextItemChildren[useIdx] = { ...nextItemChildren[useIdx], text: use ? 'true' : 'false' };
+  } else {
+    nextItemChildren.push(makeTextNode('use', use ? 'true' : 'false'));
+  }
+  const nextItem = { ...item, children: nextItemChildren };
+  const nextItems = outParamsNode.children.slice();
+  nextItems[itemIdx] = nextItem;
+  const nextOutParams = { ...outParamsNode, children: nextItems };
+  const outIdx = (structNode.children || []).findIndex((c) => localTag(c.tag) === 'outputParameters');
+  const nextChildren = (structNode.children || []).slice();
+  nextChildren[outIdx] = nextOutParams;
+  return { ...structNode, children: nextChildren };
 }
 
 function getNodeLabel(node: DcsNode): string {
@@ -1514,62 +1631,162 @@ const DcsResourceDetails: React.FC<{
   );
 };
 
-// Рекурсивный компонент для отображения вложенных группировок
+// Рекурсивный компонент для отображения вложенных группировок (column/row таблицы и вложенные)
 const NestedGroupingView: React.FC<{
   structure: any;
   level: number;
   onUpdateNode: (nodePath: string, updater: (n: DcsNode) => DcsNode) => void;
-}> = ({ structure, level, onUpdateNode }) => {
-  if (!structure || !structure.fields || structure.fields.length === 0) return null;
+  groupingOtherSettingsExpanded?: Record<string, boolean>;
+  setGroupingOtherSettingsExpanded?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+}> = ({ structure, level, onUpdateNode, groupingOtherSettingsExpanded = {}, setGroupingOtherSettingsExpanded = () => {} }) => {
+  if (!structure) return null;
+  const hasFields = structure.fields && structure.fields.length > 0;
+  const hasOutputParams = structure.outputParams && structure.outputParams.length > 0 && structure.structNode;
+  const hasNested = structure.nested && structure.nested.length > 0;
+  if (!hasFields && !hasOutputParams && !hasNested) return null;
   
   const indent = level * 20;
   
   return (
     <div style={{ marginLeft: indent, marginTop: level > 0 ? 8 : 0, borderLeft: level > 0 ? '2px solid var(--vscode-panel-border)' : 'none', paddingLeft: level > 0 ? 8 : 0 }}>
-      <table className="edt-grid__table">
-        <tbody>
-          {structure.fields.map((gf: any, idx: number) => {
-            const fieldNode = findChildNodeByLocalTag(gf.node, 'field');
-            const groupTypeNode = findChildNodeByLocalTag(gf.node, 'groupType');
-            return (
-              <React.Fragment key={gf.path}>
+      {hasFields && (
+        <table className="edt-grid__table">
+          <tbody>
+            {structure.fields.map((gf: any, idx: number) => {
+              const fieldNode = findChildNodeByLocalTag(gf.node, 'field');
+              const groupTypeNode = findChildNodeByLocalTag(gf.node, 'groupType');
+              return (
+                <React.Fragment key={gf.path}>
+                  <tr>
+                    <td style={{ width: '70%' }}>
+                      {level > 0 && <span style={{ opacity: 0.5, marginRight: 4 }}>↳</span>}
+                      <input
+                        className="edt-props-editor__input"
+                        value={gf.field}
+                        onChange={(e) => {
+                          if (fieldNode) {
+                            onUpdateNode(fieldNode.path, (n) => ({ ...n, text: e.target.value }));
+                          }
+                        }}
+                      />
+                    </td>
+                    <td style={{ width: '30%' }}>
+                      <select
+                        className="edt-props-editor__input"
+                        value={gf.groupType}
+                        onChange={(e) => {
+                          if (groupTypeNode) {
+                            onUpdateNode(groupTypeNode.path, (n) => ({ ...n, text: e.target.value }));
+                          }
+                        }}
+                      >
+                        <option value="Items">Элементы</option>
+                        <option value="Hierarchy">Иерархия</option>
+                        <option value="OnlyHierarchy">Только иерархия</option>
+                      </select>
+                    </td>
+                  </tr>
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      {/* Другие настройки для column/row */}
+      {hasOutputParams && (
+        <div style={{ marginTop: 8, fontSize: 11 }}>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setGroupingOtherSettingsExpanded((prev: Record<string, boolean>) => ({ ...prev, [structure.path]: !(prev[structure.path] ?? true) }))}
+            onKeyDown={(e) => e.key === 'Enter' && setGroupingOtherSettingsExpanded((prev: Record<string, boolean>) => ({ ...prev, [structure.path]: !(prev[structure.path] ?? true) }))}
+            style={{ fontWeight: 'bold', marginBottom: 4, opacity: 0.8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <span style={{ transform: (groupingOtherSettingsExpanded[structure.path] ?? true) ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▶</span>
+            Другие настройки
+          </div>
+          {(groupingOtherSettingsExpanded[structure.path] ?? true) && (
+            <table className="edt-grid__table" style={{ fontSize: 11 }}>
+              <thead>
                 <tr>
-                  <td style={{ width: '70%' }}>
-                    {level > 0 && <span style={{ opacity: 0.5, marginRight: 4 }}>↳</span>}
-                    <input
-                      className="edt-props-editor__input"
-                      value={gf.field}
-                      onChange={(e) => {
-                        if (fieldNode) {
-                          onUpdateNode(fieldNode.path, (n) => ({ ...n, text: e.target.value }));
-                        }
-                      }}
-                    />
-                  </td>
-                  <td style={{ width: '30%' }}>
-                    <select
-                      className="edt-props-editor__input"
-                      value={gf.groupType}
-                      onChange={(e) => {
-                        if (groupTypeNode) {
-                          onUpdateNode(groupTypeNode.path, (n) => ({ ...n, text: e.target.value }));
-                        }
-                      }}
-                    >
-                      <option value="Items">Элементы</option>
-                      <option value="Hierarchy">Иерархия</option>
-                      <option value="OnlyHierarchy">Только иерархия</option>
-                    </select>
-                  </td>
+                  <th style={{ width: 28, paddingRight: 4 }} title="Включить/выключить параметр" />
+                  <th style={{ width: '42%' }}>Параметр</th>
+                  <th style={{ width: '50%' }}>Значение</th>
                 </tr>
-              </React.Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+              </thead>
+              <tbody>
+                {structure.outputParams.map((op: any, opIdx: number) => {
+                  const paramDef = GROUPING_PARAM_MAP.get(op.parameter);
+                  const options = paramDef?.options;
+                  const paramLabel = paramDef?.label || op.parameter.replace(/([а-яa-z])([А-ЯA-Z])/g, '$1 $2');
+                  const isChild = !!paramDef?.parentParameter;
+                  const opUse = op.use !== undefined ? op.use : true;
+                  const handleValueChange = (newVal: string) => {
+                    if (!structure.structNode) return;
+                    onUpdateNode(structure.structNode.path, (n) => upsertOutputParameter(n, op.parameter, newVal, opUse));
+                  };
+                  const handleUseChange = (checked: boolean) => {
+                    if (!structure.structNode) return;
+                    if (op.node) {
+                      onUpdateNode(structure.structNode.path, (n) => setOutputParameterUse(n, op.parameter, checked));
+                    } else if (checked) {
+                      onUpdateNode(structure.structNode.path, (n) => upsertOutputParameter(n, op.parameter, '', true));
+                    }
+                  };
+                  return (
+                    <tr key={opIdx}>
+                      <td style={{ paddingRight: 4, verticalAlign: 'middle' }}>
+                        <input
+                          type="checkbox"
+                          checked={opUse}
+                          onChange={(e) => handleUseChange(e.target.checked)}
+                          title={opUse ? 'Параметр включён' : 'Параметр выключен'}
+                        />
+                      </td>
+                      <td style={{ opacity: opUse ? 0.9 : 0.5, paddingLeft: isChild ? 24 : undefined }}>{paramLabel}</td>
+                      <td>
+                        {options ? (
+                          <select
+                            className="edt-props-editor__input"
+                            style={{ fontSize: 11 }}
+                            value={op.value}
+                            onChange={(e) => handleValueChange(e.target.value)}
+                            disabled={!opUse}
+                          >
+                            <option value="">—</option>
+                            {options.map((opt: { value: string; label: string }) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            className="edt-props-editor__input"
+                            style={{ fontSize: 11 }}
+                            value={op.value}
+                            onChange={(e) => handleValueChange(e.target.value)}
+                            placeholder="—"
+                            disabled={!opUse}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
       {/* Рекурсивно отображаем вложенные группировки */}
-      {structure.nested && structure.nested.length > 0 && structure.nested.map((nested: any, idx: number) => (
-        <NestedGroupingView key={idx} structure={nested} level={level + 1} onUpdateNode={onUpdateNode} />
+      {hasNested && structure.nested.map((nested: any, idx: number) => (
+        <NestedGroupingView
+          key={idx}
+          structure={nested}
+          level={level + 1}
+          onUpdateNode={onUpdateNode}
+          groupingOtherSettingsExpanded={groupingOtherSettingsExpanded}
+          setGroupingOtherSettingsExpanded={setGroupingOtherSettingsExpanded}
+        />
       ))}
     </div>
   );
@@ -1609,7 +1826,7 @@ const DcsSettingsVariantDetails: React.FC<{
     return all.find((x) => localTag(x.node.tag) === 'settings')?.node || null;
   }, [node, isSchemaSettings, schemaRoot, schemaChildren]);
 
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'fields' | 'filters' | 'order' | 'structure' | 'params' | 'other'>('fields');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'fields' | 'filters' | 'order' | 'structure' | 'other'>('fields');
   
   // Состояния для форм добавления
   const [addingField, setAddingField] = useState(false);
@@ -1621,6 +1838,8 @@ const DcsSettingsVariantDetails: React.FC<{
   const [addingGrouping, setAddingGrouping] = useState(false);
   const [newGroupingField, setNewGroupingField] = useState('');
   const [parentGroupingPath, setParentGroupingPath] = useState<string | null>(null);
+  /** Состояние сворачивания секции «Другие настройки» по пути группировки: true = развёрнуто */
+  const [groupingOtherSettingsExpanded, setGroupingOtherSettingsExpanded] = useState<Record<string, boolean>>({});
 
   // Извлечение основных секций settings
   const selectionNode = useMemo(() => findChildNodeByLocalTag(settingsRoot, 'selection'), [settingsRoot]);
@@ -1657,8 +1876,6 @@ const DcsSettingsVariantDetails: React.FC<{
     
     return null;
   }, [settingsRoot, isSchemaSettings, schemaChildren]);
-  const dataParametersNode = useMemo(() => findChildNodeByLocalTag(settingsRoot, 'dataParameters'), [settingsRoot]);
-
   // Поля (selection items)
   const selectedFields = useMemo(() => {
     if (!selectionNode) return [];
@@ -1804,6 +2021,28 @@ const DcsSettingsVariantDetails: React.FC<{
         const groupItemsNode = findChildNodeByLocalTag(parentNode, 'groupItems');
         const fields = extractGroupFields(groupItemsNode);
         
+        // outputParameters для column/row (и вложенных группировок)
+        const outParamsNode = findChildNodeByLocalTag(parentNode, 'outputParameters');
+        const existingParamsMap = new Map<string, { value: string; node: DcsNode; use: boolean }>();
+        if (outParamsNode?.children) {
+          for (const ch of outParamsNode.children) {
+            if (localTag(ch.tag) !== 'item') continue;
+            const paramNode = findChildNodeByLocalTag(ch, 'parameter');
+            const valueNode = findChildNodeByLocalTag(ch, 'value');
+            const useNode = findChildNodeByLocalTag(ch, 'use');
+            const param = String(paramNode?.text || '').trim();
+            const val = extractValueFromParameterValue(valueNode);
+            const use = useNode ? String(useNode.text || 'true').toLowerCase() === 'true' : true;
+            if (param) existingParamsMap.set(param, { value: val, node: ch, use });
+          }
+        }
+        const outputParams: Array<{ parameter: string; value: string; node: DcsNode | null; use: boolean }> = GROUPING_OUTPUT_PARAMS.map((def) => {
+          const existing = existingParamsMap.get(def.parameter);
+          return existing
+            ? { parameter: def.parameter, value: existing.value, node: existing.node, use: existing.use }
+            : { parameter: def.parameter, value: '', node: null, use: false };
+        });
+        
         // Ищем вложенные <dcsset:item> - они могут быть:
         // 1. Прямыми дочерними элементами родительской группировки (как в отчете ПродажаМебели)
         // 2. Внутри groupItems (альтернативный вариант)
@@ -1844,9 +2083,74 @@ const DcsSettingsVariantDetails: React.FC<{
           path: parentNode.path,
           fields,
           nested,
+          outputParams,
+          outputParamsNode: outParamsNode,
+          structNode: parentNode,
         };
       };
       
+      // Имя и вариант использования группировки (для отображения как в 1С)
+      const groupName = String(findChildNodeByLocalTag(item, 'name')?.text || '').trim();
+      let groupUseVariant = '';
+      const outputParamsNode = findChildNodeByLocalTag(item, 'outputParameters');
+      if (outputParamsNode?.children) {
+        const variantItem = outputParamsNode.children.find((ch) => {
+          if (localTag(ch.tag) !== 'item') return false;
+          const paramNode = findChildNodeByLocalTag(ch, 'parameter');
+          const p = String(paramNode?.text || '').trim();
+          return p === 'ВариантИспользованияГруппировки' || p.includes('GroupUseVariant');
+        });
+        if (variantItem) {
+          const valNode = findChildNodeByLocalTag(variantItem, 'value');
+          groupUseVariant = String(valNode?.text || '').trim();
+        }
+      }
+      const GROUP_USE_VARIANT_LABELS: Record<string, string> = {
+        AdditionalInformation: 'Дополнительная информация',
+        Items: 'Детальные записи',
+        DontUse: 'Не использовать',
+      };
+      // Формат как в 1С: <Дополнительная информация> (Заголовок), <Детальные записи>
+      const variantLabel = groupUseVariant ? (GROUP_USE_VARIANT_LABELS[groupUseVariant] || groupUseVariant) : null;
+      const groupDisplayLabel = variantLabel
+        ? `<${variantLabel}>` + (groupName ? ` (${groupName})` : '')
+        : groupName ? groupName : `<Детальные записи>`;
+
+      // outputParameters — «Другие настройки». Объединяем полный список параметров с существующими в XML.
+      const existingParamsMap = new Map<string, { value: string; node: DcsNode; use: boolean }>();
+      if (outputParamsNode?.children) {
+        for (const ch of outputParamsNode.children) {
+          if (localTag(ch.tag) !== 'item') continue;
+          const paramNode = findChildNodeByLocalTag(ch, 'parameter');
+          const valueNode = findChildNodeByLocalTag(ch, 'value');
+          const useNode = findChildNodeByLocalTag(ch, 'use');
+          const param = String(paramNode?.text || '').trim();
+          const val = extractValueFromParameterValue(valueNode);
+          const use = useNode ? String(useNode.text || 'true').toLowerCase() === 'true' : true;
+          if (param) existingParamsMap.set(param, { value: val, node: ch, use });
+        }
+      }
+        const outputParams: Array<{ parameter: string; value: string; node: DcsNode | null; use: boolean }> = GROUPING_OUTPUT_PARAMS.map((def) => {
+        const existing = existingParamsMap.get(def.parameter);
+        return existing
+          ? { parameter: def.parameter, value: existing.value, node: existing.node, use: existing.use }
+          : { parameter: def.parameter, value: '', node: null, use: false };
+      });
+
+      // Проверка SelectedItemAuto / OrderItemAuto (автоматический режим полей)
+      const selectionNode = findChildNodeByLocalTag(item, 'selection');
+      const orderNode = findChildNodeByLocalTag(item, 'order');
+      const hasSelectedItemAuto = (selectionNode?.children || []).some((ch) =>
+        String(ch.attrs?.['@_xsi:type'] || '').includes('SelectedItemAuto')
+      );
+      const hasOrderItemAuto = (orderNode?.children || []).some((ch) =>
+        String(ch.attrs?.['@_xsi:type'] || '').includes('OrderItemAuto')
+      );
+      const isAutoMode = hasSelectedItemAuto && hasOrderItemAuto;
+
+      // Элемент use для включения/отключения группировки
+      const useNode = findChildNodeByLocalTag(item, 'use');
+
       // Для таблицы ищем column и row
       let columnStructure: any = null;
       let rowStructure: any = null;
@@ -1918,6 +2222,44 @@ const DcsSettingsVariantDetails: React.FC<{
           // Для группировки рекурсивно извлекаем структуру
           const nestedGroupItemsNode = findChildNodeByLocalTag(nestedNode, 'groupItems');
           const nestedFields = extractGroupFields(nestedGroupItemsNode);
+          const nestedName = String(findChildNodeByLocalTag(nestedNode, 'name')?.text || '').trim();
+          let nestedUseVariant = '';
+          const nestedOutputParams = findChildNodeByLocalTag(nestedNode, 'outputParameters');
+          const variantItem = (nestedOutputParams?.children || []).find((ch) => {
+            if (localTag(ch.tag) !== 'item') return false;
+            const p = String(findChildNodeByLocalTag(ch, 'parameter')?.text || '').trim();
+            return p === 'ВариантИспользованияГруппировки' || p.includes('GroupUseVariant');
+          });
+          if (variantItem) {
+            nestedUseVariant = String(findChildNodeByLocalTag(variantItem, 'value')?.text || '').trim();
+          }
+          const nestedVariantLabel = nestedUseVariant ? (GROUP_USE_VARIANT_LABELS[nestedUseVariant] || nestedUseVariant) : null;
+          const nestedDisplayLabel = nestedVariantLabel
+            ? `<${nestedVariantLabel}>` + (nestedName ? ` (${nestedName})` : '')
+            : nestedName ? nestedName : `<Детальные записи>`;
+          const nestedOutputParamsNode = findChildNodeByLocalTag(nestedNode, 'outputParameters');
+          const nestedExistingParamsMap = new Map<string, { value: string; node: DcsNode; use: boolean }>();
+          if (nestedOutputParamsNode?.children) {
+            for (const ch of nestedOutputParamsNode.children) {
+              if (localTag(ch.tag) !== 'item') continue;
+              const p = String(findChildNodeByLocalTag(ch, 'parameter')?.text || '').trim();
+              const vn = findChildNodeByLocalTag(ch, 'value');
+              const un = findChildNodeByLocalTag(ch, 'use');
+              const v = extractValueFromParameterValue(vn);
+              const use = un ? String(un.text || 'true').toLowerCase() === 'true' : true;
+              if (p) nestedExistingParamsMap.set(p, { value: v, node: ch, use });
+            }
+          }
+          const nestedOutputParamsList: Array<{ parameter: string; value: string; node: DcsNode | null; use: boolean }> = GROUPING_OUTPUT_PARAMS.map((def) => {
+            const existing = nestedExistingParamsMap.get(def.parameter);
+            return existing
+              ? { parameter: def.parameter, value: existing.value, node: existing.node, use: existing.use }
+              : { parameter: def.parameter, value: '', node: null, use: false };
+          });
+          const nestedSel = findChildNodeByLocalTag(nestedNode, 'selection');
+          const nestedOrd = findChildNodeByLocalTag(nestedNode, 'order');
+          const nestedIsAuto = (nestedSel?.children || []).some((ch) => String(ch.attrs?.['@_xsi:type'] || '').includes('SelectedItemAuto'))
+            && (nestedOrd?.children || []).some((ch) => String(ch.attrs?.['@_xsi:type'] || '').includes('OrderItemAuto'));
           
           // Рекурсивно ищем еще более вложенные группировки и диаграммы
           const nestedNestedDirect = (nestedNode.children || []).filter((ch) => {
@@ -1933,6 +2275,11 @@ const DcsSettingsVariantDetails: React.FC<{
             path: nestedNode.path,
             isChart: false,
             fields: nestedFields,
+            groupDisplayLabel: nestedDisplayLabel,
+            isAutoMode: nestedIsAuto,
+            outputParams: nestedOutputParamsList,
+            outputParamsNode: nestedOutputParamsNode,
+            structNode: nestedNode,
             nested: allNestedNested.map(nn => {
               const nnType = String(nn.attrs?.['@_xsi:type'] || '').trim();
               if (nnType.includes('StructureItemChart')) {
@@ -1973,24 +2320,17 @@ const DcsSettingsVariantDetails: React.FC<{
         rowStructure,
         chartParams,
         nestedCharts,
+        groupDisplayLabel,
+        isAutoMode,
+        useNode,
+        outputParams,
+        outputParamsNode,
+        structNode: item,
         // Вложенные группировки и диаграммы из groupItems (для обычных группировок)
         nestedFromGroupItems,
       };
     });
   }, [structureNode, schemaChildren]);
-
-  // Параметры данных
-  const dataParams = useMemo(() => {
-    if (!dataParametersNode) return [];
-    return (dataParametersNode.children || []).filter((ch) => localTag(ch.tag) === 'item').map((item) => {
-      const paramNode = findChildNodeByLocalTag(item, 'parameter');
-      return {
-        node: item,
-        path: item.path,
-        parameter: String(paramNode?.text || '').trim(),
-      };
-    });
-  }, [dataParametersNode]);
 
   const structuralUpdate = onUpdateNodeReindex || onUpdateNode;
 
@@ -2326,30 +2666,29 @@ const DcsSettingsVariantDetails: React.FC<{
                 const isParentGroup = parentType.includes('StructureItemGroup');
                 const isParentTable = parentType.includes('StructureItemTable');
                 
-                // Для column и row добавляем напрямую как item (они могут содержать вложенные группировки)
-                if (parentLocalTag === 'column' || parentLocalTag === 'row') {
-                  return { ...parent, children: [...(parent.children || []), newGroupItem] };
-                }
-                
-                // ВАЖНО: Для обычных группировок вложенные группировки добавляются как прямые дочерние элементы
-                // (как в отчете ПродажаМебели), а НЕ внутрь groupItems!
-                // groupItems содержит только поля группировки (GroupItemField), а не вложенные группировки
-                if (isParentGroup || isParentTable) {
-                  // Добавляем вложенную группировку как прямой дочерний элемент родительской группировки
-                  return { ...parent, children: [...(parent.children || []), newGroupItem] };
-                }
-                
-                // Если это не группировка, но есть groupItems, добавляем туда (для совместимости)
+                // По XSD и тестам: вложенные группировки (StructureItemGroup/Table) и поля (GroupItemField)
+                // размещаются внутри groupItems. column и row также содержат groupItems.
                 let groupItemsNode = findChildNodeByLocalTag(parent, 'groupItems');
-                if (groupItemsNode) {
-                  const groupItemsIdx = parent.children.findIndex((ch) => ch.path === groupItemsNode!.path);
-                  if (groupItemsIdx >= 0) {
-                    const nextChildren = parent.children.slice();
-                    nextChildren[groupItemsIdx] = {
-                      ...groupItemsNode,
-                      children: [...(groupItemsNode.children || []), newGroupItem],
+                if (parentLocalTag === 'column' || parentLocalTag === 'row' || isParentGroup || isParentTable) {
+                  if (groupItemsNode) {
+                    const groupItemsIdx = parent.children!.findIndex((ch) => ch.path === groupItemsNode!.path);
+                    if (groupItemsIdx >= 0) {
+                      const nextChildren = parent.children!.slice();
+                      nextChildren[groupItemsIdx] = {
+                        ...groupItemsNode,
+                        children: [...(groupItemsNode.children || []), newGroupItem],
+                      };
+                      return { ...parent, children: nextChildren };
+                    }
+                  } else if (isParentGroup || isParentTable) {
+                    // Создаём groupItems если отсутствует (для новой группировки)
+                    const newGroupItems: DcsNode = {
+                      path: '',
+                      tag: 'dcsset:groupItems',
+                      attrs: {},
+                      children: [newGroupItem],
                     };
-                    return { ...parent, children: nextChildren };
+                    return { ...parent, children: [...(parent.children || []), newGroupItems] };
                   }
                 }
                 
@@ -2465,12 +2804,6 @@ const DcsSettingsVariantDetails: React.FC<{
                 onClick={() => setActiveSettingsTab('structure')}
               >
                 Группировки <span className="dcs-top-tab__count">{structureItems.length}</span>
-              </button>
-              <button
-                className={`dcs-top-tab ${activeSettingsTab === 'params' ? 'is-active' : ''}`}
-                onClick={() => setActiveSettingsTab('params')}
-              >
-                Параметры <span className="dcs-top-tab__count">{dataParams.length}</span>
               </button>
               <button
                 className={`dcs-top-tab ${activeSettingsTab === 'other' ? 'is-active' : ''}`}
@@ -2805,11 +3138,31 @@ const DcsSettingsVariantDetails: React.FC<{
                     {structureItems.map((struct, idx) => (
                       <div key={struct.path} style={{ marginBottom: 16, padding: 10, border: '1px solid var(--vscode-panel-border)', borderRadius: 4 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <div style={{ fontSize: 13, fontWeight: 'bold', opacity: 0.9 }}>
-                            {struct.isTable && '📊 Таблица'}
-                            {struct.isGroup && '📁 Группировка'}
-                            {struct.isChart && (struct.chartParams?.title ? `📊 Диаграмма: ${struct.chartParams.title}` : '📊 Диаграмма')}
-                            {!struct.isTable && !struct.isGroup && !struct.isChart && `Элемент ${idx + 1}`}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                            {(struct.isGroup || struct.isTable) && (
+                              <input
+                                type="checkbox"
+                                checked={struct.useNode ? String(struct.useNode.text || 'true').toLowerCase() === 'true' : true}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  if (struct.useNode) {
+                                    onUpdateNode(struct.useNode.path, (n) => ({ ...n, text: checked ? 'true' : 'false' }));
+                                  } else {
+                                    onUpdateNode(struct.path, (n) => {
+                                      const useChild = { path: '', tag: 'dcsset:use', attrs: {}, text: checked ? 'true' : 'false', children: [] };
+                                      return { ...n, children: [...(n.children || []), useChild] };
+                                    });
+                                  }
+                                }}
+                                title="Включить/отключить группировку"
+                              />
+                            )}
+                            <div style={{ fontSize: 13, fontWeight: 'bold', opacity: 0.9 }}>
+                              {struct.isTable && '📊 Таблица'}
+                              {struct.isGroup && (struct.groupDisplayLabel ? `📁 ${struct.groupDisplayLabel}` : '📁 Группировка')}
+                              {struct.isChart && (struct.chartParams?.title ? `📊 Диаграмма: ${struct.chartParams.title}` : '📊 Диаграмма')}
+                              {!struct.isTable && !struct.isGroup && !struct.isChart && `Элемент ${idx + 1}`}
+                            </div>
                           </div>
                           <button
                             type="button"
@@ -2826,14 +3179,14 @@ const DcsSettingsVariantDetails: React.FC<{
                             {struct.columnStructure && (
                               <div style={{ marginBottom: 12 }}>
                                 <div style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 6, opacity: 0.8 }}>📋 Колонки</div>
-                                <NestedGroupingView structure={struct.columnStructure} level={0} onUpdateNode={onUpdateNode} />
+                                <NestedGroupingView structure={struct.columnStructure} level={0} onUpdateNode={onUpdateNode} groupingOtherSettingsExpanded={groupingOtherSettingsExpanded} setGroupingOtherSettingsExpanded={setGroupingOtherSettingsExpanded} />
                               </div>
                             )}
                             {/* Строки таблицы */}
                             {struct.rowStructure && (
                               <div>
                                 <div style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 6, opacity: 0.8 }}>📊 Строки</div>
-                                <NestedGroupingView structure={struct.rowStructure} level={0} onUpdateNode={onUpdateNode} />
+                                <NestedGroupingView structure={struct.rowStructure} level={0} onUpdateNode={onUpdateNode} groupingOtherSettingsExpanded={groupingOtherSettingsExpanded} setGroupingOtherSettingsExpanded={setGroupingOtherSettingsExpanded} />
                               </div>
                             )}
                             {!struct.columnStructure && !struct.rowStructure && (
@@ -2929,8 +3282,95 @@ const DcsSettingsVariantDetails: React.FC<{
                                   })}
                                 </tbody>
                               </table>
+                            ) : struct.isAutoMode ? (
+                              <div style={{ fontSize: 12, padding: 6, opacity: 0.85 }}>
+                                Авто (все поля из отбора)
+                              </div>
                             ) : (
                               <div className="dcs-empty" style={{ fontSize: 12, padding: 6 }}>Нет полей группировки</div>
+                            )}
+                            {/* Другие настройки (outputParameters) — сворачиваемая секция */}
+                            {struct.outputParams && struct.outputParams.length > 0 && struct.structNode && (
+                              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--vscode-panel-border)' }}>
+                                <div
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => setGroupingOtherSettingsExpanded((prev) => ({ ...prev, [struct.path]: !(prev[struct.path] ?? true) }))}
+                                  onKeyDown={(e) => e.key === 'Enter' && setGroupingOtherSettingsExpanded((prev) => ({ ...prev, [struct.path]: !(prev[struct.path] ?? true) }))}
+                                  style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 8, opacity: 0.8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                                >
+                                  <span style={{ transform: (groupingOtherSettingsExpanded[struct.path] ?? true) ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▶</span>
+                                  Другие настройки
+                                </div>
+                                {(groupingOtherSettingsExpanded[struct.path] ?? true) && (
+                                  <table className="edt-grid__table">
+                                    <thead>
+                                      <tr>
+                                        <th style={{ width: 28, paddingRight: 4 }} title="Включить/выключить параметр" />
+                                        <th style={{ width: '38%' }}>Параметр</th>
+                                        <th style={{ width: '54%' }}>Значение</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {struct.outputParams.map((op, opIdx) => {
+                                        const paramDef = GROUPING_PARAM_MAP.get(op.parameter);
+                                        const options = paramDef?.options;
+                                        const paramLabel = paramDef?.label || op.parameter.replace(/([а-яa-z])([А-ЯA-Z])/g, '$1 $2');
+                                        const isChild = !!paramDef?.parentParameter;
+                                        const handleValueChange = (newVal: string) => {
+                                          if (!struct.structNode) return;
+                                          // Всегда обновляем через structNode: valueNode.path может быть '' у новых узлов
+                                          onUpdateNode(struct.structNode.path, (n) => upsertOutputParameter(n, op.parameter, newVal, op.use));
+                                        };
+                                        const handleUseChange = (checked: boolean) => {
+                                          if (!struct.structNode) return;
+                                          if (op.node) {
+                                            onUpdateNode(struct.structNode.path, (n) => setOutputParameterUse(n, op.parameter, checked));
+                                          } else if (checked) {
+                                            onUpdateNode(struct.structNode.path, (n) => upsertOutputParameter(n, op.parameter, '', true));
+                                          }
+                                        };
+                                        return (
+                                          <tr key={opIdx}>
+                                            <td style={{ paddingRight: 4, verticalAlign: 'middle' }}>
+                                              <input
+                                                type="checkbox"
+                                                checked={op.use}
+                                                onChange={(e) => handleUseChange(e.target.checked)}
+                                                title={op.use ? 'Параметр включён' : 'Параметр выключен'}
+                                              />
+                                            </td>
+                                            <td style={{ opacity: op.use ? 0.9 : 0.5, paddingLeft: isChild ? 24 : undefined }}>{paramLabel}</td>
+                                            <td>
+                                              {options ? (
+                                                <select
+                                                  className="edt-props-editor__input"
+                                                  value={op.value}
+                                                  onChange={(e) => handleValueChange(e.target.value)}
+                                                  disabled={!op.use}
+                                                >
+                                                  <option value="">—</option>
+                                                  {options.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                  ))}
+                                                </select>
+                                              ) : (
+                                                <input
+                                                  className="edt-props-editor__input"
+                                                  value={op.value}
+                                                  onChange={(e) => handleValueChange(e.target.value)}
+                                                  placeholder="—"
+                                                  disabled={!op.use}
+                                                />
+                                              )}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                )}
+                              </div>
                             )}
                             {/* Отображаем вложенные диаграммы */}
                             {struct.nestedCharts && struct.nestedCharts.length > 0 && (
@@ -2965,7 +3405,9 @@ const DcsSettingsVariantDetails: React.FC<{
                                       </>
                                     ) : (
                                       <>
-                                        <div style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 6, opacity: 0.9 }}>📁 Вложенная группировка</div>
+                                        <div style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 6, opacity: 0.9 }}>
+                                          📁 {nested.groupDisplayLabel || 'Вложенная группировка'}
+                                        </div>
                                         {nested.fields && nested.fields.length > 0 ? (
                                           <table className="edt-grid__table">
                                             <thead>
@@ -3011,8 +3453,95 @@ const DcsSettingsVariantDetails: React.FC<{
                                               })}
                                             </tbody>
                                           </table>
+                                        ) : nested.isAutoMode ? (
+                                          <div style={{ fontSize: 12, padding: 6, opacity: 0.85 }}>Авто (все поля из отбора)</div>
                                         ) : (
                                           <div className="dcs-empty" style={{ fontSize: 12, padding: 6 }}>Нет полей группировки</div>
+                                        )}
+                                        {nested.outputParams && nested.outputParams.length > 0 && nested.structNode && (
+                                          <div style={{ marginTop: 8, fontSize: 11 }}>
+                                            <div
+                                              role="button"
+                                              tabIndex={0}
+                                              onClick={() => setGroupingOtherSettingsExpanded((prev) => ({ ...prev, [nested.path]: !(prev[nested.path] ?? true) }))}
+                                              onKeyDown={(e) => e.key === 'Enter' && setGroupingOtherSettingsExpanded((prev) => ({ ...prev, [nested.path]: !(prev[nested.path] ?? true) }))}
+                                              style={{ fontWeight: 'bold', marginBottom: 4, opacity: 0.8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                                            >
+                                              <span style={{ transform: (groupingOtherSettingsExpanded[nested.path] ?? true) ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▶</span>
+                                              Другие настройки
+                                            </div>
+                                            {(groupingOtherSettingsExpanded[nested.path] ?? true) && (
+                                              <table className="edt-grid__table" style={{ fontSize: 11 }}>
+                                                <thead>
+                                                  <tr>
+                                                    <th style={{ width: 28, paddingRight: 4 }} title="Включить/выключить параметр" />
+                                                    <th style={{ width: '42%' }}>Параметр</th>
+                                                    <th style={{ width: '50%' }}>Значение</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {nested.outputParams.map((op: any, opIdx: number) => {
+                                                    const paramDef = GROUPING_PARAM_MAP.get(op.parameter);
+                                                    const options = paramDef?.options;
+                                                    const paramLabel = paramDef?.label || op.parameter.replace(/([а-яa-z])([А-ЯA-Z])/g, '$1 $2');
+                                                    const isChild = !!paramDef?.parentParameter;
+                                                    const opUse = op.use !== undefined ? op.use : true;
+                                                    const handleValueChange = (newVal: string) => {
+                                                      if (!nested.structNode) return;
+                                                      const opUse = op.use !== undefined ? op.use : true;
+                                                      onUpdateNode(nested.structNode.path, (n) => upsertOutputParameter(n, op.parameter, newVal, opUse));
+                                                    };
+                                                    const handleUseChange = (checked: boolean) => {
+                                                      if (!nested.structNode) return;
+                                                      if (op.node) {
+                                                        onUpdateNode(nested.structNode.path, (n) => setOutputParameterUse(n, op.parameter, checked));
+                                                      } else if (checked) {
+                                                        onUpdateNode(nested.structNode.path, (n) => upsertOutputParameter(n, op.parameter, '', true));
+                                                      }
+                                                    };
+                                                    return (
+                                                      <tr key={opIdx}>
+                                                        <td style={{ paddingRight: 4, verticalAlign: 'middle' }}>
+                                                          <input
+                                                            type="checkbox"
+                                                            checked={opUse}
+                                                            onChange={(e) => handleUseChange(e.target.checked)}
+                                                            title={opUse ? 'Параметр включён' : 'Параметр выключен'}
+                                                          />
+                                                        </td>
+                                                        <td style={{ opacity: opUse ? 0.9 : 0.5, paddingLeft: isChild ? 24 : undefined }}>{paramLabel}</td>
+                                                        <td>
+                                                          {options ? (
+                                                            <select
+                                                              className="edt-props-editor__input"
+                                                              style={{ fontSize: 11 }}
+                                                              value={op.value}
+                                                              onChange={(e) => handleValueChange(e.target.value)}
+                                                              disabled={!opUse}
+                                                            >
+                                                              <option value="">—</option>
+                                                              {options.map((opt: { value: string; label: string }) => (
+                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                              ))}
+                                                            </select>
+                                                          ) : (
+                                                            <input
+                                                              className="edt-props-editor__input"
+                                                              style={{ fontSize: 11 }}
+                                                              value={op.value}
+                                                              onChange={(e) => handleValueChange(e.target.value)}
+                                                              placeholder="—"
+                                                              disabled={!opUse}
+                                                            />
+                                                          )}
+                                                        </td>
+                                                      </tr>
+                                                    );
+                                                  })}
+                                                </tbody>
+                                              </table>
+                                            )}
+                                          </div>
                                         )}
                                         {/* Рекурсивно отображаем еще более вложенные группировки и диаграммы */}
                                         {nested.nested && nested.nested.length > 0 && nested.nested.map((nn: any, nnIdx: number) => (
@@ -3071,32 +3600,6 @@ const DcsSettingsVariantDetails: React.FC<{
                 )}
                 <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
                   Группировки определяют структуру отчета. Могут быть простыми (Group), табличными (Table) с колонками и строками, или диаграммами (Chart).
-                </div>
-              </div>
-            )}
-
-            {activeSettingsTab === 'params' && (
-              <div>
-                {dataParams.length === 0 ? (
-                  <div className="dcs-empty">Нет параметров данных в настройках.</div>
-                ) : (
-                  <table className="edt-grid__table">
-                    <thead>
-                      <tr>
-                        <th>Параметр</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dataParams.map((p) => (
-                        <tr key={p.path}>
-                          <td>{p.parameter || '(не указан)'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-                <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-                  Значения параметров настраиваются в секции dataParameters. Полное редактирование доступно на вкладке "Прочее".
                 </div>
               </div>
             )}
@@ -3201,6 +3704,15 @@ export const DcsEditorApp: React.FC<{ vscode: any }> = ({ vscode }) => {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
+
+  // Fallback: если редактор запроса открыт, а дерево не пришло — запрашиваем
+  useEffect(() => {
+    if (!isQueryEditorOpen || metadataTree) return;
+    const id = window.setTimeout(() => {
+      vscode.postMessage({ type: 'requestMetadataTree' });
+    }, 300);
+    return () => window.clearTimeout(id);
+  }, [isQueryEditorOpen, metadataTree, vscode]);
 
   const selectedNode = useMemo(() => getNodeAtPath(schemaChildren, selectedPath), [schemaChildren, selectedPath]);
 

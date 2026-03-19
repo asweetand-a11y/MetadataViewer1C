@@ -169,12 +169,16 @@ class QueryStringEditor {
         return result;
     }
     /**
-     * Загрузка дерева метаданных для редактора
+     * Загрузка дерева метаданных для редактора.
+     * @param onProgress — при указании используется прогрессивная загрузка: колбэк вызывается после каждого типа.
      */
-    async loadMetadataTreeForWebview(configRoot) {
+    async loadMetadataTreeForWebview(configRoot, onProgress) {
         const cached = this.metadataTreeCacheByRoot.get(configRoot);
-        if (cached !== undefined)
+        if (cached !== undefined) {
+            if (onProgress && cached)
+                onProgress(cached);
             return cached;
+        }
         // Только типы, используемые в запросах 1С
         const typeDirToQuery = {
             FilterCriteria: { typeLabel: 'КритерииОтбора', prefix: 'КритерийОтбора' },
@@ -222,223 +226,237 @@ class QueryStringEditor {
             Predefined: 'Предопределенные',
             Members: 'Состав',
         };
-        try {
-            const { tree } = await this.metadataRepository.load(configRoot);
-            // Получаем debugMode из настроек один раз для всей функции
-            const config = vscode.workspace.getConfiguration();
-            const debugMode = config.get('metadataViewer.debugMode', false);
-            const toWeb = (n, ctx = {}) => {
-                if (n.kind === 'type') {
-                    // Фильтруем только разрешенные типы метаданных
-                    if (!allowedTypes.has(n.label)) {
-                        return null; // Пропускаем этот тип
-                    }
-                    const m = typeDirToQuery[n.label];
-                    const typeLabel = m?.typeLabel || n.label;
-                    const prefix = m?.prefix;
-                    const children = (n.children || [])
-                        .map((c) => toWeb(c, { ...ctx, prefix: prefix || ctx.prefix }))
-                        .filter((c) => c !== null);
-                    // Если после фильтрации не осталось детей, пропускаем тип
-                    if (children.length === 0) {
+        const config = vscode.workspace.getConfiguration();
+        const debugMode = config.get('metadataViewer.debugMode', false);
+        const toWeb = (n, ctx = {}) => {
+            if (n.kind === 'type') {
+                // Фильтруем только разрешенные типы метаданных
+                if (!allowedTypes.has(n.label)) {
+                    return null; // Пропускаем этот тип
+                }
+                const m = typeDirToQuery[n.label];
+                const typeLabel = m?.typeLabel || n.label;
+                const prefix = m?.prefix;
+                const children = (n.children || [])
+                    .map((c) => toWeb(c, { ...ctx, prefix: prefix || ctx.prefix }))
+                    .filter((c) => c !== null);
+                // Если после фильтрации не осталось детей, пропускаем тип
+                if (children.length === 0) {
+                    return null;
+                }
+                return {
+                    id: n.id,
+                    label: typeLabel,
+                    kind: 'type',
+                    children,
+                };
+            }
+            if (n.kind === 'object') {
+                const obj = n.object;
+                const typeDir = obj?.objectTypeDir;
+                const m = (typeDir && typeDirToQuery[typeDir]) || undefined;
+                const prefix = m?.prefix || ctx.prefix || obj?.objectType || '';
+                const objectName = obj?.name || '';
+                const label = obj?.displayName || obj?.name || n.label;
+                const baseChildren = (n.children || [])
+                    .map((c) => toWeb(c, { prefix, objectName }))
+                    .filter((c) => c !== null);
+                const virtualGroup = (() => {
+                    if (!prefix || !objectName)
                         return null;
-                    }
-                    return {
-                        id: n.id,
-                        label: typeLabel,
-                        kind: 'type',
-                        children,
-                    };
-                }
-                if (n.kind === 'object') {
-                    const obj = n.object;
-                    const typeDir = obj?.objectTypeDir;
-                    const m = (typeDir && typeDirToQuery[typeDir]) || undefined;
-                    const prefix = m?.prefix || ctx.prefix || obj?.objectType || '';
-                    const objectName = obj?.name || '';
-                    const label = obj?.displayName || obj?.name || n.label;
-                    const baseChildren = (n.children || [])
-                        .map((c) => toWeb(c, { prefix, objectName }))
-                        .filter((c) => c !== null);
-                    const virtualGroup = (() => {
-                        if (!prefix || !objectName)
-                            return null;
-                        const tableKey = `${prefix}.${objectName}`;
-                        const makeVirtual = (idSuffix, label, insertText) => ({
-                            id: `${n.id}/virtual/${idSuffix}`,
-                            label,
-                            kind: 'member',
-                            insertText,
-                        });
-                        let members = [];
-                        if (prefix === 'РегистрНакопления') {
-                            members = [
-                                makeVirtual('ostatki', 'Остатки(...)', `${tableKey}.Остатки(`),
-                                makeVirtual('oboroty', 'Обороты(...)', `${tableKey}.Обороты(`),
-                                makeVirtual('ostatki_i_oboroty', 'ОстаткиИОбороты(...)', `${tableKey}.ОстаткиИОбороты(`),
-                            ];
-                        }
-                        if (prefix === 'РегистрБухгалтерии') {
-                            members = [
-                                makeVirtual('ostatki', 'Остатки(...)', `${tableKey}.Остатки(`),
-                                makeVirtual('oboroty', 'Обороты(...)', `${tableKey}.Обороты(`),
-                                makeVirtual('ostatki_i_oboroty', 'ОстаткиИОбороты(...)', `${tableKey}.ОстаткиИОбороты(`),
-                                makeVirtual('oboroty_dtkt', 'ОборотыДтКт(...)', `${tableKey}.ОборотыДтКт(`),
-                                makeVirtual('movements_subkonto', 'ДвиженияССубконто(...)', `${tableKey}.ДвиженияССубконто(`),
-                            ];
-                        }
-                        if (prefix === 'РегистрСведений') {
-                            members = [
-                                makeVirtual('srez_poslednih', 'СрезПоследних(...)', `${tableKey}.СрезПоследних(`),
-                                makeVirtual('srez_pervyh', 'СрезПервых(...)', `${tableKey}.СрезПервых(`),
-                            ];
-                        }
-                        if (prefix === 'РегистрРасчета') {
-                            members = [
-                                makeVirtual('dviheniya', 'Движения(...)', `${tableKey}.Движения(`),
-                                makeVirtual('period_deystviya', 'ПериодДействия(...)', `${tableKey}.ПериодДействия(`),
-                                makeVirtual('dannye_grafika', 'ДанныеГрафика(...)', `${tableKey}.ДанныеГрафика(`),
-                            ];
-                        }
-                        if (members.length === 0)
-                            return null;
-                        return {
-                            id: `${n.id}/virtual`,
-                            label: 'Виртуальные таблицы',
-                            kind: 'group',
-                            children: members,
-                        };
-                    })();
-                    const children = virtualGroup ? [...baseChildren, virtualGroup] : baseChildren;
-                    return {
-                        id: n.id,
+                    const tableKey = `${prefix}.${objectName}`;
+                    const makeVirtual = (idSuffix, label, insertText) => ({
+                        id: `${n.id}/virtual/${idSuffix}`,
                         label,
-                        kind: 'object',
-                        insertText: prefix && objectName ? `${prefix}.${objectName}` : undefined,
-                        children,
-                    };
-                }
-                if (n.kind === 'group') {
-                    const label = groupLabelMap[n.label] || n.label;
-                    const isTabularSectionsGroup = label === 'Табличные части' || n.label === 'TabularSections';
-                    // Передаем флаг в контекст для детей группы "Табличные части"
-                    const childCtx = isTabularSectionsGroup
-                        ? { ...ctx, inTabularSectionsGroup: true }
-                        : { ...ctx, inTabularSectionsGroup: false };
-                    const children = (n.children || [])
-                        .map((c) => toWeb(c, childCtx))
-                        .filter((c) => c !== null);
-                    return {
-                        id: n.id,
-                        label,
-                        kind: 'group',
-                        children,
-                    };
-                }
-                if (n.kind === 'member') {
-                    const memberName = String(n.member?.name || n.label || '').trim();
-                    // Если мы в группе "Табличные части" и у этого member есть дети (реквизиты),
-                    // то это табличная часть
-                    const isTabularSection = ctx.inTabularSectionsGroup &&
-                        ctx.prefix && ctx.objectName && !ctx.tabularSectionName &&
-                        (n.children || []).length > 0;
-                    // Отладка: логируем табличные части только если включен debugMode
-                    if (debugMode && isTabularSection) {
-                        console.log('[queryStringEditor.toWeb] Found tabular section:', {
-                            memberName,
-                            insertText: ctx.prefix && ctx.objectName ? `${ctx.prefix}.${ctx.objectName}.${memberName}` : undefined,
-                            childrenCount: (n.children || []).length,
-                            children: (n.children || []).map(ch => ({
-                                kind: ch.kind,
-                                label: ch.label,
-                                id: ch.id,
-                                childrenCount: (ch.children || []).length
-                            })),
-                            fullNode: n
-                        });
-                    }
-                    let insertText;
-                    if (ctx.prefix && ctx.objectName && memberName) {
-                        if (ctx.tabularSectionName) {
-                            // Это реквизит табличной части: Prefix.Object.TabularSection.Field
-                            insertText = `${ctx.prefix}.${ctx.objectName}.${ctx.tabularSectionName}.${memberName}`;
-                        }
-                        else {
-                            // Это либо реквизит объекта, либо табличная часть: Prefix.Object.Member
-                            insertText = `${ctx.prefix}.${ctx.objectName}.${memberName}`;
-                        }
-                    }
-                    // Если это табличная часть, обновляем контекст для детей (реквизитов табличной части)
-                    const childCtx = isTabularSection
-                        ? { ...ctx, tabularSectionName: memberName, inTabularSectionsGroup: false }
-                        : ctx;
-                    // Для табличной части нужно обработать детей, включая группы (например, "Реквизиты")
-                    // Если дети - это группы, нужно обработать их детей тоже
-                    const processChildren = (children, context) => {
-                        return children
-                            .map((c) => {
-                            // Если это группа внутри табличной части (например, "Реквизиты"),
-                            // обрабатываем её детей с правильным контекстом
-                            if (c.kind === 'group' && isTabularSection) {
-                                const groupChildren = (c.children || [])
-                                    .map((gc) => toWeb(gc, context))
-                                    .filter((result) => result !== null);
-                                if (groupChildren.length > 0) {
-                                    return {
-                                        id: c.id,
-                                        label: c.label,
-                                        kind: 'group',
-                                        children: groupChildren,
-                                    };
-                                }
-                                return null;
-                            }
-                            return toWeb(c, context);
-                        })
-                            .filter((result) => result !== null);
-                    };
-                    const children = processChildren((n.children || []), childCtx);
-                    const result = {
-                        id: n.id,
-                        label: memberName || n.label,
                         kind: 'member',
                         insertText,
-                        children,
-                    };
-                    // Отладка для табличной части - добавляем информацию в сам узел для отправки в webview (только если включен debugMode)
-                    if (debugMode && isTabularSection) {
-                        // Добавляем отладочную информацию в узел, чтобы она была видна в webview
-                        result._debug = {
-                            memberName,
-                            originalChildrenCount: (n.children || []).length,
-                            processedChildrenCount: children.length,
-                            children: children.map(ch => ({
-                                kind: ch.kind,
-                                label: ch.label,
-                                insertText: ch.insertText,
-                                childrenCount: (ch.children || []).length
-                            })),
-                            originalChildren: (n.children || []).map((ch) => ({
-                                kind: ch.kind,
-                                label: ch.label,
-                                id: ch.id,
-                                childrenCount: (ch.children || []).length
-                            }))
-                        };
+                    });
+                    let members = [];
+                    if (prefix === 'РегистрНакопления') {
+                        members = [
+                            makeVirtual('ostatki', 'Остатки(...)', `${tableKey}.Остатки(`),
+                            makeVirtual('oboroty', 'Обороты(...)', `${tableKey}.Обороты(`),
+                            makeVirtual('ostatki_i_oboroty', 'ОстаткиИОбороты(...)', `${tableKey}.ОстаткиИОбороты(`),
+                        ];
                     }
-                    return result;
-                }
-                // root
-                const rootChildren = (n.children || [])
-                    .map((c) => toWeb(c, ctx))
+                    if (prefix === 'РегистрБухгалтерии') {
+                        members = [
+                            makeVirtual('ostatki', 'Остатки(...)', `${tableKey}.Остатки(`),
+                            makeVirtual('oboroty', 'Обороты(...)', `${tableKey}.Обороты(`),
+                            makeVirtual('ostatki_i_oboroty', 'ОстаткиИОбороты(...)', `${tableKey}.ОстаткиИОбороты(`),
+                            makeVirtual('oboroty_dtkt', 'ОборотыДтКт(...)', `${tableKey}.ОборотыДтКт(`),
+                            makeVirtual('movements_subkonto', 'ДвиженияССубконто(...)', `${tableKey}.ДвиженияССубконто(`),
+                        ];
+                    }
+                    if (prefix === 'РегистрСведений') {
+                        members = [
+                            makeVirtual('srez_poslednih', 'СрезПоследних(...)', `${tableKey}.СрезПоследних(`),
+                            makeVirtual('srez_pervyh', 'СрезПервых(...)', `${tableKey}.СрезПервых(`),
+                        ];
+                    }
+                    if (prefix === 'РегистрРасчета') {
+                        members = [
+                            makeVirtual('dviheniya', 'Движения(...)', `${tableKey}.Движения(`),
+                            makeVirtual('period_deystviya', 'ПериодДействия(...)', `${tableKey}.ПериодДействия(`),
+                            makeVirtual('dannye_grafika', 'ДанныеГрафика(...)', `${tableKey}.ДанныеГрафика(`),
+                        ];
+                    }
+                    if (members.length === 0)
+                        return null;
+                    return {
+                        id: `${n.id}/virtual`,
+                        label: 'Виртуальные таблицы',
+                        kind: 'group',
+                        children: members,
+                    };
+                })();
+                const children = virtualGroup ? [...baseChildren, virtualGroup] : baseChildren;
+                return {
+                    id: n.id,
+                    label,
+                    kind: 'object',
+                    insertText: prefix && objectName ? `${prefix}.${objectName}` : undefined,
+                    children,
+                };
+            }
+            if (n.kind === 'group') {
+                const label = groupLabelMap[n.label] || n.label;
+                const isTabularSectionsGroup = label === 'Табличные части' || n.label === 'TabularSections';
+                // Передаем флаг в контекст для детей группы "Табличные части"
+                const childCtx = isTabularSectionsGroup
+                    ? { ...ctx, inTabularSectionsGroup: true }
+                    : { ...ctx, inTabularSectionsGroup: false };
+                const children = (n.children || [])
+                    .map((c) => toWeb(c, childCtx))
                     .filter((c) => c !== null);
                 return {
                     id: n.id,
-                    label: n.label,
-                    kind: 'root',
-                    children: rootChildren,
+                    label,
+                    kind: 'group',
+                    children,
                 };
+            }
+            if (n.kind === 'member') {
+                const memberName = String(n.member?.name || n.label || '').trim();
+                // Если мы в группе "Табличные части" и у этого member есть дети (реквизиты),
+                // то это табличная часть
+                const isTabularSection = ctx.inTabularSectionsGroup &&
+                    ctx.prefix && ctx.objectName && !ctx.tabularSectionName &&
+                    (n.children || []).length > 0;
+                // Отладка: логируем табличные части только если включен debugMode
+                if (debugMode && isTabularSection) {
+                    console.log('[queryStringEditor.toWeb] Found tabular section:', {
+                        memberName,
+                        insertText: ctx.prefix && ctx.objectName ? `${ctx.prefix}.${ctx.objectName}.${memberName}` : undefined,
+                        childrenCount: (n.children || []).length,
+                        children: (n.children || []).map(ch => ({
+                            kind: ch.kind,
+                            label: ch.label,
+                            id: ch.id,
+                            childrenCount: (ch.children || []).length
+                        })),
+                        fullNode: n
+                    });
+                }
+                let insertText;
+                if (ctx.prefix && ctx.objectName && memberName) {
+                    if (ctx.tabularSectionName) {
+                        // Это реквизит табличной части: Prefix.Object.TabularSection.Field
+                        insertText = `${ctx.prefix}.${ctx.objectName}.${ctx.tabularSectionName}.${memberName}`;
+                    }
+                    else {
+                        // Это либо реквизит объекта, либо табличная часть: Prefix.Object.Member
+                        insertText = `${ctx.prefix}.${ctx.objectName}.${memberName}`;
+                    }
+                }
+                // Если это табличная часть, обновляем контекст для детей (реквизитов табличной части)
+                const childCtx = isTabularSection
+                    ? { ...ctx, tabularSectionName: memberName, inTabularSectionsGroup: false }
+                    : ctx;
+                // Для табличной части нужно обработать детей, включая группы (например, "Реквизиты")
+                // Если дети - это группы, нужно обработать их детей тоже
+                const processChildren = (children, context) => {
+                    return children
+                        .map((c) => {
+                        // Если это группа внутри табличной части (например, "Реквизиты"),
+                        // обрабатываем её детей с правильным контекстом
+                        if (c.kind === 'group' && isTabularSection) {
+                            const groupChildren = (c.children || [])
+                                .map((gc) => toWeb(gc, context))
+                                .filter((result) => result !== null);
+                            if (groupChildren.length > 0) {
+                                return {
+                                    id: c.id,
+                                    label: c.label,
+                                    kind: 'group',
+                                    children: groupChildren,
+                                };
+                            }
+                            return null;
+                        }
+                        return toWeb(c, context);
+                    })
+                        .filter((result) => result !== null);
+                };
+                const children = processChildren((n.children || []), childCtx);
+                const result = {
+                    id: n.id,
+                    label: memberName || n.label,
+                    kind: 'member',
+                    insertText,
+                    children,
+                };
+                // Отладка для табличной части - добавляем информацию в сам узел для отправки в webview (только если включен debugMode)
+                if (debugMode && isTabularSection) {
+                    // Добавляем отладочную информацию в узел, чтобы она была видна в webview
+                    result._debug = {
+                        memberName,
+                        originalChildrenCount: (n.children || []).length,
+                        processedChildrenCount: children.length,
+                        children: children.map(ch => ({
+                            kind: ch.kind,
+                            label: ch.label,
+                            insertText: ch.insertText,
+                            childrenCount: (ch.children || []).length
+                        })),
+                        originalChildren: (n.children || []).map((ch) => ({
+                            kind: ch.kind,
+                            label: ch.label,
+                            id: ch.id,
+                            childrenCount: (ch.children || []).length
+                        }))
+                    };
+                }
+                return result;
+            }
+            // root
+            const rootChildren = (n.children || [])
+                .map((c) => toWeb(c, ctx))
+                .filter((c) => c !== null);
+            return {
+                id: n.id,
+                label: n.label,
+                kind: 'root',
+                children: rootChildren,
             };
+        };
+        try {
+            const rootNode = {
+                id: 'root',
+                label: 'Configuration',
+                kind: 'root',
+                children: [],
+            };
+            const onTypeLoaded = (typeNode) => {
+                const converted = toWeb(typeNode, {});
+                if (converted && converted.kind === 'type') {
+                    rootNode.children.push(converted);
+                    onProgress?.({ ...rootNode, children: [...rootNode.children] });
+                }
+            };
+            const { tree } = onProgress
+                ? await this.metadataRepository.loadProgressive(configRoot, onTypeLoaded)
+                : await this.metadataRepository.load(configRoot);
             const mapped = toWeb(tree, {});
             if (!mapped) {
                 const emptyTree = {
@@ -585,7 +603,17 @@ class QueryStringEditor {
         }).catch(() => {
             // Игнорируем ошибки сканирования — редактор уже открыт с пустыми метаданными
         });
-        void this.loadMetadataTreeForWebview(configRoot).then((metadataTree) => {
+        const sendTree = (tree) => {
+            if (!this.webpanel)
+                return;
+            if (this.webviewReady) {
+                this.webpanel.webview.postMessage({ type: "metadataTreeReady", metadataTree: tree });
+            }
+            else {
+                this.pendingMetadataTree = tree;
+            }
+        };
+        void this.loadMetadataTreeForWebview(configRoot, sendTree).then((metadataTree) => {
             if (!this.webpanel)
                 return;
             this.pendingMetadataTree = metadataTree;

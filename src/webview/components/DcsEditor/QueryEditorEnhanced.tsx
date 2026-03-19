@@ -436,6 +436,8 @@ export const QueryEditorEnhanced: React.FC<QueryEditorEnhancedProps> = ({
   const [condDraft, setCondDraft] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const queryTextRef = useRef(queryText);
+  queryTextRef.current = queryText;
 
   const [rightWidthPx, setRightWidthPx] = useState<number>(360);
   const dragStateRef = useRef<{ startX: number; startRightWidth: number } | null>(null);
@@ -457,54 +459,71 @@ export const QueryEditorEnhanced: React.FC<QueryEditorEnhancedProps> = ({
     }
   }, [isOpen, rightPanel]);
 
-  // Создание Monaco editor (только когда модалка открыта)
+  // Создание Monaco editor (только когда модалка открыта).
+  // КРИТИЧНО: Откладываем создание на следующий тик — иначе Monaco fallback (workers отключены)
+  // блокирует main thread и сообщение metadataTreeReady не успевает обработаться.
   useEffect(() => {
     if (!isOpen) return;
     if (!containerRef.current) return;
 
-    register1cQueryLanguage();
+    let cancelled = false;
+    let cleanup: (() => void) | null = null;
 
-    const editor = monaco.editor.create(containerRef.current, {
-      value: editedQuery || '',
-      language: '1c-query',
-      theme: 'vs-dark',
-      automaticLayout: true,
-      minimap: { enabled: false },
-      scrollBeyondLastLine: false,
-      wordWrap: 'on',
-      fontSize: 13,
-      unicodeHighlight: {
-        ambiguousCharacters: false,
-      },
-    });
+    const run = () => {
+      if (cancelled || !containerRef.current) return;
+      register1cQueryLanguage();
+      // Используем ref: editedQuery из замыкания устаревает при задержке
+      const initialValue = queryTextRef.current || editedQuery || '';
+      const editor = monaco.editor.create(containerRef.current!, {
+        value: initialValue,
+        language: '1c-query',
+        theme: 'vs-dark',
+        automaticLayout: true,
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        wordWrap: 'on',
+        fontSize: 13,
+        unicodeHighlight: {
+          ambiguousCharacters: false,
+        },
+      });
 
-    editorRef.current = editor;
+      editorRef.current = editor;
 
-    const disposable = editor.onDidChangeModelContent(() => {
-      const v = editor.getValue();
-      setEditedQuery(v);
-    });
+      const disposable = editor.onDidChangeModelContent(() => {
+        const v = editor.getValue();
+        setEditedQuery(v);
+      });
 
-    const cursorDisposable = editor.onDidChangeCursorPosition(() => {
-      const model = editor.getModel();
-      const pos = editor.getPosition();
-      if (!model || !pos) return;
-      const off = model.getOffsetAt(pos);
-      setCursorOffset(off);
-      setVtInfo(detectVirtualCall(model.getValue(), off));
-    });
+      const cursorDisposable = editor.onDidChangeCursorPosition(() => {
+        const model = editor.getModel();
+        const pos = editor.getPosition();
+        if (!model || !pos) return;
+        const off = model.getOffsetAt(pos);
+        setCursorOffset(off);
+        setVtInfo(detectVirtualCall(model.getValue(), off));
+      });
 
-    // Горячие клавиши
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-      onSave(editor.getValue());
-    });
-    // Escape не закрывает редактор (как в редакторе СКД)
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+        onSave(editor.getValue());
+      });
+
+      cleanup = () => {
+        disposable.dispose();
+        cursorDisposable.dispose();
+        editor.dispose();
+        editorRef.current = null;
+      };
+    };
+
+    // Откладываем, чтобы metadataTreeReady успел обработаться до блокировки main thread.
+    // 150ms даёт время на обработку сообщений и requestMetadataTree (300ms) при необходимости.
+    const id = window.setTimeout(run, 150);
 
     return () => {
-      disposable.dispose();
-      cursorDisposable.dispose();
-      editor.dispose();
-      editorRef.current = null;
+      cancelled = true;
+      window.clearTimeout(id);
+      cleanup?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);

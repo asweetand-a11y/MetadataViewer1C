@@ -22,7 +22,7 @@ interface InitMessage {
   };
 }
 
-type TabType = 'properties' | 'attributes' | 'tabular' | 'forms' | 'commands' | 'characteristicTypes' | 'accountingFlags' | 'xml';
+type TabType = 'properties' | 'attributes' | 'tabular' | 'enumValues' | 'forms' | 'commands' | 'characteristicTypes' | 'accountingFlags' | 'xml';
 
 export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
   const [objects, setObjects] = useState<ParsedMetadataObject[]>([]);
@@ -203,10 +203,16 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
       return accountingFlags.length + extDimensionAccountingFlags.length;
     })();
     
+    const isEnum =
+      selectedObject.objectType === 'Enum' ||
+      selectedObject.objectType === 'Перечисление' ||
+      (selectedObject.sourcePath && selectedObject.sourcePath.includes('/Enums/'));
+
     const result: { id: TabType; label: string; count?: number }[] = [
       { id: 'properties', label: 'Свойства' },
       { id: 'attributes', label: 'Реквизиты', count: selectedObject.attributes?.length },
       { id: 'tabular', label: 'Табличные части', count: selectedObject.tabularSections?.length },
+      ...(isEnum ? [{ id: 'enumValues' as TabType, label: 'Значения перечисления', count: selectedObject.enumValues?.length }] : []),
       { id: 'forms', label: 'Формы', count: selectedObject.forms?.length },
       { id: 'commands', label: 'Команды', count: selectedObject.commands?.length }
     ];

@@ -34,21 +34,60 @@ function updateDomFromNodes(doc, rootElement, newChildren) {
     }
 }
 exports.updateDomFromNodes = updateDomFromNodes;
+/** Разрешает namespace URI по префиксу из документа (для XDTO-совместимости 1С) */
+function resolveNamespace(doc, prefix) {
+    const root = doc.documentElement;
+    if (!root)
+        return null;
+    if (prefix === '' || prefix === 'xmlns')
+        return root.lookupNamespaceURI(null) || null;
+    return root.lookupNamespaceURI(prefix) || null;
+}
 /**
  * Рекурсивно создает DOM элемент из ParsedDcsNode
- *
- * @param doc - DOM документ
- * @param node - узел для преобразования
- * @param depth - текущий уровень вложенности (для отступов)
+ * ВАЖНО: Использует createElementNS для элементов с префиксом namespace (dcsset:, dcscor:, v8: и т.д.)
+ * — иначе 1С XDTO выдаёт ошибку при загрузке.
  */
 function createElementFromNode(doc, node, depth) {
-    // Создаем элемент (может содержать namespace prefix)
-    const element = doc.createElement(node.tag);
-    // Устанавливаем атрибуты
+    const tag = node.tag || '';
+    const colonIdx = tag.indexOf(':');
+    let element;
+    if (colonIdx > 0) {
+        const prefix = tag.slice(0, colonIdx);
+        const ns = resolveNamespace(doc, prefix);
+        if (ns) {
+            element = doc.createElementNS(ns, tag);
+        }
+        else {
+            element = doc.createElement(tag);
+        }
+    }
+    else {
+        const defaultNs = resolveNamespace(doc, '');
+        if (defaultNs) {
+            element = doc.createElementNS(defaultNs, tag);
+        }
+        else {
+            element = doc.createElement(tag);
+        }
+    }
+    // Устанавливаем атрибуты (xsi:type и др. — с учётом namespace)
     for (const [key, value] of Object.entries(node.attrs || {})) {
-        // Убираем префикс @_ который мы добавили при парсинге
         const attrName = key.startsWith('@_') ? key.slice(2) : key;
-        element.setAttribute(attrName, String(value));
+        const attrColon = attrName.indexOf(':');
+        if (attrColon > 0) {
+            const attrPrefix = attrName.slice(0, attrColon);
+            const ns = resolveNamespace(doc, attrPrefix);
+            if (ns) {
+                element.setAttributeNS(ns, attrName, String(value));
+            }
+            else {
+                element.setAttribute(attrName, String(value));
+            }
+        }
+        else {
+            element.setAttribute(attrName, String(value));
+        }
     }
     // Если есть дочерние элементы
     if (node.children && node.children.length > 0) {

@@ -45,6 +45,13 @@ export interface ParsedPredefined {
     parents?: string[];
 }
 
+/** Значение перечисления (EnumValue) */
+export interface ParsedEnumValue {
+    uuid?: string;
+    name: string;
+    properties?: Record<string, any>;
+}
+
 export interface ParsedMetadataObject {
     objectType: string;
     name: string;
@@ -59,6 +66,8 @@ export interface ParsedMetadataObject {
     accountingFlags?: ParsedAttribute[];
     /** Признаки учета по субконто (только для планов счетов) */
     extDimensionAccountingFlags?: ParsedAttribute[];
+    /** Значения перечисления (только для Enum) */
+    enumValues?: ParsedEnumValue[];
     /**
      * Исходный XML как строка (для сохранения структуры при записи)
      * Используется как основа для применения изменений без изменения структуры
@@ -193,6 +202,7 @@ export async function parseMetadataXml(xmlPath: string): Promise<ParsedMetadataO
             extDimensionAccountingFlags: objectType === 'ChartOfAccounts'
                 ? parseExtDimensionAccountingFlags(objNode.ChildObjects)
                 : undefined,
+            enumValues: objectType === 'Enum' ? parseEnumValues(objNode.ChildObjects) : undefined,
             _originalXml: _originalXml  // Сохраняем исходный XML как строку для максимального сохранения структуры
         };
         
@@ -489,6 +499,28 @@ function parseExtDimensionAccountingFlags(childObjects: any): ParsedAttribute[] 
             name: props.Name || a.name || "Неизвестно",
             type: parsedType,
             typeDisplay: parsedType ? getTypeDisplayString(parsedType) : "Неопределено",
+            properties: parseProperties(props)
+        };
+    });
+}
+
+/**
+ * Парсинг значений перечисления (EnumValue)
+ */
+function parseEnumValues(childObjects: any): ParsedEnumValue[] {
+    if (!childObjects) return [];
+    let items = childObjects.EnumValue;
+    if (!items) return [];
+
+    if (!Array.isArray(items)) items = [items];
+
+    return items.map((ev: any) => {
+        const uuid = ev?.['@_uuid'] || ev?.uuid || ev?.Properties?.['@_uuid'] || ev?.Properties?.uuid;
+        const props = ev.Properties || ev;
+        const name = props.Name || ev.name || ev.Name || "Неизвестно";
+        return {
+            uuid: uuid ? String(uuid) : undefined,
+            name: String(name),
             properties: parseProperties(props)
         };
     });

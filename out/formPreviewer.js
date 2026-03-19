@@ -39,6 +39,7 @@ const MetadataScanner_1 = require("./metadata_utils/MetadataScanner");
 const formParserXmldom_1 = require("./xmlParsers/formParserXmldom");
 const formSerializerXmldom_1 = require("./xmlParsers/formSerializerXmldom");
 const xmlUtils_1 = require("./utils/xmlUtils");
+const xmlStructureValidator_1 = require("./validation/xmlStructureValidator");
 const commitFileLogger_1 = require("./utils/commitFileLogger");
 const extension_1 = require("./extension");
 class FormPreviewer {
@@ -213,6 +214,7 @@ class FormPreviewer {
         this.webpanel = undefined;
         this.currentDomDocument = null; // DOM документ для сохранения
         this.currentRootAttrs = undefined; // Атрибуты корня
+        this.extensionUri = undefined;
         this.confPath = confPath;
         this.rootFilePath = rootFilePath;
         this.filePath = filePath;
@@ -223,6 +225,7 @@ class FormPreviewer {
      * @param title Заголовок узла дерева
      */
     async openPreview(extensionUri, title) {
+        this.extensionUri = extensionUri;
         if (!fs.existsSync(this.filePath)) {
             vscode.window.showInformationMessage(`File ${this.filePath} does not exist.`);
             return;
@@ -334,8 +337,22 @@ class FormPreviewer {
                     };
                     const updatedXml = (0, formSerializerXmldom_1.serializeFormToXml)(formDataWithDom);
                     const normalizedXml = (0, xmlUtils_1.normalizeXML)(updatedXml);
-                    if (!(0, xmlUtils_1.validateXML)(normalizedXml)) {
-                        throw new Error('Результат сохранения не является валидным XML');
+                    const validation = (0, xmlUtils_1.validateXML)(normalizedXml);
+                    if (!validation.valid) {
+                        throw new Error(validation.error ?? 'Результат сохранения не является валидным XML');
+                    }
+                    const structureValidationEnabled = vscode.workspace.getConfiguration('metadataViewer').get('structureValidationEnabled', true);
+                    if (structureValidationEnabled && this.extensionUri) {
+                        const structureResult = (0, xmlStructureValidator_1.validateXmlStructure)(normalizedXml, {
+                            extensionPath: this.extensionUri.fsPath,
+                            filePath: formPath,
+                            rootTag: 'Form'
+                        });
+                        if (!structureResult.valid && structureResult.errors?.length) {
+                            const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+                            vscode.window.showErrorMessage(`Ошибка структуры XML формы: ${errorMessage}`);
+                            throw new Error(`XML structure validation failed: ${errorMessage}`);
+                        }
                     }
                     // ВАЖНО: Добавляем BOM (Byte Order Mark) для UTF-8, как в оригинальных файлах 1С
                     const xmlWithBom = '\uFEFF' + normalizedXml;

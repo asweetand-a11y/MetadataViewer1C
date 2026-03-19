@@ -189,6 +189,10 @@ function applyChangesToXmlStringWithDom(originalXml, obj, xmlObjectType) {
     if (obj.attributes !== undefined || obj.tabularSections !== undefined || obj.accountingFlags !== undefined || obj.extDimensionAccountingFlags !== undefined) {
         applyChildObjectsChangesWithDom(objElement, obj.attributes, obj.tabularSections, obj.accountingFlags, obj.extDimensionAccountingFlags);
     }
+    // Применяем изменения к значениям перечисления (только для Enum)
+    if (xmlObjectType === 'Enum' && obj.enumValues !== undefined) {
+        applyEnumValuesChangesWithDom(objElement, obj.enumValues);
+    }
     // Сериализуем обратно в XML
     const serializer = new xmldom_1.XMLSerializer();
     let updatedXml = serializer.serializeToString(doc);
@@ -1118,6 +1122,113 @@ function setComplexXmlStructure(element, value, defaultNamespace) {
     }
     else {
         element.textContent = String(value);
+    }
+}
+/**
+ * Применяет изменения к значениям перечисления (EnumValue) для типа Enum
+ */
+function applyEnumValuesChangesWithDom(objElement, enumValues) {
+    let childObjectsElement = objElement.getElementsByTagName('ChildObjects')[0];
+    if (!childObjectsElement) {
+        childObjectsElement = objElement.ownerDocument.createElement('ChildObjects');
+        objElement.appendChild(childObjectsElement);
+    }
+    function getDirectChildrenByTag(parent, tagName) {
+        const res = [];
+        for (let i = 0; i < parent.childNodes.length; i++) {
+            const n = parent.childNodes[i];
+            if (n.nodeType === 1 && n.tagName === tagName) {
+                res.push(n);
+            }
+        }
+        return res;
+    }
+    function getNameFromProps(el) {
+        const propsEl = el.getElementsByTagName('Properties')[0];
+        if (propsEl) {
+            const nameEl = propsEl.getElementsByTagName('Name')[0];
+            return nameEl?.textContent || null;
+        }
+        return null;
+    }
+    const items = Array.isArray(enumValues) ? enumValues : [];
+    const keepUuids = new Set();
+    const keepNames = new Set();
+    for (const v of items) {
+        if (v?.uuid)
+            keepUuids.add(String(v.uuid));
+        if (v?.name)
+            keepNames.add(String(v.name));
+    }
+    const existing = getDirectChildrenByTag(childObjectsElement, 'EnumValue');
+    for (const el of existing) {
+        const uuid = el.getAttribute('uuid');
+        const name = getNameFromProps(el);
+        const shouldKeep = items.length > 0 &&
+            ((uuid && keepUuids.has(uuid)) || (name && keepNames.has(name)));
+        if (!shouldKeep) {
+            childObjectsElement.removeChild(el);
+        }
+    }
+    const V8_NS = 'http://v8.1c.ru/8.1/data/core';
+    for (const item of items) {
+        if (!item?.name)
+            continue;
+        let enumValEl = null;
+        if (item.uuid) {
+            for (const el of getDirectChildrenByTag(childObjectsElement, 'EnumValue')) {
+                if (el.getAttribute('uuid') === String(item.uuid)) {
+                    enumValEl = el;
+                    break;
+                }
+            }
+        }
+        if (!enumValEl) {
+            for (const el of getDirectChildrenByTag(childObjectsElement, 'EnumValue')) {
+                if (getNameFromProps(el) === item.name) {
+                    enumValEl = el;
+                    break;
+                }
+            }
+        }
+        if (!enumValEl) {
+            enumValEl = objElement.ownerDocument.createElement('EnumValue');
+            enumValEl.setAttribute('uuid', item.uuid ? String(item.uuid) : (0, crypto_1.randomUUID)());
+            childObjectsElement.appendChild(enumValEl);
+        }
+        let propsEl = enumValEl.getElementsByTagName('Properties')[0];
+        if (!propsEl) {
+            propsEl = enumValEl.ownerDocument.createElement('Properties');
+            enumValEl.appendChild(propsEl);
+        }
+        const setOrCreateChild = (parent, tagName, value) => {
+            let el = parent.getElementsByTagName(tagName)[0];
+            if (!el) {
+                el = parent.ownerDocument.createElement(tagName);
+                parent.appendChild(el);
+            }
+            if (value !== undefined && value !== null) {
+                if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                    setComplexXmlStructure(el, value, '');
+                }
+                else {
+                    el.textContent = String(value);
+                }
+            }
+        };
+        setOrCreateChild(propsEl, 'Name', item.name);
+        const props = item.properties || {};
+        const synonym = props.Synonym ?? props.synonym;
+        if (synonym !== undefined && synonym !== null && (typeof synonym === 'object' || typeof synonym === 'string')) {
+            setOrCreateChild(propsEl, 'Synonym', synonym);
+        }
+        else {
+            setOrCreateChild(propsEl, 'Synonym', {
+                'v8:item': { 'v8:lang': 'ru', 'v8:content': String(item.name) }
+            });
+        }
+        const comment = props.Comment ?? props.comment ?? '';
+        setOrCreateChild(propsEl, 'Comment', comment !== undefined && comment !== null ? comment : '');
     }
 }
 /**

@@ -13,7 +13,7 @@ export const FIELD_VALUES: Record<string, string[]> = {
     "PasswordMode": ["true", "false"],
     "MarkNegatives": ["true", "false"],
     "Hierarchical": ["true", "false"],
-    "HierarchyType": ["HierarchyFoldersAndItems", "HierarchyItems"],
+    "HierarchyType": ["HierarchyFoldersAndItems", "HierarchyOfItems"],
     "FoldersOnTop": ["true", "false"],
     "UseInputByString": ["true", "false"],
     "RegisterRecords": ["true", "false"],
@@ -26,6 +26,13 @@ export const FIELD_VALUES: Record<string, string[]> = {
     "IncludeHelpInContents": ["true", "false"],
     "BasedOn": ["true", "false"],
     "DataLockControlMode": ["Managed", "Automatic", "AutomaticAndManaged"],
+    
+    // DataSeparation, SeparatedDataUse (CommonAttribute)
+    "DataSeparation": ["DontUse", "Separate"],
+    "SeparatedDataUse": ["Independently", "IndependentlyAndSimultaneously"],
+    
+    // Indexing (CommonAttribute - IndexWithAdditionalOrder)
+    "Indexing": ["DontIndex", "Index", "IndexWithAdditionalOrder"],
     "FullTextSearch": ["Use", "DontUse"],
     "ObjectPresentation": [""],
     "ExtendedObjectPresentation": [""],
@@ -51,7 +58,7 @@ export const FIELD_VALUES: Record<string, string[]> = {
     "NumberPeriodicity": ["Nonperiodical", "Year", "Quarter", "Month", "Day"],
     
     // FillChecking
-    "FillChecking": ["DontCheck", "ShowError"],
+    "FillChecking": ["DontCheck", "ShowError", "ShowWarning"],
     
     // DataHistory
     "DataHistory": ["Use", "DontUse"],
@@ -59,11 +66,11 @@ export const FIELD_VALUES: Record<string, string[]> = {
     // QuickChoice
     "QuickChoice": ["Auto", "Use", "DontUse"],
     
-    // SearchStringModeOnInputByString
-    "SearchStringModeOnInputByString": ["Begin", "Substring", "Anywhere"],
+    // SearchStringModeOnInputByString (1С XDTO: Begin, AnyPart)
+    "SearchStringModeOnInputByString": ["Begin", "AnyPart"],
     
-    // ChoiceDataGetModeOnInputByString
-    "ChoiceDataGetModeOnInputByString": ["Background", "Directly"],
+    // ChoiceDataGetModeOnInputByString (1С XDTO: Background, Directly, OnDemand)
+    "ChoiceDataGetModeOnInputByString": ["Background", "Directly", "OnDemand"],
     
     // FullTextSearchOnInputByString
     "FullTextSearchOnInputByString": ["Use", "DontUse"],
@@ -81,7 +88,10 @@ export const FIELD_VALUES: Record<string, string[]> = {
     "CodeAllowedLength": ["Variable", "Fixed"],
     
     // CodeSeries
-    "CodeSeries": ["WholeCatalog", "WithinOwnerSubordination", "WithinOwnerHierarchy"],
+    "CodeSeries": ["WholeCatalog", "WithinOwnerSubordination", "WithinOwnerHierarchy", "WholeCharacteristicKind"],
+    
+    // SubordinationUse (подчинение для иерархических справочников)
+    "SubordinationUse": ["ToItems", "ToFolders", "ToFoldersAndItems"],
     
     // DescriptionLength
     "DescriptionLength": ["10", "25", "50", "100", "150", "200", "250", "300", "500"],
@@ -271,6 +281,7 @@ export const FIELD_LABELS: Record<string, string> = {
     'UnpostInPrivilegedMode': 'Отмена проведения в привилегированном режиме',
     'WriteRegisterRecordsOnPosting': 'Запись регистров при проведении',
     'HierarchyType': 'Тип иерархии',
+    'SubordinationUse': 'Подчинение',
     'RegisterRecordsDeletion': 'Удаление записей регистров',
     'RegisterRecordsWritingOnPost': 'Запись регистров при проведении',
     'SequenceFilling': 'Заполнение последовательности',
@@ -529,7 +540,7 @@ export const ENUM_VALUE_LABELS: Record<string, string> = {
     
     // HierarchyType
     'HierarchyFoldersAndItems': 'Папки и элементы',
-    'HierarchyItems': 'Элементы',
+    'HierarchyOfItems': 'Элементы',
     
     // NumberType
     'String': 'Строка',
@@ -556,12 +567,19 @@ export const ENUM_VALUE_LABELS: Record<string, string> = {
     
     // SearchStringModeOnInputByString
     'Begin': 'С начала',
+    'AnyPart': 'С любой части',
     'Substring': 'Подстрока',
     'Anywhere': 'Везде',
     
     // ChoiceDataGetModeOnInputByString
     'Background': 'В фоне',
     'Directly': 'Напрямую',
+    'OnDemand': 'По требованию',
+    
+    // SubordinationUse
+    'ToItems': 'Элементам',
+    'ToFolders': 'Папкам',
+    'ToFoldersAndItems': 'Папкам и элементам',
     
     // WriteMode
     'RecorderSubordinate': 'Подчиненный регистратору',
@@ -594,6 +612,7 @@ export const ENUM_VALUE_LABELS: Record<string, string> = {
     // Indexing
     'DontIndex': 'Не индексировать',
     'Index': 'Индексировать',
+    'IndexWithAdditionalOrder': 'Индексировать с дополнительным порядком',
     
     // ChoiceFoldersAndItems
     'Items': 'Элементы',
@@ -615,7 +634,31 @@ export const ENUM_VALUE_LABELS: Record<string, string> = {
     // v8:DateFractions
     'Date': 'Дата',
     'Time': 'Время',
-    'DateTime': 'Дата и время'
+    'DateTime': 'Дата и время',
+    
+    // DataSeparation, SeparatedDataUse
+    'Separate': 'Раздельно',
+    'Independently': 'Независимо',
+    'IndependentlyAndSimultaneously': 'Независимо и одновременно',
+    
+    // TaskNumberAutoPrefix (DontUse и Auto уже определены выше)
+    'BusinessProcessNumber': 'Номер бизнес-процесса',
+    
+    // Representation (CommandGroup)
+    'Picture': 'Картинка',
+    'PictureAndText': 'Картинка и текст',
+    
+    // Category (CommandGroup)
+    'FormCommandBar': 'Панель команд формы',
+    'FormNavigationPanel': 'Панель навигации формы',
+    'ActionsPanel': 'Панель действий',
+    'NavigationPanel': 'Панель навигации',
+    
+    // TemplateType
+    'BinaryData': 'Двоичные данные',
+    'SpreadsheetDocument': 'Табличный документ',
+    'TextDocument': 'Текстовый документ',
+    'DataCompositionSchema': 'Схема компоновки данных'
 };
 
 /**

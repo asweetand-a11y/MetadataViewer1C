@@ -15,7 +15,7 @@ exports.FIELD_VALUES = {
     "PasswordMode": ["true", "false"],
     "MarkNegatives": ["true", "false"],
     "Hierarchical": ["true", "false"],
-    "HierarchyType": ["HierarchyFoldersAndItems", "HierarchyItems"],
+    "HierarchyType": ["HierarchyFoldersAndItems", "HierarchyOfItems"],
     "FoldersOnTop": ["true", "false"],
     "UseInputByString": ["true", "false"],
     "RegisterRecords": ["true", "false"],
@@ -28,6 +28,11 @@ exports.FIELD_VALUES = {
     "IncludeHelpInContents": ["true", "false"],
     "BasedOn": ["true", "false"],
     "DataLockControlMode": ["Managed", "Automatic", "AutomaticAndManaged"],
+    // DataSeparation, SeparatedDataUse (CommonAttribute)
+    "DataSeparation": ["DontUse", "Separate"],
+    "SeparatedDataUse": ["Independently", "IndependentlyAndSimultaneously"],
+    // Indexing (CommonAttribute - IndexWithAdditionalOrder)
+    "Indexing": ["DontIndex", "Index", "IndexWithAdditionalOrder"],
     "FullTextSearch": ["Use", "DontUse"],
     "ObjectPresentation": [""],
     "ExtendedObjectPresentation": [""],
@@ -49,15 +54,15 @@ exports.FIELD_VALUES = {
     // NumberPeriodicity
     "NumberPeriodicity": ["Nonperiodical", "Year", "Quarter", "Month", "Day"],
     // FillChecking
-    "FillChecking": ["DontCheck", "ShowError"],
+    "FillChecking": ["DontCheck", "ShowError", "ShowWarning"],
     // DataHistory
     "DataHistory": ["Use", "DontUse"],
     // QuickChoice
     "QuickChoice": ["Auto", "Use", "DontUse"],
-    // SearchStringModeOnInputByString
-    "SearchStringModeOnInputByString": ["Begin", "Substring", "Anywhere"],
-    // ChoiceDataGetModeOnInputByString
-    "ChoiceDataGetModeOnInputByString": ["Background", "Directly"],
+    // SearchStringModeOnInputByString (1С XDTO: Begin, AnyPart)
+    "SearchStringModeOnInputByString": ["Begin", "AnyPart"],
+    // ChoiceDataGetModeOnInputByString (1С XDTO: Background, Directly, OnDemand)
+    "ChoiceDataGetModeOnInputByString": ["Background", "Directly", "OnDemand"],
     // FullTextSearchOnInputByString
     "FullTextSearchOnInputByString": ["Use", "DontUse"],
     // DefaultForm
@@ -69,7 +74,9 @@ exports.FIELD_VALUES = {
     // CodeAllowedLength
     "CodeAllowedLength": ["Variable", "Fixed"],
     // CodeSeries
-    "CodeSeries": ["WholeCatalog", "WithinOwnerSubordination", "WithinOwnerHierarchy"],
+    "CodeSeries": ["WholeCatalog", "WithinOwnerSubordination", "WithinOwnerHierarchy", "WholeCharacteristicKind"],
+    // SubordinationUse (подчинение для иерархических справочников)
+    "SubordinationUse": ["ToItems", "ToFolders", "ToFoldersAndItems"],
     // DescriptionLength
     "DescriptionLength": ["10", "25", "50", "100", "150", "200", "250", "300", "500"],
     // Periodicity
@@ -216,6 +223,7 @@ exports.FIELD_LABELS = {
     'UnpostInPrivilegedMode': 'Отмена проведения в привилегированном режиме',
     'WriteRegisterRecordsOnPosting': 'Запись регистров при проведении',
     'HierarchyType': 'Тип иерархии',
+    'SubordinationUse': 'Подчинение',
     'RegisterRecordsDeletion': 'Удаление записей регистров',
     'RegisterRecordsWritingOnPost': 'Запись регистров при проведении',
     'SequenceFilling': 'Заполнение последовательности',
@@ -466,7 +474,7 @@ exports.ENUM_VALUE_LABELS = {
     'AutomaticAndManaged': 'Автоматический и управляемый',
     // HierarchyType
     'HierarchyFoldersAndItems': 'Папки и элементы',
-    'HierarchyItems': 'Элементы',
+    'HierarchyOfItems': 'Элементы',
     // NumberType
     'String': 'Строка',
     'Number': 'Число',
@@ -488,11 +496,17 @@ exports.ENUM_VALUE_LABELS = {
     'WholeCharacteristicKind': 'Весь вид характеристики',
     // SearchStringModeOnInputByString
     'Begin': 'С начала',
+    'AnyPart': 'С любой части',
     'Substring': 'Подстрока',
     'Anywhere': 'Везде',
     // ChoiceDataGetModeOnInputByString
     'Background': 'В фоне',
     'Directly': 'Напрямую',
+    'OnDemand': 'По требованию',
+    // SubordinationUse
+    'ToItems': 'Элементам',
+    'ToFolders': 'Папкам',
+    'ToFoldersAndItems': 'Папкам и элементам',
     // WriteMode
     'RecorderSubordinate': 'Подчиненный регистратору',
     'Independent': 'Независимый',
@@ -517,6 +531,7 @@ exports.ENUM_VALUE_LABELS = {
     // Indexing
     'DontIndex': 'Не индексировать',
     'Index': 'Индексировать',
+    'IndexWithAdditionalOrder': 'Индексировать с дополнительным порядком',
     // ChoiceFoldersAndItems
     'Items': 'Элементы',
     'FoldersAndItems': 'Папки и элементы',
@@ -533,7 +548,26 @@ exports.ENUM_VALUE_LABELS = {
     // v8:DateFractions
     'Date': 'Дата',
     'Time': 'Время',
-    'DateTime': 'Дата и время'
+    'DateTime': 'Дата и время',
+    // DataSeparation, SeparatedDataUse
+    'Separate': 'Раздельно',
+    'Independently': 'Независимо',
+    'IndependentlyAndSimultaneously': 'Независимо и одновременно',
+    // TaskNumberAutoPrefix (DontUse и Auto уже определены выше)
+    'BusinessProcessNumber': 'Номер бизнес-процесса',
+    // Representation (CommandGroup)
+    'Picture': 'Картинка',
+    'PictureAndText': 'Картинка и текст',
+    // Category (CommandGroup)
+    'FormCommandBar': 'Панель команд формы',
+    'FormNavigationPanel': 'Панель навигации формы',
+    'ActionsPanel': 'Панель действий',
+    'NavigationPanel': 'Панель навигации',
+    // TemplateType
+    'BinaryData': 'Двоичные данные',
+    'SpreadsheetDocument': 'Табличный документ',
+    'TextDocument': 'Текстовый документ',
+    'DataCompositionSchema': 'Схема компоновки данных'
 };
 /**
  * Получить переведенное название поля объекта метаданных

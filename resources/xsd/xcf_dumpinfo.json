@@ -1,0 +1,46 @@
+{
+  "roots": [
+    "ConfigDumpInfo",
+    "ConfigVersions",
+    "Metadata"
+  ],
+  "elements": {
+    "ConfigDumpInfo": {
+      "children": [
+        "ConfigVersions"
+      ],
+      "childMin": {
+        "ConfigVersions": 1
+      },
+      "childMax": {
+        "ConfigVersions": 1
+      },
+      "allowAny": false
+    },
+    "ConfigVersions": {
+      "children": [
+        "Metadata"
+      ],
+      "childMin": {
+        "Metadata": 44163
+      },
+      "childMax": {
+        "Metadata": -1
+      },
+      "allowAny": false
+    },
+    "Metadata": {
+      "children": [
+        "Metadata"
+      ],
+      "childMin": {
+        "Metadata": 0
+      },
+      "childMax": {
+        "Metadata": -1
+      },
+      "allowAny": false
+    }
+  },
+  "source": "http_v8.1c.ru_8.3_xcf_dumpinfo.xsd"
+}

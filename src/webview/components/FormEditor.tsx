@@ -17,6 +17,7 @@ import { AddTabularAttributeModal } from './FormEditor/AddTabularAttributeModal'
 import { EditTabularAttributeTypeModal } from './FormEditor/EditTabularAttributeTypeModal';
 import { RegisterRecordsEditorModal } from './FormEditor/RegisterRecordsEditorModal';
 import { ConfirmModal } from './FormEditor/ConfirmModal';
+import { EnumValueEditorModal } from './FormEditor/EnumValueEditorModal';
 import { SimpleMultilingualEditor } from './FormEditor/SimpleMultilingualEditor';
 import { CharacteristicTypeEditorModal } from './FormEditor/CharacteristicTypeEditorModal';
 import { AccountingFlagEditorModal } from './FormEditor/AccountingFlagEditorModal';
@@ -81,6 +82,13 @@ export const FormEditor: React.FC<FormEditorProps> = ({
   const [editingAccountingFlag, setEditingAccountingFlag] = useState<{ type: 'accountingFlag' | 'extDimensionAccountingFlag'; index: number } | null>(null);
   const [addingAccountingFlagType, setAddingAccountingFlagType] = useState<'accountingFlag' | 'extDimensionAccountingFlag' | null>(null);
 
+  // Состояния для значений перечисления (Enum)
+  const [showEnumValueModal, setShowEnumValueModal] = useState<boolean>(false);
+  const [editingEnumValueIndex, setEditingEnumValueIndex] = useState<number | null>(null);
+  const [newEnumValueName, setNewEnumValueName] = useState('');
+  const [newEnumValueSynonym, setNewEnumValueSynonym] = useState<any>(null);
+  const [newEnumValueComment, setNewEnumValueComment] = useState<any>(null);
+
   // Подтверждение опасных действий (удаление) — делаем модалкой, т.к. window.confirm в webview часто неудобен/неочевиден
   const [confirmModal, setConfirmModal] = useState<null | { message: string; onConfirm: () => void }>(null);
   
@@ -109,6 +117,8 @@ export const FormEditor: React.FC<FormEditorProps> = ({
     setConfirmModal(null);
     setShowCharacteristicTypeModal(false);
     setEditingCharacteristicTypeIndex(null);
+    setShowEnumValueModal(false);
+    setEditingEnumValueIndex(null);
     console.log('[FormEditor] Состояния модальных окон после сброса:', {
       showAddTabularModal: false,
       showAddAttributeModal: null,
@@ -343,6 +353,87 @@ export const FormEditor: React.FC<FormEditorProps> = ({
           setEditingAttribute({ tsIndex: editingAttribute.tsIndex - 1, attrIndex: editingAttribute.attrIndex });
         }
       }
+    });
+  };
+
+  /** Добавить значение перечисления */
+  const handleAddEnumValue = () => {
+    setEditingEnumValueIndex(null);
+    setNewEnumValueName('');
+    setNewEnumValueSynonym(null);
+    setNewEnumValueComment(null);
+    setShowEnumValueModal(true);
+  };
+
+  /** Редактировать значение перечисления */
+  const handleEditEnumValue = (index: number) => {
+    const baseObject = selectedObject || formData;
+    const enumValues = baseObject?.enumValues || [];
+    const ev = enumValues[index];
+    if (ev) {
+      setEditingEnumValueIndex(index);
+      setNewEnumValueName(ev.name || '');
+      setNewEnumValueSynonym(ev.properties?.Synonym ?? ev.properties?.synonym ?? null);
+      setNewEnumValueComment(ev.properties?.Comment ?? ev.properties?.comment ?? '');
+      setShowEnumValueModal(true);
+    }
+  };
+
+  /** Сохранить значение перечисления (добавление или редактирование) */
+  const handleSaveEnumValue = () => {
+    const baseObject = selectedObject || formData;
+    if (!baseObject) return;
+    const enumValues = Array.isArray(baseObject.enumValues) ? [...baseObject.enumValues] : [];
+
+    const newVal = {
+      name: newEnumValueName.trim(),
+      properties: {
+        Name: newEnumValueName.trim(),
+        Synonym: newEnumValueSynonym,
+        Comment: newEnumValueComment ?? ''
+      }
+    };
+
+    if (editingEnumValueIndex !== null) {
+      const existing = enumValues[editingEnumValueIndex];
+      if (existing) {
+        enumValues[editingEnumValueIndex] = {
+          ...existing,
+          name: newVal.name,
+          properties: newVal.properties,
+          uuid: existing.uuid
+        };
+      }
+    } else {
+      enumValues.push(newVal);
+    }
+
+    const updatedObject = { ...baseObject, enumValues };
+    if (onSelectedObjectChange) {
+      onSelectedObjectChange(updatedObject);
+    }
+    onChange(formData);
+    setShowEnumValueModal(false);
+    setEditingEnumValueIndex(null);
+    setNewEnumValueName('');
+    setNewEnumValueSynonym(null);
+    setNewEnumValueComment(null);
+  };
+
+  /** Удалить значение перечисления */
+  const handleDeleteEnumValue = (index: number) => {
+    const baseObject = selectedObject || formData;
+    if (!baseObject) return;
+    const enumValues = Array.isArray(baseObject.enumValues) ? [...baseObject.enumValues] : [];
+    const ev = enumValues[index];
+    const evName = ev?.name || `Значение ${index + 1}`;
+    openConfirm(`Удалить значение перечисления "${evName}"?`, () => {
+      const updated = enumValues.filter((_, i) => i !== index);
+      const updatedObject = { ...baseObject, enumValues: updated };
+      if (onSelectedObjectChange) {
+        onSelectedObjectChange(updatedObject);
+      }
+      onChange(formData);
     });
   };
 
@@ -1426,6 +1517,77 @@ export const FormEditor: React.FC<FormEditorProps> = ({
             );
           })}
         </div>
+      </div>
+    );
+  } else if (activeTab === 'enumValues') {
+    const baseEnumValues = selectedObject?.enumValues ?? formData?.enumValues ?? [];
+    const enumValues = Array.isArray(baseEnumValues) ? baseEnumValues : [];
+    content = (
+      <div className="form-editor">
+        <div className="section-header">
+          <h3>Значения перечисления ({enumValues.length})</h3>
+          <button type="button" className="btn-add" onClick={handleAddEnumValue} title="Добавить значение">
+            + Добавить
+          </button>
+        </div>
+        <div className="attributes-list">
+          {enumValues.map((ev: any, index: number) => {
+            const name = ev.name || ev.properties?.Name || `Значение ${index + 1}`;
+            const synonym = ev.properties?.Synonym ?? ev.properties?.synonym;
+            const synonymStr = typeof synonym === 'string' ? synonym : (synonym?.['v8:item']?.['v8:content'] ?? synonym?.content ?? '');
+            const comment = ev.properties?.Comment ?? ev.properties?.comment ?? '';
+            return (
+              <div key={ev.uuid || index} className="attribute-card">
+                <div className="attribute-header">
+                  <span className="attribute-name">{name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="attribute-index">#{index + 1}</span>
+                    <button
+                      type="button"
+                      className="btn-edit-type"
+                      onClick={() => handleEditEnumValue(index)}
+                      title="Изменить"
+                      aria-label="Изменить"
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-edit-type"
+                      onClick={() => handleDeleteEnumValue(index)}
+                      title="Удалить"
+                      aria-label="Удалить"
+                      style={{
+                        background: 'var(--vscode-errorForeground)',
+                        color: 'var(--vscode-button-foreground)'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                {(synonymStr || comment) && (
+                  <div className="attribute-meta">
+                    {synonymStr && <span>{synonymStr}</span>}
+                    {comment && <span className="attribute-comment">{comment}</span>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <EnumValueEditorModal
+          isOpen={showEnumValueModal}
+          isEdit={editingEnumValueIndex !== null}
+          name={newEnumValueName}
+          synonym={newEnumValueSynonym}
+          comment={newEnumValueComment}
+          onClose={() => setShowEnumValueModal(false)}
+          onSave={handleSaveEnumValue}
+          onNameChange={setNewEnumValueName}
+          onSynonymChange={setNewEnumValueSynonym}
+          onCommentChange={setNewEnumValueComment}
+        />
       </div>
     );
   } else if (activeTab === 'forms' && selectedObject?.forms) {
@@ -2606,10 +2768,10 @@ function getFieldTypeAndOptions(field: string, objectType: string): { type: 'boo
     // Значение WithinMonth приводит к ошибке сборки CF ("Неверное значение перечисления").
     'NumberPeriodicity': ['Nonperiodical', 'Year', 'Quarter', 'Month', 'Day'],
     'CreateOnInput': ['Use', 'DontUse', 'Auto', 'DontCreate', 'Create'], // Объединяем значения для документа и реквизитов
-    'SearchStringModeOnInputByString': ['Begin', 'AnyPart', 'End'],
+    'SearchStringModeOnInputByString': ['Begin', 'AnyPart'],
     'FullTextSearchOnInputByString': ['DontUse', 'Use'],
-    'ChoiceDataGetModeOnInputByString': ['Directly', 'OnDemand'],
-    'DataLockControlMode': ['Automatic', 'Managed'],
+    'ChoiceDataGetModeOnInputByString': ['Background', 'Directly', 'OnDemand'],
+    'DataLockControlMode': ['Automatic', 'Managed', 'AutomaticAndManaged'],
     'FullTextSearch': ['DontUse', 'Use'],
     'ChoiceHistoryOnInput': ['DontUse', 'Use', 'Auto'],
     'DataHistory': ['DontUse', 'Use'],
@@ -2617,7 +2779,7 @@ function getFieldTypeAndOptions(field: string, objectType: string): { type: 'boo
     'FillChecking': ['DontCheck', 'ShowError', 'ShowWarning'],
     'ChoiceFoldersAndItems': ['Items', 'FoldersAndItems'],
     'QuickChoice': ['Auto', 'DontUse', 'Use'],
-    'Indexing': ['DontIndex', 'Index'],
+    'Indexing': ['DontIndex', 'Index', 'IndexWithAdditionalOrder'],
     'TypeReductionMode': ['TransformValues', 'DontTransform'],
     'LinkByType': [], // Строковое поле (может быть пустым или содержать путь)
     // Стандартные атрибуты
@@ -2634,16 +2796,23 @@ function getFieldTypeAndOptions(field: string, objectType: string): { type: 'boo
     'v8:AllowedSign': ['Any', 'Nonnegative'],
     'v8:DateFractions': ['Date', 'Time', 'DateTime'],
     // Другие
-    'HierarchyType': ['HierarchyFoldersAndItems', 'HierarchyItems'],
+    'HierarchyType': ['HierarchyFoldersAndItems', 'HierarchyOfItems'],
     'WriteRegisterRecordsOnPosting': ['WriteSelected', 'WriteModified'],
     // Поля из FIELD_VALUES, которые должны быть выпадающими списками
     'CodeSeries': ['WholeCatalog', 'WithinOwnerSubordination', 'WithinOwnerHierarchy', 'WholeCharacteristicKind'],
     'PredefinedDataUpdate': ['Auto', 'DontAutoUpdate', 'AutoUpdateUseDefaultLanguage'],
     'EditType': ['InDialog', 'BothWays'],
     'DefaultPresentation': ['AsDescription', 'AsCode'],
-    'ChoiceMode': ['BothWays', 'InDialog'], // Альтернативное название для EditType
+    'ChoiceMode': ['BothWays', 'InDialog'],
     'SearchOnInput': ['Auto', 'Use', 'DontUse'],
-    'FullTextSearchUsing': ['Allow', 'Use', 'DontUse']
+    'FullTextSearchUsing': ['Allow', 'Use', 'DontUse'],
+    'SubordinationUse': ['ToItems', 'ToFolders', 'ToFoldersAndItems'],
+    'DataSeparation': ['DontUse', 'Separate'],
+    'SeparatedDataUse': ['Independently', 'IndependentlyAndSimultaneously'],
+    'TaskNumberAutoPrefix': ['BusinessProcessNumber', 'DontUse'],
+    'Representation': ['Picture', 'Auto', 'PictureAndText'],
+    'Category': ['FormCommandBar', 'FormNavigationPanel', 'ActionsPanel', 'NavigationPanel'],
+    'TemplateType': ['BinaryData', 'SpreadsheetDocument', 'TextDocument', 'DataCompositionSchema']
   };
 
   if (enumFields[field]) {

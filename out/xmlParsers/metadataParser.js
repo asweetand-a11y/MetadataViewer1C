@@ -135,6 +135,7 @@ async function parseMetadataXml(xmlPath) {
             extDimensionAccountingFlags: objectType === 'ChartOfAccounts'
                 ? parseExtDimensionAccountingFlags(objNode.ChildObjects)
                 : undefined,
+            enumValues: objectType === 'Enum' ? parseEnumValues(objNode.ChildObjects) : undefined,
             _originalXml: _originalXml // Сохраняем исходный XML как строку для максимального сохранения структуры
         };
         console.log(`[parseMetadataXml] Парсинг завершен успешно. Объект: ${parsed.objectType}, Имя: ${parsed.name}`);
@@ -409,6 +410,28 @@ function parseExtDimensionAccountingFlags(childObjects) {
             name: props.Name || a.name || "Неизвестно",
             type: parsedType,
             typeDisplay: parsedType ? getTypeDisplayString(parsedType) : "Неопределено",
+            properties: parseProperties(props)
+        };
+    });
+}
+/**
+ * Парсинг значений перечисления (EnumValue)
+ */
+function parseEnumValues(childObjects) {
+    if (!childObjects)
+        return [];
+    let items = childObjects.EnumValue;
+    if (!items)
+        return [];
+    if (!Array.isArray(items))
+        items = [items];
+    return items.map((ev) => {
+        const uuid = ev?.['@_uuid'] || ev?.uuid || ev?.Properties?.['@_uuid'] || ev?.Properties?.uuid;
+        const props = ev.Properties || ev;
+        const name = props.Name || ev.name || ev.Name || "Неизвестно";
+        return {
+            uuid: uuid ? String(uuid) : undefined,
+            name: String(name),
             properties: parseProperties(props)
         };
     });

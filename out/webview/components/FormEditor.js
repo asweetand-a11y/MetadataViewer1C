@@ -44,6 +44,7 @@ const AddTabularAttributeModal_1 = require("./FormEditor/AddTabularAttributeModa
 const EditTabularAttributeTypeModal_1 = require("./FormEditor/EditTabularAttributeTypeModal");
 const RegisterRecordsEditorModal_1 = require("./FormEditor/RegisterRecordsEditorModal");
 const ConfirmModal_1 = require("./FormEditor/ConfirmModal");
+const EnumValueEditorModal_1 = require("./FormEditor/EnumValueEditorModal");
 const SimpleMultilingualEditor_1 = require("./FormEditor/SimpleMultilingualEditor");
 const CharacteristicTypeEditorModal_1 = require("./FormEditor/CharacteristicTypeEditorModal");
 const AccountingFlagEditorModal_1 = require("./FormEditor/AccountingFlagEditorModal");
@@ -82,6 +83,12 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
     const [showAccountingFlagModal, setShowAccountingFlagModal] = (0, react_1.useState)(false);
     const [editingAccountingFlag, setEditingAccountingFlag] = (0, react_1.useState)(null);
     const [addingAccountingFlagType, setAddingAccountingFlagType] = (0, react_1.useState)(null);
+    // Состояния для значений перечисления (Enum)
+    const [showEnumValueModal, setShowEnumValueModal] = (0, react_1.useState)(false);
+    const [editingEnumValueIndex, setEditingEnumValueIndex] = (0, react_1.useState)(null);
+    const [newEnumValueName, setNewEnumValueName] = (0, react_1.useState)('');
+    const [newEnumValueSynonym, setNewEnumValueSynonym] = (0, react_1.useState)(null);
+    const [newEnumValueComment, setNewEnumValueComment] = (0, react_1.useState)(null);
     // Подтверждение опасных действий (удаление) — делаем модалкой, т.к. window.confirm в webview часто неудобен/неочевиден
     const [confirmModal, setConfirmModal] = (0, react_1.useState)(null);
     // Состояния для формы добавления табличной части
@@ -107,6 +114,8 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
         setConfirmModal(null);
         setShowCharacteristicTypeModal(false);
         setEditingCharacteristicTypeIndex(null);
+        setShowEnumValueModal(false);
+        setEditingEnumValueIndex(null);
         console.log('[FormEditor] Состояния модальных окон после сброса:', {
             showAddTabularModal: false,
             showAddAttributeModal: null,
@@ -329,6 +338,83 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     setEditingAttribute({ tsIndex: editingAttribute.tsIndex - 1, attrIndex: editingAttribute.attrIndex });
                 }
             }
+        });
+    };
+    /** Добавить значение перечисления */
+    const handleAddEnumValue = () => {
+        setEditingEnumValueIndex(null);
+        setNewEnumValueName('');
+        setNewEnumValueSynonym(null);
+        setNewEnumValueComment(null);
+        setShowEnumValueModal(true);
+    };
+    /** Редактировать значение перечисления */
+    const handleEditEnumValue = (index) => {
+        const baseObject = selectedObject || formData;
+        const enumValues = baseObject?.enumValues || [];
+        const ev = enumValues[index];
+        if (ev) {
+            setEditingEnumValueIndex(index);
+            setNewEnumValueName(ev.name || '');
+            setNewEnumValueSynonym(ev.properties?.Synonym ?? ev.properties?.synonym ?? null);
+            setNewEnumValueComment(ev.properties?.Comment ?? ev.properties?.comment ?? '');
+            setShowEnumValueModal(true);
+        }
+    };
+    /** Сохранить значение перечисления (добавление или редактирование) */
+    const handleSaveEnumValue = () => {
+        const baseObject = selectedObject || formData;
+        if (!baseObject)
+            return;
+        const enumValues = Array.isArray(baseObject.enumValues) ? [...baseObject.enumValues] : [];
+        const newVal = {
+            name: newEnumValueName.trim(),
+            properties: {
+                Name: newEnumValueName.trim(),
+                Synonym: newEnumValueSynonym,
+                Comment: newEnumValueComment ?? ''
+            }
+        };
+        if (editingEnumValueIndex !== null) {
+            const existing = enumValues[editingEnumValueIndex];
+            if (existing) {
+                enumValues[editingEnumValueIndex] = {
+                    ...existing,
+                    name: newVal.name,
+                    properties: newVal.properties,
+                    uuid: existing.uuid
+                };
+            }
+        }
+        else {
+            enumValues.push(newVal);
+        }
+        const updatedObject = { ...baseObject, enumValues };
+        if (onSelectedObjectChange) {
+            onSelectedObjectChange(updatedObject);
+        }
+        onChange(formData);
+        setShowEnumValueModal(false);
+        setEditingEnumValueIndex(null);
+        setNewEnumValueName('');
+        setNewEnumValueSynonym(null);
+        setNewEnumValueComment(null);
+    };
+    /** Удалить значение перечисления */
+    const handleDeleteEnumValue = (index) => {
+        const baseObject = selectedObject || formData;
+        if (!baseObject)
+            return;
+        const enumValues = Array.isArray(baseObject.enumValues) ? [...baseObject.enumValues] : [];
+        const ev = enumValues[index];
+        const evName = ev?.name || `Значение ${index + 1}`;
+        openConfirm(`Удалить значение перечисления "${evName}"?`, () => {
+            const updated = enumValues.filter((_, i) => i !== index);
+            const updatedObject = { ...baseObject, enumValues: updated };
+            if (onSelectedObjectChange) {
+                onSelectedObjectChange(updatedObject);
+            }
+            onChange(formData);
         });
     };
     /**
@@ -1196,6 +1282,39 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                         react_1.default.createElement("span", null, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442"))));
             }))));
     }
+    else if (activeTab === 'enumValues') {
+        const baseEnumValues = selectedObject?.enumValues ?? formData?.enumValues ?? [];
+        const enumValues = Array.isArray(baseEnumValues) ? baseEnumValues : [];
+        content = (react_1.default.createElement("div", { className: "form-editor" },
+            react_1.default.createElement("div", { className: "section-header" },
+                react_1.default.createElement("h3", null,
+                    "\u0417\u043D\u0430\u0447\u0435\u043D\u0438\u044F \u043F\u0435\u0440\u0435\u0447\u0438\u0441\u043B\u0435\u043D\u0438\u044F (",
+                    enumValues.length,
+                    ")"),
+                react_1.default.createElement("button", { type: "button", className: "btn-add", onClick: handleAddEnumValue, title: "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435" }, "+ \u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")),
+            react_1.default.createElement("div", { className: "attributes-list" }, enumValues.map((ev, index) => {
+                const name = ev.name || ev.properties?.Name || `Значение ${index + 1}`;
+                const synonym = ev.properties?.Synonym ?? ev.properties?.synonym;
+                const synonymStr = typeof synonym === 'string' ? synonym : (synonym?.['v8:item']?.['v8:content'] ?? synonym?.content ?? '');
+                const comment = ev.properties?.Comment ?? ev.properties?.comment ?? '';
+                return (react_1.default.createElement("div", { key: ev.uuid || index, className: "attribute-card" },
+                    react_1.default.createElement("div", { className: "attribute-header" },
+                        react_1.default.createElement("span", { className: "attribute-name" }, name),
+                        react_1.default.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                            react_1.default.createElement("span", { className: "attribute-index" },
+                                "#",
+                                index + 1),
+                            react_1.default.createElement("button", { type: "button", className: "btn-edit-type", onClick: () => handleEditEnumValue(index), title: "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C", "aria-label": "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C" }, "\u270E"),
+                            react_1.default.createElement("button", { type: "button", className: "btn-edit-type", onClick: () => handleDeleteEnumValue(index), title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", style: {
+                                    background: 'var(--vscode-errorForeground)',
+                                    color: 'var(--vscode-button-foreground)'
+                                } }, "\u00D7"))),
+                    (synonymStr || comment) && (react_1.default.createElement("div", { className: "attribute-meta" },
+                        synonymStr && react_1.default.createElement("span", null, synonymStr),
+                        comment && react_1.default.createElement("span", { className: "attribute-comment" }, comment)))));
+            })),
+            react_1.default.createElement(EnumValueEditorModal_1.EnumValueEditorModal, { isOpen: showEnumValueModal, isEdit: editingEnumValueIndex !== null, name: newEnumValueName, synonym: newEnumValueSynonym, comment: newEnumValueComment, onClose: () => setShowEnumValueModal(false), onSave: handleSaveEnumValue, onNameChange: setNewEnumValueName, onSynonymChange: setNewEnumValueSynonym, onCommentChange: setNewEnumValueComment })));
+    }
     else if (activeTab === 'forms' && selectedObject?.forms) {
         content = (react_1.default.createElement("div", { className: "form-editor" },
             react_1.default.createElement("div", { className: "section-header" },
@@ -1904,10 +2023,10 @@ function getFieldTypeAndOptions(field, objectType) {
         // Значение WithinMonth приводит к ошибке сборки CF ("Неверное значение перечисления").
         'NumberPeriodicity': ['Nonperiodical', 'Year', 'Quarter', 'Month', 'Day'],
         'CreateOnInput': ['Use', 'DontUse', 'Auto', 'DontCreate', 'Create'],
-        'SearchStringModeOnInputByString': ['Begin', 'AnyPart', 'End'],
+        'SearchStringModeOnInputByString': ['Begin', 'AnyPart'],
         'FullTextSearchOnInputByString': ['DontUse', 'Use'],
-        'ChoiceDataGetModeOnInputByString': ['Directly', 'OnDemand'],
-        'DataLockControlMode': ['Automatic', 'Managed'],
+        'ChoiceDataGetModeOnInputByString': ['Background', 'Directly', 'OnDemand'],
+        'DataLockControlMode': ['Automatic', 'Managed', 'AutomaticAndManaged'],
         'FullTextSearch': ['DontUse', 'Use'],
         'ChoiceHistoryOnInput': ['DontUse', 'Use', 'Auto'],
         'DataHistory': ['DontUse', 'Use'],
@@ -1915,7 +2034,7 @@ function getFieldTypeAndOptions(field, objectType) {
         'FillChecking': ['DontCheck', 'ShowError', 'ShowWarning'],
         'ChoiceFoldersAndItems': ['Items', 'FoldersAndItems'],
         'QuickChoice': ['Auto', 'DontUse', 'Use'],
-        'Indexing': ['DontIndex', 'Index'],
+        'Indexing': ['DontIndex', 'Index', 'IndexWithAdditionalOrder'],
         'TypeReductionMode': ['TransformValues', 'DontTransform'],
         'LinkByType': [],
         // Стандартные атрибуты
@@ -1932,7 +2051,7 @@ function getFieldTypeAndOptions(field, objectType) {
         'v8:AllowedSign': ['Any', 'Nonnegative'],
         'v8:DateFractions': ['Date', 'Time', 'DateTime'],
         // Другие
-        'HierarchyType': ['HierarchyFoldersAndItems', 'HierarchyItems'],
+        'HierarchyType': ['HierarchyFoldersAndItems', 'HierarchyOfItems'],
         'WriteRegisterRecordsOnPosting': ['WriteSelected', 'WriteModified'],
         // Поля из FIELD_VALUES, которые должны быть выпадающими списками
         'CodeSeries': ['WholeCatalog', 'WithinOwnerSubordination', 'WithinOwnerHierarchy', 'WholeCharacteristicKind'],
@@ -1941,7 +2060,14 @@ function getFieldTypeAndOptions(field, objectType) {
         'DefaultPresentation': ['AsDescription', 'AsCode'],
         'ChoiceMode': ['BothWays', 'InDialog'],
         'SearchOnInput': ['Auto', 'Use', 'DontUse'],
-        'FullTextSearchUsing': ['Allow', 'Use', 'DontUse']
+        'FullTextSearchUsing': ['Allow', 'Use', 'DontUse'],
+        'SubordinationUse': ['ToItems', 'ToFolders', 'ToFoldersAndItems'],
+        'DataSeparation': ['DontUse', 'Separate'],
+        'SeparatedDataUse': ['Independently', 'IndependentlyAndSimultaneously'],
+        'TaskNumberAutoPrefix': ['BusinessProcessNumber', 'DontUse'],
+        'Representation': ['Picture', 'Auto', 'PictureAndText'],
+        'Category': ['FormCommandBar', 'FormNavigationPanel', 'ActionsPanel', 'NavigationPanel'],
+        'TemplateType': ['BinaryData', 'SpreadsheetDocument', 'TextDocument', 'DataCompositionSchema']
     };
     if (enumFields[field]) {
         return { type: 'enum', options: enumFields[field] };

@@ -32,6 +32,7 @@ const xmldom_1 = require("@xmldom/xmldom");
 const fs = __importStar(require("fs"));
 const commitFileLogger_1 = require("./commitFileLogger");
 const fileUtils_1 = require("./fileUtils");
+const xmlUtils_1 = require("./xmlUtils");
 /**
  * Сохраняет макет в XML файл с сохранением структуры через xmldom
  * @param templateDocument - Документ макета для сохранения
@@ -61,9 +62,10 @@ function saveTemplateToXml(templateDocument, originalXml, templatePath, configRo
     // Сериализуем DOM обратно в XML
     const serializer = new xmldom_1.XMLSerializer();
     let updatedXml = serializer.serializeToString(xmlDoc);
-    // Добавляем XML декларацию, если её нет
-    if (!updatedXml.startsWith('<?xml')) {
-        updatedXml = '<?xml version="1.0" encoding="UTF-8"?>\n' + updatedXml;
+    updatedXml = (0, xmlUtils_1.normalizeXML)(updatedXml);
+    const validation = (0, xmlUtils_1.validateXML)(updatedXml);
+    if (!validation.valid) {
+        throw new Error(validation.error ?? 'Результат сохранения не является валидным XML');
     }
     // Сохраняем файл с BOM (как в оригинальных файлах 1С)
     // ВАЖНО: 1С конфигуратор требует UTF-8 с BOM (EF BB BF)

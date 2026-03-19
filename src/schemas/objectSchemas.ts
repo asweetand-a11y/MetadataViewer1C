@@ -198,7 +198,7 @@ export const catalogSchema: JSONSchema7 = {
     HierarchyType: {
       type: 'string',
       title: 'Тип иерархии',
-      enum: ['HierarchyFoldersAndItems', 'HierarchyItems'],
+      enum: ['HierarchyFoldersAndItems', 'HierarchyOfItems'],
       default: 'HierarchyFoldersAndItems'
     },
     FoldersOnTop: {
@@ -236,8 +236,14 @@ export const catalogSchema: JSONSchema7 = {
     CodeSeries: {
       type: 'string',
       title: 'Серия кода',
-      enum: ['WholeCatalog', 'WithinOwnerSubordination', 'WithinOwnerHierarchy'],
+      enum: ['WholeCatalog', 'WithinOwnerSubordination', 'WithinOwnerHierarchy', 'WholeCharacteristicKind'],
       default: 'WholeCatalog'
+    },
+    SubordinationUse: {
+      type: 'string',
+      title: 'Подчинение',
+      enum: ['ToItems', 'ToFolders', 'ToFoldersAndItems'],
+      default: 'ToItems'
     },
     DescriptionLength: {
       type: 'string',
@@ -356,7 +362,7 @@ export const informationRegisterSchema: JSONSchema7 = {
     InformationRegisterPeriodicity: {
       type: 'string',
       title: 'InformationRegisterPeriodicity',
-      enum: ["Nonperiodical","Month","Second","RecorderPosition"]
+      enum: ["Nonperiodical","Month","Second","Day","Year","Quarter","RecorderPosition"]
     },
     WriteMode: {
       type: 'string',

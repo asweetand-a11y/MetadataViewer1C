@@ -199,10 +199,14 @@ const MetadataEditor = ({ vscode }) => {
             const extDimensionAccountingFlags = selectedObject.extDimensionAccountingFlags || [];
             return accountingFlags.length + extDimensionAccountingFlags.length;
         })();
+        const isEnum = selectedObject.objectType === 'Enum' ||
+            selectedObject.objectType === 'Перечисление' ||
+            (selectedObject.sourcePath && selectedObject.sourcePath.includes('/Enums/'));
         const result = [
             { id: 'properties', label: 'Свойства' },
             { id: 'attributes', label: 'Реквизиты', count: selectedObject.attributes?.length },
             { id: 'tabular', label: 'Табличные части', count: selectedObject.tabularSections?.length },
+            ...(isEnum ? [{ id: 'enumValues', label: 'Значения перечисления', count: selectedObject.enumValues?.length }] : []),
             { id: 'forms', label: 'Формы', count: selectedObject.forms?.length },
             { id: 'commands', label: 'Команды', count: selectedObject.commands?.length }
         ];

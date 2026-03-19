@@ -41,3 +41,4 @@ test-output*.txt
 AGENTS.md
 .cache-bsl/**
 scripts/**
+resources/xsd/*.xsd

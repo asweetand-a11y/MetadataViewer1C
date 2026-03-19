@@ -3,68 +3,100 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MetadataRepository = void 0;
 const UniversalMetadataParser_1 = require("./UniversalMetadataParser");
 const MetadataScanner_1 = require("./MetadataScanner");
+/** Размер батча для параллельного парсинга (баланс скорость/память) */
+const BATCH_SIZE = 32;
 class MetadataRepository {
     constructor(ttlMs = 30000) {
         this.ttlMs = ttlMs;
         this.cacheByRoot = new Map();
     }
     async load(root) {
+        return this.loadInternal(root, undefined);
+    }
+    /**
+     * Прогрессивная загрузка дерева метаданных по типам.
+     * После загрузки каждого типа вызывается onTypeLoaded — UI может обновляться по мере готовности.
+     * Между типами используется setImmediate для освобождения event loop.
+     */
+    async loadProgressive(root, onTypeLoaded) {
+        return this.loadInternal(root, onTypeLoaded);
+    }
+    async loadInternal(root, onTypeLoaded) {
         const cached = this.cacheByRoot.get(root);
         const now = Date.now();
         if (cached && now - cached.ts < this.ttlMs) {
+            // Кэш есть — при прогрессивной загрузке всё равно вызываем колбэк для каждого типа
+            if (onTypeLoaded && cached.tree.children) {
+                for (const typeNode of cached.tree.children) {
+                    if (typeNode.kind === "type")
+                        onTypeLoaded(typeNode);
+                }
+            }
             return { objects: cached.objects, tree: cached.tree, errors: [] };
         }
         const scan = await (0, MetadataScanner_1.scanMetadataRoot)(root);
-        const parsed = [];
         const errors = [...scan.errors];
-        // Парсим батчами параллельно (32 объекта — баланс скорость/память на больших проектах)
-        const BATCH_SIZE = 32;
-        for (let i = 0; i < scan.objects.length; i += BATCH_SIZE) {
-            const batch = scan.objects.slice(i, i + BATCH_SIZE);
-            const results = await Promise.allSettled(batch.map(ref => (0, UniversalMetadataParser_1.parseMetadataObject)(ref)));
-            for (let j = 0; j < results.length; j++) {
-                const r = results[j];
-                const ref = batch[j];
-                if (r.status === "fulfilled") {
-                    parsed.push(r.value);
-                }
-                else {
-                    errors.push(`Parse failed: ${ref.mainXmlPath}: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+        // Группируем refs по типу для прогрессивной загрузки
+        const refsByType = new Map();
+        for (const ref of scan.objects) {
+            const t = ref.objectTypeDir;
+            const arr = refsByType.get(t) || [];
+            arr.push(ref);
+            refsByType.set(t, arr);
+        }
+        const parsed = [];
+        const typeNodes = [];
+        const sortedTypes = [...refsByType.keys()].sort((a, b) => a.localeCompare(b, "ru"));
+        for (const typeDir of sortedTypes) {
+            const refs = refsByType.get(typeDir);
+            // Парсим объекты этого типа батчами
+            for (let i = 0; i < refs.length; i += BATCH_SIZE) {
+                const batch = refs.slice(i, i + BATCH_SIZE);
+                const results = await Promise.allSettled(batch.map((ref) => (0, UniversalMetadataParser_1.parseMetadataObject)(ref)));
+                for (let j = 0; j < results.length; j++) {
+                    const r = results[j];
+                    const ref = batch[j];
+                    if (r.status === "fulfilled") {
+                        parsed.push(r.value);
+                    }
+                    else {
+                        errors.push(`Parse failed: ${ref.mainXmlPath}: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+                    }
                 }
             }
+            const typeObjs = parsed.filter((o) => (o.objectTypeDir || o.objectType) === typeDir);
+            const typeNode = buildTypeNode(typeDir, typeObjs);
+            typeNodes.push(typeNode);
+            if (onTypeLoaded) {
+                onTypeLoaded(typeNode);
+                await yieldToEventLoop();
+            }
         }
-        const tree = buildTree(parsed);
+        const tree = {
+            id: "root",
+            label: "Configuration",
+            kind: "root",
+            children: typeNodes,
+        };
         this.cacheByRoot.set(root, { objects: parsed, tree, ts: now });
         return { objects: parsed, tree, errors };
     }
 }
 exports.MetadataRepository = MetadataRepository;
-function buildTree(objects) {
-    const byType = new Map();
-    for (const o of objects) {
-        const t = o.objectTypeDir || o.objectType;
-        const arr = byType.get(t) || [];
-        arr.push(o);
-        byType.set(t, arr);
-    }
-    const typeNodes = [];
-    for (const [type, objs] of [...byType.entries()].sort((a, b) => a[0].localeCompare(b[0], "ru"))) {
-        const children = objs
-            .slice()
-            .sort((a, b) => a.displayName.localeCompare(b.displayName, "ru"))
-            .map(o => buildObjectNode(type, o));
-        typeNodes.push({
-            id: `type:${type}`,
-            label: type,
-            kind: "type",
-            children
-        });
-    }
+/** Освобождает event loop между тяжёлыми операциями */
+function yieldToEventLoop() {
+    return new Promise((resolve) => setImmediate(resolve));
+}
+function buildTypeNode(type, objs) {
+    const children = objs
+        .slice()
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, "ru"))
+        .map((o) => buildObjectNode(type, o));
     return {
-        id: "root",
-        label: "Configuration",
-        kind: "root",
-        children: typeNodes
+        id: `type:${type}`,
+        label: type,
+        kind: "type",
+        children,
     };
 }
 function buildObjectNode(type, o) {

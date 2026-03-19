@@ -11,8 +11,10 @@ import { WebviewMessage, InitMessage } from "../metadata/types";
 import { safeReadFile, safeWriteFile, createBackup, validatePath } from "../utils/fileUtils";
 import { createXMLParser, normalizeXML, validateXML } from "../utils/xmlUtils";
 import { applyChangesToXmlString } from "../utils/xmlStringPatcher";
+import { validateXmlStructure } from "../validation/xmlStructureValidator";
 import { applyFormChangesToXmlStringWithDom } from "../utils/xmlDomUtils";
 import { XmlDiffMerge } from "../utils/xmlDiffMerge";
+import { ensureMetadataInConfigurationXml } from "../utils/configurationXmlUpdater";
 import { statusBarProgress, contextStatusBar } from "../extension";
 
 
@@ -1243,6 +1245,35 @@ export class MetadataPanel {
                 
                 throw new Error(`XML validation error: ${errorMessage}`);
             }
+
+            // Валидация структуры по JSON-схеме (если включена)
+            const structureValidationEnabled = vscode.workspace.getConfiguration('metadataViewer').get<boolean>('structureValidationEnabled', true);
+            if (structureValidationEnabled) {
+                const structureResult = validateXmlStructure(updatedXml, {
+                    extensionPath: this.extensionUri.fsPath,
+                    filePath: obj.sourcePath,
+                    xmlObjectType,
+                    rootTag: 'MetaDataObject'
+                });
+                if (!structureResult.valid && structureResult.errors && structureResult.errors.length > 0) {
+                    const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+                    vscode.window.showErrorMessage(
+                        `Ошибка структуры XML: ${errorMessage}`,
+                        'Показать детали'
+                    ).then(selection => {
+                        if (selection === 'Показать детали') {
+                            const outputChannel = vscode.window.createOutputChannel('Metadata Editor');
+                            outputChannel.appendLine('=== Ошибка валидации структуры XML ===');
+                            structureResult.errors?.forEach(e => outputChannel.appendLine(e));
+                            outputChannel.appendLine(`\nДлина XML: ${updatedXml.length} символов`);
+                            outputChannel.appendLine('\n=== Начало XML (первые 2000 символов) ===');
+                            outputChannel.appendLine(updatedXml.substring(0, 2000));
+                            outputChannel.show();
+                        }
+                    });
+                    throw new Error(`XML structure validation failed: ${errorMessage}`);
+                }
+            }
             
             // КРИТИЧНО: Сохраняем файл только если валидация прошла успешно
             try {
@@ -1272,6 +1303,21 @@ export class MetadataPanel {
                     vscode.window.showWarningMessage(
                         `Объект сохранён, но ConfigDumpInfo.xml не обновлён: ${String(e?.message || e).substring(0, 200)}`
                     );
+                }
+
+                // Автоматически добавляем объект в Configuration.xml, если его там ещё нет
+                try {
+                    const configResult = await ensureMetadataInConfigurationXml({
+                        configRoot: this.configRoot,
+                        xmlObjectType,
+                        objectName: obj.name,
+                    });
+                    if (configResult.changed) {
+                        console.log(`[MetadataPanel.handleSave] Configuration.xml обновлён: добавлен ${xmlObjectType}.${obj.name}`);
+                        CommitFileLogger.getInstance().logChangedFile(path.join(this.configRoot, "Configuration.xml"));
+                    }
+                } catch (e: any) {
+                    console.warn("[MetadataPanel.handleSave] Не удалось обновить Configuration.xml:", e);
                 }
 
                 vscode.window.showInformationMessage("Изменения объекта успешно сохранены.");
@@ -1416,8 +1462,22 @@ export class MetadataPanel {
         const updatedXml = applyFormChangesToXmlStringWithDom(xml, formData);
         const normalizedXml = normalizeXML(updatedXml);
 
-        if (!validateXML(normalizedXml)) {
-            throw new Error("Результат сохранения не является валидным XML");
+        const validation = validateXML(normalizedXml);
+        if (!validation.valid) {
+            throw new Error(validation.error ?? "Результат сохранения не является валидным XML");
+        }
+
+        const structureValidationEnabled = vscode.workspace.getConfiguration('metadataViewer').get<boolean>('structureValidationEnabled', true);
+        if (structureValidationEnabled) {
+            const structureResult = validateXmlStructure(normalizedXml, {
+                extensionPath: this.extensionUri.fsPath,
+                filePath: formPath,
+                rootTag: 'Form'
+            });
+            if (!structureResult.valid && structureResult.errors?.length) {
+                const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+                throw new Error(`Ошибка структуры XML формы: ${errorMessage}`);
+            }
         }
 
         await fs.promises.writeFile(formPath, normalizedXml, 'utf8');

@@ -2,7 +2,7 @@
 	"name": "cursor-1c-metadata-viewer",
 	"displayName": "1C Metadata Viewer",
 	"description": "Explore 1C:Enterprise 8 configuration in the usual way",
-	"version": "2.10.2",
+	"version": "2.10.4",
 	"publisher": "whiterabbit",
 	"license": "MIT",
 	"author": {
@@ -161,6 +161,10 @@
 				"command": "metadataViewer.editMetadata",
 				"title": "%1c-metadata-viewer.editMetadata.title%",
 				"icon": "$(edit)"
+			},
+			{
+				"command": "metadataViewer.validateMetadataXml",
+				"title": "Проверить XML метаданных (XDTO)"
 			},
 			{
 				"command": "metadataViewer.toggleBookmark",
@@ -326,7 +330,19 @@
 					"when": "viewItem =~ /subsystem/ && viewItem in filteredConfigArray"
 				}
 			],
+			"explorer/context": [
+				{
+					"command": "metadataViewer.validateMetadataXml",
+					"group": "1c-metadata",
+					"when": "resourceExtname == 'xml' && explorerResourceIsFolder == false"
+				}
+			],
 			"editor/context": [
+				{
+					"command": "metadataViewer.validateMetadataXml",
+					"group": "1c-metadata",
+					"when": "resourceExtname == 'xml'"
+				},
 				{
 					"command": "metadataViewer.genFromCommentPrompt",
 					"group": "1c-metadata",
@@ -394,6 +410,11 @@
 						"type": "string",
 						"default": "ask_1c_ai",
 						"description": "Имя инструмента для генерации кода"
+					},
+					"metadataViewer.structureValidationEnabled": {
+						"type": "boolean",
+						"default": true,
+						"description": "Включить валидацию структуры XML"
 					}
 				}
 			}
@@ -431,7 +452,8 @@
 		"lint": "eslint . --ext .ts,.tsx",
 		"package": "npx @vscode/vsce package",
 		"test:metadata-save:prepare": "node test-cases/metadata-save-test.js prepare",
-		"test:metadata-save": "npm run compile && node test-cases/metadata-save-test.js test"
+		"test:metadata-save": "npm run compile && node test-cases/metadata-save-test.js test",
+		"generate:xsd-json": "node test-cases/xsd-to-json/generate-schemas.js"
 	},
 	"devDependencies": {
 		"@types/node": "^16.11.7",

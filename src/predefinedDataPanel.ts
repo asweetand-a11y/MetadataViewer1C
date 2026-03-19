@@ -3,6 +3,8 @@ import { PredefinedDataItem } from './predefinedDataInterfaces';
 import { parsePredefinedXmlWithDom } from './xmlParsers/predefinedParser';
 import { serializePredefinedXmlWithDom } from './xmlParsers/predefinedSerializer';
 import { updateConfigDumpInfoForPredefined } from './utils/configDumpInfoUpdater';
+import { normalizeXML, validateXML } from './utils/xmlUtils';
+import { validateXmlStructure } from './validation/xmlStructureValidator';
 import { METADATA_TYPES } from './Metadata/metadata-types';
 import { scanMetadataRoot } from './metadata_utils/MetadataScanner';
 import { loadChartOfAccountsMetadata } from './metadata_utils/ChartOfAccountsDataLoader';
@@ -451,8 +453,27 @@ export class PredefinedDataPanel {
         try {
             // Сохраняем Predefined.xml
             // serializePredefinedXmlWithDom уже добавляет BOM если он был в originalXml
-            const updatedXml = serializePredefinedXmlWithDom(this.state.originalXml, items);
-            
+            let updatedXml = serializePredefinedXmlWithDom(this.state.originalXml, items);
+            updatedXml = normalizeXML(updatedXml);
+
+            const validation = validateXML(updatedXml);
+            if (!validation.valid) {
+                throw new Error(validation.error ?? 'Результат сохранения не является валидным XML');
+            }
+
+            const structureValidationEnabled = vscode.workspace.getConfiguration('metadataViewer').get<boolean>('structureValidationEnabled', true);
+            if (structureValidationEnabled) {
+                const structureResult = validateXmlStructure(updatedXml, {
+                    extensionPath: this.extensionUri.fsPath,
+                    filePath: this.state.predefinedPath,
+                    rootTag: 'PredefinedData'
+                });
+                if (!structureResult.valid && structureResult.errors?.length) {
+                    const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+                    throw new Error(`Ошибка структуры XML: ${errorMessage}`);
+                }
+            }
+
             // Создаем директорию Ext если её нет
             const extDir = path.dirname(this.state.predefinedPath);
             if (!fs.existsSync(extDir)) {

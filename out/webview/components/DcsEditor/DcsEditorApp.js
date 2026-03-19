@@ -35,6 +35,7 @@ const TypeWidget_1 = require("../../widgets/TypeWidget");
 const QueryEditorEnhanced_1 = require("./QueryEditorEnhanced");
 const MetadataTreePanel_1 = require("./MetadataTreePanel");
 const monacoQueryLanguage_1 = require("../../utils/monacoQueryLanguage");
+const dcsGroupingParams_1 = require("./dcsGroupingParams");
 function normalizeTextForSearch(s) {
     return String(s || '')
         .toLowerCase()
@@ -110,6 +111,25 @@ function findChildNodeByLocalTag(node, wantedLocalTag) {
 function getChildTextByLocalTag(node, wantedLocalTag) {
     const ch = findChildNodeByLocalTag(node, wantedLocalTag);
     return String(ch?.text ?? '').trim();
+}
+/** Извлекает текст из узла value параметра (поддержка v8:LocalStringType и простого текста) */
+function extractValueFromParameterValue(valueNode) {
+    if (!valueNode)
+        return '';
+    let val = String(valueNode.text || '').trim();
+    if (val)
+        return val;
+    if (!valueNode.children?.length)
+        return '';
+    // v8:LocalStringType: value -> v8:item -> v8:content
+    const itemNode = findChildNodeByLocalTag(valueNode, 'item');
+    if (itemNode) {
+        const contentNode = findChildNodeByLocalTag(itemNode, 'content');
+        return String(contentNode?.text ?? '').trim();
+    }
+    // Прямой поиск content в детях (на случай другой структуры)
+    const contentNode = (valueNode.children || []).find((c) => localTag(c.tag) === 'content');
+    return contentNode ? String(contentNode.text ?? '').trim() : '';
 }
 function findAllNodes(root) {
     const out = [];
@@ -266,6 +286,104 @@ function upsertChildTextByLocalTag(node, wantedLocalTag, value, overrideTag) {
 function removeChildByLocalTag(node, wantedLocalTag) {
     const nextChildren = (node.children || []).filter((c) => localTag(c.tag) !== wantedLocalTag);
     return { ...node, children: nextChildren };
+}
+/** Параметры, требующие v8:LocalStringType (Заголовок и др.) */
+const OUTPUT_PARAMS_LOCAL_STRING = new Set(['Заголовок']);
+/** Префиксы namespace для XDTO-совместимости 1С (dcscor=core, dcsset=settings) */
+const DCSCOR = 'dcscor';
+const DCSSET = 'dcsset';
+function makeOutputParameterValueNode(paramName, paramValue, valueTag = 'dcscor:value') {
+    if (OUTPUT_PARAMS_LOCAL_STRING.has(paramName)) {
+        return {
+            path: '',
+            tag: valueTag,
+            attrs: { '@_xsi:type': 'v8:LocalStringType' },
+            children: [{
+                    path: '',
+                    tag: 'v8:item',
+                    attrs: {},
+                    children: [
+                        makeTextNode('v8:lang', 'ru'),
+                        makeTextNode('v8:content', paramValue),
+                    ],
+                }],
+        };
+    }
+    return { ...makeTextNode('value', paramValue), tag: valueTag };
+}
+/** Добавляет или обновляет параметр в outputParameters группировки (use = включён) */
+function upsertOutputParameter(structNode, paramName, paramValue, use = true) {
+    let outParamsNode = (structNode.children || []).find((c) => localTag(c.tag) === 'outputParameters');
+    const firstItem = outParamsNode?.children?.[0];
+    const paramTag = firstItem ? findChildNodeByLocalTag(firstItem, 'parameter')?.tag || `${DCSCOR}:parameter` : `${DCSCOR}:parameter`;
+    const valueTag = firstItem ? findChildNodeByLocalTag(firstItem, 'value')?.tag || `${DCSCOR}:value` : `${DCSCOR}:value`;
+    const useTag = firstItem ? findChildNodeByLocalTag(firstItem, 'use')?.tag || `${DCSCOR}:use` : `${DCSCOR}:use`;
+    const itemChildren = [
+        { ...makeTextNode('parameter', paramName), tag: paramTag },
+        makeOutputParameterValueNode(paramName, paramValue, valueTag),
+        { ...makeTextNode('use', use ? 'true' : 'false'), tag: useTag },
+    ];
+    if (!outParamsNode) {
+        const itemTag = `${DCSCOR}:item`;
+        const outParamsTag = `${DCSSET}:outputParameters`;
+        const newItem = { path: '', tag: itemTag, attrs: { '@_xsi:type': 'dcsset:SettingsParameterValue' }, children: itemChildren };
+        outParamsNode = { path: '', tag: outParamsTag, attrs: {}, children: [newItem] };
+        return { ...structNode, children: [...(structNode.children || []), outParamsNode] };
+    }
+    const items = outParamsNode.children || [];
+    const itemIdx = items.findIndex((it) => {
+        const p = findChildNodeByLocalTag(it, 'parameter');
+        return p && String(p.text || '').trim() === paramName;
+    });
+    const newItemNode = {
+        path: '',
+        tag: items[0]?.tag || `${DCSCOR}:item`,
+        attrs: items[0]?.attrs || { '@_xsi:type': 'dcsset:SettingsParameterValue' },
+        children: itemChildren,
+    };
+    let nextItems;
+    if (itemIdx >= 0) {
+        nextItems = items.slice();
+        nextItems[itemIdx] = newItemNode;
+    }
+    else {
+        nextItems = [...items, newItemNode];
+    }
+    const nextOutParams = { ...outParamsNode, children: nextItems };
+    const outIdx = (structNode.children || []).findIndex((c) => localTag(c.tag) === 'outputParameters');
+    const nextChildren = (structNode.children || []).slice();
+    nextChildren[outIdx] = nextOutParams;
+    return { ...structNode, children: nextChildren };
+}
+/** Устанавливает флаг use для параметра outputParameters */
+function setOutputParameterUse(structNode, paramName, use) {
+    const outParamsNode = (structNode.children || []).find((c) => localTag(c.tag) === 'outputParameters');
+    if (!outParamsNode?.children)
+        return structNode;
+    const itemIdx = outParamsNode.children.findIndex((it) => {
+        const p = findChildNodeByLocalTag(it, 'parameter');
+        return p && String(p.text || '').trim() === paramName;
+    });
+    if (itemIdx < 0)
+        return structNode;
+    const item = outParamsNode.children[itemIdx];
+    let useNode = findChildNodeByLocalTag(item, 'use');
+    const nextItemChildren = (item.children || []).slice();
+    if (useNode) {
+        const useIdx = nextItemChildren.findIndex((c) => localTag(c.tag) === 'use');
+        nextItemChildren[useIdx] = { ...nextItemChildren[useIdx], text: use ? 'true' : 'false' };
+    }
+    else {
+        nextItemChildren.push(makeTextNode('use', use ? 'true' : 'false'));
+    }
+    const nextItem = { ...item, children: nextItemChildren };
+    const nextItems = outParamsNode.children.slice();
+    nextItems[itemIdx] = nextItem;
+    const nextOutParams = { ...outParamsNode, children: nextItems };
+    const outIdx = (structNode.children || []).findIndex((c) => localTag(c.tag) === 'outputParameters');
+    const nextChildren = (structNode.children || []).slice();
+    nextChildren[outIdx] = nextOutParams;
+    return { ...structNode, children: nextChildren };
 }
 function getNodeLabel(node) {
     const lt = localTag(node.tag);
@@ -1140,13 +1258,18 @@ const DcsResourceDetails = ({ node, onUpdateNode }) => {
             react_1.default.createElement("div", { className: "dcs-section__body" },
                 react_1.default.createElement("input", { className: "edt-props-editor__input", value: expr, onChange: (e) => onUpdateNode(node.path, (n) => upsertChildTextByLocalTag(n, 'expression', e.target.value)) })))));
 };
-// Рекурсивный компонент для отображения вложенных группировок
-const NestedGroupingView = ({ structure, level, onUpdateNode }) => {
-    if (!structure || !structure.fields || structure.fields.length === 0)
+// Рекурсивный компонент для отображения вложенных группировок (column/row таблицы и вложенные)
+const NestedGroupingView = ({ structure, level, onUpdateNode, groupingOtherSettingsExpanded = {}, setGroupingOtherSettingsExpanded = () => { } }) => {
+    if (!structure)
+        return null;
+    const hasFields = structure.fields && structure.fields.length > 0;
+    const hasOutputParams = structure.outputParams && structure.outputParams.length > 0 && structure.structNode;
+    const hasNested = structure.nested && structure.nested.length > 0;
+    if (!hasFields && !hasOutputParams && !hasNested)
         return null;
     const indent = level * 20;
     return (react_1.default.createElement("div", { style: { marginLeft: indent, marginTop: level > 0 ? 8 : 0, borderLeft: level > 0 ? '2px solid var(--vscode-panel-border)' : 'none', paddingLeft: level > 0 ? 8 : 0 } },
-        react_1.default.createElement("table", { className: "edt-grid__table" },
+        hasFields && (react_1.default.createElement("table", { className: "edt-grid__table" },
             react_1.default.createElement("tbody", null, structure.fields.map((gf, idx) => {
                 const fieldNode = findChildNodeByLocalTag(gf.node, 'field');
                 const groupTypeNode = findChildNodeByLocalTag(gf.node, 'groupType');
@@ -1168,8 +1291,47 @@ const NestedGroupingView = ({ structure, level, onUpdateNode }) => {
                                 react_1.default.createElement("option", { value: "Items" }, "\u042D\u043B\u0435\u043C\u0435\u043D\u0442\u044B"),
                                 react_1.default.createElement("option", { value: "Hierarchy" }, "\u0418\u0435\u0440\u0430\u0440\u0445\u0438\u044F"),
                                 react_1.default.createElement("option", { value: "OnlyHierarchy" }, "\u0422\u043E\u043B\u044C\u043A\u043E \u0438\u0435\u0440\u0430\u0440\u0445\u0438\u044F"))))));
-            }))),
-        structure.nested && structure.nested.length > 0 && structure.nested.map((nested, idx) => (react_1.default.createElement(NestedGroupingView, { key: idx, structure: nested, level: level + 1, onUpdateNode: onUpdateNode })))));
+            })))),
+        hasOutputParams && (react_1.default.createElement("div", { style: { marginTop: 8, fontSize: 11 } },
+            react_1.default.createElement("div", { role: "button", tabIndex: 0, onClick: () => setGroupingOtherSettingsExpanded((prev) => ({ ...prev, [structure.path]: !(prev[structure.path] ?? true) })), onKeyDown: (e) => e.key === 'Enter' && setGroupingOtherSettingsExpanded((prev) => ({ ...prev, [structure.path]: !(prev[structure.path] ?? true) })), style: { fontWeight: 'bold', marginBottom: 4, opacity: 0.8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 } },
+                react_1.default.createElement("span", { style: { transform: (groupingOtherSettingsExpanded[structure.path] ?? true) ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' } }, "\u25B6"),
+                "\u0414\u0440\u0443\u0433\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438"),
+            (groupingOtherSettingsExpanded[structure.path] ?? true) && (react_1.default.createElement("table", { className: "edt-grid__table", style: { fontSize: 11 } },
+                react_1.default.createElement("thead", null,
+                    react_1.default.createElement("tr", null,
+                        react_1.default.createElement("th", { style: { width: 28, paddingRight: 4 }, title: "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C/\u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043F\u0430\u0440\u0430\u043C\u0435\u0442\u0440" }),
+                        react_1.default.createElement("th", { style: { width: '42%' } }, "\u041F\u0430\u0440\u0430\u043C\u0435\u0442\u0440"),
+                        react_1.default.createElement("th", { style: { width: '50%' } }, "\u0417\u043D\u0430\u0447\u0435\u043D\u0438\u0435"))),
+                react_1.default.createElement("tbody", null, structure.outputParams.map((op, opIdx) => {
+                    const paramDef = dcsGroupingParams_1.GROUPING_PARAM_MAP.get(op.parameter);
+                    const options = paramDef?.options;
+                    const paramLabel = paramDef?.label || op.parameter.replace(/([а-яa-z])([А-ЯA-Z])/g, '$1 $2');
+                    const isChild = !!paramDef?.parentParameter;
+                    const opUse = op.use !== undefined ? op.use : true;
+                    const handleValueChange = (newVal) => {
+                        if (!structure.structNode)
+                            return;
+                        onUpdateNode(structure.structNode.path, (n) => upsertOutputParameter(n, op.parameter, newVal, opUse));
+                    };
+                    const handleUseChange = (checked) => {
+                        if (!structure.structNode)
+                            return;
+                        if (op.node) {
+                            onUpdateNode(structure.structNode.path, (n) => setOutputParameterUse(n, op.parameter, checked));
+                        }
+                        else if (checked) {
+                            onUpdateNode(structure.structNode.path, (n) => upsertOutputParameter(n, op.parameter, '', true));
+                        }
+                    };
+                    return (react_1.default.createElement("tr", { key: opIdx },
+                        react_1.default.createElement("td", { style: { paddingRight: 4, verticalAlign: 'middle' } },
+                            react_1.default.createElement("input", { type: "checkbox", checked: opUse, onChange: (e) => handleUseChange(e.target.checked), title: opUse ? 'Параметр включён' : 'Параметр выключен' })),
+                        react_1.default.createElement("td", { style: { opacity: opUse ? 0.9 : 0.5, paddingLeft: isChild ? 24 : undefined } }, paramLabel),
+                        react_1.default.createElement("td", null, options ? (react_1.default.createElement("select", { className: "edt-props-editor__input", style: { fontSize: 11 }, value: op.value, onChange: (e) => handleValueChange(e.target.value), disabled: !opUse },
+                            react_1.default.createElement("option", { value: "" }, "\u2014"),
+                            options.map((opt) => (react_1.default.createElement("option", { key: opt.value, value: opt.value }, opt.label))))) : (react_1.default.createElement("input", { className: "edt-props-editor__input", style: { fontSize: 11 }, value: op.value, onChange: (e) => handleValueChange(e.target.value), placeholder: "\u2014", disabled: !opUse })))));
+                })))))),
+        hasNested && structure.nested.map((nested, idx) => (react_1.default.createElement(NestedGroupingView, { key: idx, structure: nested, level: level + 1, onUpdateNode: onUpdateNode, groupingOtherSettingsExpanded: groupingOtherSettingsExpanded, setGroupingOtherSettingsExpanded: setGroupingOtherSettingsExpanded })))));
 };
 const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, schemaChildren }) => {
     // Поддержка настроек на уровне схемы (если нет вариантов)
@@ -1208,6 +1370,8 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
     const [addingGrouping, setAddingGrouping] = (0, react_1.useState)(false);
     const [newGroupingField, setNewGroupingField] = (0, react_1.useState)('');
     const [parentGroupingPath, setParentGroupingPath] = (0, react_1.useState)(null);
+    /** Состояние сворачивания секции «Другие настройки» по пути группировки: true = развёрнуто */
+    const [groupingOtherSettingsExpanded, setGroupingOtherSettingsExpanded] = (0, react_1.useState)({});
     // Извлечение основных секций settings
     const selectionNode = (0, react_1.useMemo)(() => findChildNodeByLocalTag(settingsRoot, 'selection'), [settingsRoot]);
     const filterNode = (0, react_1.useMemo)(() => findChildNodeByLocalTag(settingsRoot, 'filter'), [settingsRoot]);
@@ -1240,7 +1404,6 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
         }
         return null;
     }, [settingsRoot, isSchemaSettings, schemaChildren]);
-    const dataParametersNode = (0, react_1.useMemo)(() => findChildNodeByLocalTag(settingsRoot, 'dataParameters'), [settingsRoot]);
     // Поля (selection items)
     const selectedFields = (0, react_1.useMemo)(() => {
         if (!selectionNode)
@@ -1383,6 +1546,29 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                     return null;
                 const groupItemsNode = findChildNodeByLocalTag(parentNode, 'groupItems');
                 const fields = extractGroupFields(groupItemsNode);
+                // outputParameters для column/row (и вложенных группировок)
+                const outParamsNode = findChildNodeByLocalTag(parentNode, 'outputParameters');
+                const existingParamsMap = new Map();
+                if (outParamsNode?.children) {
+                    for (const ch of outParamsNode.children) {
+                        if (localTag(ch.tag) !== 'item')
+                            continue;
+                        const paramNode = findChildNodeByLocalTag(ch, 'parameter');
+                        const valueNode = findChildNodeByLocalTag(ch, 'value');
+                        const useNode = findChildNodeByLocalTag(ch, 'use');
+                        const param = String(paramNode?.text || '').trim();
+                        const val = extractValueFromParameterValue(valueNode);
+                        const use = useNode ? String(useNode.text || 'true').toLowerCase() === 'true' : true;
+                        if (param)
+                            existingParamsMap.set(param, { value: val, node: ch, use });
+                    }
+                }
+                const outputParams = dcsGroupingParams_1.GROUPING_OUTPUT_PARAMS.map((def) => {
+                    const existing = existingParamsMap.get(def.parameter);
+                    return existing
+                        ? { parameter: def.parameter, value: existing.value, node: existing.node, use: existing.use }
+                        : { parameter: def.parameter, value: '', node: null, use: false };
+                });
                 // Ищем вложенные <dcsset:item> - они могут быть:
                 // 1. Прямыми дочерними элементами родительской группировки (как в отчете ПродажаМебели)
                 // 2. Внутри groupItems (альтернативный вариант)
@@ -1421,8 +1607,68 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                     path: parentNode.path,
                     fields,
                     nested,
+                    outputParams,
+                    outputParamsNode: outParamsNode,
+                    structNode: parentNode,
                 };
             };
+            // Имя и вариант использования группировки (для отображения как в 1С)
+            const groupName = String(findChildNodeByLocalTag(item, 'name')?.text || '').trim();
+            let groupUseVariant = '';
+            const outputParamsNode = findChildNodeByLocalTag(item, 'outputParameters');
+            if (outputParamsNode?.children) {
+                const variantItem = outputParamsNode.children.find((ch) => {
+                    if (localTag(ch.tag) !== 'item')
+                        return false;
+                    const paramNode = findChildNodeByLocalTag(ch, 'parameter');
+                    const p = String(paramNode?.text || '').trim();
+                    return p === 'ВариантИспользованияГруппировки' || p.includes('GroupUseVariant');
+                });
+                if (variantItem) {
+                    const valNode = findChildNodeByLocalTag(variantItem, 'value');
+                    groupUseVariant = String(valNode?.text || '').trim();
+                }
+            }
+            const GROUP_USE_VARIANT_LABELS = {
+                AdditionalInformation: 'Дополнительная информация',
+                Items: 'Детальные записи',
+                DontUse: 'Не использовать',
+            };
+            // Формат как в 1С: <Дополнительная информация> (Заголовок), <Детальные записи>
+            const variantLabel = groupUseVariant ? (GROUP_USE_VARIANT_LABELS[groupUseVariant] || groupUseVariant) : null;
+            const groupDisplayLabel = variantLabel
+                ? `<${variantLabel}>` + (groupName ? ` (${groupName})` : '')
+                : groupName ? groupName : `<Детальные записи>`;
+            // outputParameters — «Другие настройки». Объединяем полный список параметров с существующими в XML.
+            const existingParamsMap = new Map();
+            if (outputParamsNode?.children) {
+                for (const ch of outputParamsNode.children) {
+                    if (localTag(ch.tag) !== 'item')
+                        continue;
+                    const paramNode = findChildNodeByLocalTag(ch, 'parameter');
+                    const valueNode = findChildNodeByLocalTag(ch, 'value');
+                    const useNode = findChildNodeByLocalTag(ch, 'use');
+                    const param = String(paramNode?.text || '').trim();
+                    const val = extractValueFromParameterValue(valueNode);
+                    const use = useNode ? String(useNode.text || 'true').toLowerCase() === 'true' : true;
+                    if (param)
+                        existingParamsMap.set(param, { value: val, node: ch, use });
+                }
+            }
+            const outputParams = dcsGroupingParams_1.GROUPING_OUTPUT_PARAMS.map((def) => {
+                const existing = existingParamsMap.get(def.parameter);
+                return existing
+                    ? { parameter: def.parameter, value: existing.value, node: existing.node, use: existing.use }
+                    : { parameter: def.parameter, value: '', node: null, use: false };
+            });
+            // Проверка SelectedItemAuto / OrderItemAuto (автоматический режим полей)
+            const selectionNode = findChildNodeByLocalTag(item, 'selection');
+            const orderNode = findChildNodeByLocalTag(item, 'order');
+            const hasSelectedItemAuto = (selectionNode?.children || []).some((ch) => String(ch.attrs?.['@_xsi:type'] || '').includes('SelectedItemAuto'));
+            const hasOrderItemAuto = (orderNode?.children || []).some((ch) => String(ch.attrs?.['@_xsi:type'] || '').includes('OrderItemAuto'));
+            const isAutoMode = hasSelectedItemAuto && hasOrderItemAuto;
+            // Элемент use для включения/отключения группировки
+            const useNode = findChildNodeByLocalTag(item, 'use');
             // Для таблицы ищем column и row
             let columnStructure = null;
             let rowStructure = null;
@@ -1487,6 +1733,47 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                     // Для группировки рекурсивно извлекаем структуру
                     const nestedGroupItemsNode = findChildNodeByLocalTag(nestedNode, 'groupItems');
                     const nestedFields = extractGroupFields(nestedGroupItemsNode);
+                    const nestedName = String(findChildNodeByLocalTag(nestedNode, 'name')?.text || '').trim();
+                    let nestedUseVariant = '';
+                    const nestedOutputParams = findChildNodeByLocalTag(nestedNode, 'outputParameters');
+                    const variantItem = (nestedOutputParams?.children || []).find((ch) => {
+                        if (localTag(ch.tag) !== 'item')
+                            return false;
+                        const p = String(findChildNodeByLocalTag(ch, 'parameter')?.text || '').trim();
+                        return p === 'ВариантИспользованияГруппировки' || p.includes('GroupUseVariant');
+                    });
+                    if (variantItem) {
+                        nestedUseVariant = String(findChildNodeByLocalTag(variantItem, 'value')?.text || '').trim();
+                    }
+                    const nestedVariantLabel = nestedUseVariant ? (GROUP_USE_VARIANT_LABELS[nestedUseVariant] || nestedUseVariant) : null;
+                    const nestedDisplayLabel = nestedVariantLabel
+                        ? `<${nestedVariantLabel}>` + (nestedName ? ` (${nestedName})` : '')
+                        : nestedName ? nestedName : `<Детальные записи>`;
+                    const nestedOutputParamsNode = findChildNodeByLocalTag(nestedNode, 'outputParameters');
+                    const nestedExistingParamsMap = new Map();
+                    if (nestedOutputParamsNode?.children) {
+                        for (const ch of nestedOutputParamsNode.children) {
+                            if (localTag(ch.tag) !== 'item')
+                                continue;
+                            const p = String(findChildNodeByLocalTag(ch, 'parameter')?.text || '').trim();
+                            const vn = findChildNodeByLocalTag(ch, 'value');
+                            const un = findChildNodeByLocalTag(ch, 'use');
+                            const v = extractValueFromParameterValue(vn);
+                            const use = un ? String(un.text || 'true').toLowerCase() === 'true' : true;
+                            if (p)
+                                nestedExistingParamsMap.set(p, { value: v, node: ch, use });
+                        }
+                    }
+                    const nestedOutputParamsList = dcsGroupingParams_1.GROUPING_OUTPUT_PARAMS.map((def) => {
+                        const existing = nestedExistingParamsMap.get(def.parameter);
+                        return existing
+                            ? { parameter: def.parameter, value: existing.value, node: existing.node, use: existing.use }
+                            : { parameter: def.parameter, value: '', node: null, use: false };
+                    });
+                    const nestedSel = findChildNodeByLocalTag(nestedNode, 'selection');
+                    const nestedOrd = findChildNodeByLocalTag(nestedNode, 'order');
+                    const nestedIsAuto = (nestedSel?.children || []).some((ch) => String(ch.attrs?.['@_xsi:type'] || '').includes('SelectedItemAuto'))
+                        && (nestedOrd?.children || []).some((ch) => String(ch.attrs?.['@_xsi:type'] || '').includes('OrderItemAuto'));
                     // Рекурсивно ищем еще более вложенные группировки и диаграммы
                     const nestedNestedDirect = (nestedNode.children || []).filter((ch) => {
                         if (localTag(ch.tag) !== 'item')
@@ -1501,6 +1788,11 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                         path: nestedNode.path,
                         isChart: false,
                         fields: nestedFields,
+                        groupDisplayLabel: nestedDisplayLabel,
+                        isAutoMode: nestedIsAuto,
+                        outputParams: nestedOutputParamsList,
+                        outputParamsNode: nestedOutputParamsNode,
+                        structNode: nestedNode,
                         nested: allNestedNested.map(nn => {
                             const nnType = String(nn.attrs?.['@_xsi:type'] || '').trim();
                             if (nnType.includes('StructureItemChart')) {
@@ -1539,24 +1831,17 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                 rowStructure,
                 chartParams,
                 nestedCharts,
+                groupDisplayLabel,
+                isAutoMode,
+                useNode,
+                outputParams,
+                outputParamsNode,
+                structNode: item,
                 // Вложенные группировки и диаграммы из groupItems (для обычных группировок)
                 nestedFromGroupItems,
             };
         });
     }, [structureNode, schemaChildren]);
-    // Параметры данных
-    const dataParams = (0, react_1.useMemo)(() => {
-        if (!dataParametersNode)
-            return [];
-        return (dataParametersNode.children || []).filter((ch) => localTag(ch.tag) === 'item').map((item) => {
-            const paramNode = findChildNodeByLocalTag(item, 'parameter');
-            return {
-                node: item,
-                path: item.path,
-                parameter: String(paramNode?.text || '').trim(),
-            };
-        });
-    }, [dataParametersNode]);
     const structuralUpdate = onUpdateNodeReindex || onUpdateNode;
     // Добавить поле
     const handleAddField = (0, react_1.useCallback)(() => {
@@ -1880,28 +2165,30 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                                 const parentType = String(parent.attrs?.['@_xsi:type'] || '').trim();
                                 const isParentGroup = parentType.includes('StructureItemGroup');
                                 const isParentTable = parentType.includes('StructureItemTable');
-                                // Для column и row добавляем напрямую как item (они могут содержать вложенные группировки)
-                                if (parentLocalTag === 'column' || parentLocalTag === 'row') {
-                                    return { ...parent, children: [...(parent.children || []), newGroupItem] };
-                                }
-                                // ВАЖНО: Для обычных группировок вложенные группировки добавляются как прямые дочерние элементы
-                                // (как в отчете ПродажаМебели), а НЕ внутрь groupItems!
-                                // groupItems содержит только поля группировки (GroupItemField), а не вложенные группировки
-                                if (isParentGroup || isParentTable) {
-                                    // Добавляем вложенную группировку как прямой дочерний элемент родительской группировки
-                                    return { ...parent, children: [...(parent.children || []), newGroupItem] };
-                                }
-                                // Если это не группировка, но есть groupItems, добавляем туда (для совместимости)
+                                // По XSD и тестам: вложенные группировки (StructureItemGroup/Table) и поля (GroupItemField)
+                                // размещаются внутри groupItems. column и row также содержат groupItems.
                                 let groupItemsNode = findChildNodeByLocalTag(parent, 'groupItems');
-                                if (groupItemsNode) {
-                                    const groupItemsIdx = parent.children.findIndex((ch) => ch.path === groupItemsNode.path);
-                                    if (groupItemsIdx >= 0) {
-                                        const nextChildren = parent.children.slice();
-                                        nextChildren[groupItemsIdx] = {
-                                            ...groupItemsNode,
-                                            children: [...(groupItemsNode.children || []), newGroupItem],
+                                if (parentLocalTag === 'column' || parentLocalTag === 'row' || isParentGroup || isParentTable) {
+                                    if (groupItemsNode) {
+                                        const groupItemsIdx = parent.children.findIndex((ch) => ch.path === groupItemsNode.path);
+                                        if (groupItemsIdx >= 0) {
+                                            const nextChildren = parent.children.slice();
+                                            nextChildren[groupItemsIdx] = {
+                                                ...groupItemsNode,
+                                                children: [...(groupItemsNode.children || []), newGroupItem],
+                                            };
+                                            return { ...parent, children: nextChildren };
+                                        }
+                                    }
+                                    else if (isParentGroup || isParentTable) {
+                                        // Создаём groupItems если отсутствует (для новой группировки)
+                                        const newGroupItems = {
+                                            path: '',
+                                            tag: 'dcsset:groupItems',
+                                            attrs: {},
+                                            children: [newGroupItem],
                                         };
-                                        return { ...parent, children: nextChildren };
+                                        return { ...parent, children: [...(parent.children || []), newGroupItems] };
                                     }
                                 }
                                 return parent;
@@ -1981,9 +2268,6 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                     react_1.default.createElement("button", { className: `dcs-top-tab ${activeSettingsTab === 'structure' ? 'is-active' : ''}`, onClick: () => setActiveSettingsTab('structure') },
                         "\u0413\u0440\u0443\u043F\u043F\u0438\u0440\u043E\u0432\u043A\u0438 ",
                         react_1.default.createElement("span", { className: "dcs-top-tab__count" }, structureItems.length)),
-                    react_1.default.createElement("button", { className: `dcs-top-tab ${activeSettingsTab === 'params' ? 'is-active' : ''}`, onClick: () => setActiveSettingsTab('params') },
-                        "\u041F\u0430\u0440\u0430\u043C\u0435\u0442\u0440\u044B ",
-                        react_1.default.createElement("span", { className: "dcs-top-tab__count" }, dataParams.length)),
                     react_1.default.createElement("button", { className: `dcs-top-tab ${activeSettingsTab === 'other' ? 'is-active' : ''}`, onClick: () => setActiveSettingsTab('other') }, "\u041F\u0440\u043E\u0447\u0435\u0435")),
                 activeSettingsTab === 'fields' && (react_1.default.createElement("div", null,
                     react_1.default.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center' } }, !addingField ? (react_1.default.createElement("button", { type: "button", className: "edt-icon-btn", title: "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u043E\u043B\u0435", onClick: () => setAddingField(true) }, "+")) : (react_1.default.createElement(react_1.default.Fragment, null,
@@ -2141,19 +2425,32 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                         react_1.default.createElement("button", { type: "button", className: "edt-icon-btn", title: "\u041E\u0442\u043C\u0435\u043D\u0430", onClick: () => { setAddingGrouping(false); setNewGroupingField(''); setParentGroupingPath(null); } }, "\u2715")))),
                     structureItems.length === 0 ? (react_1.default.createElement("div", { className: "dcs-empty" }, "\u041D\u0435\u0442 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u044B (\u0433\u0440\u0443\u043F\u043F\u0438\u0440\u043E\u0432\u043E\u043A, \u0442\u0430\u0431\u043B\u0438\u0446, \u0434\u0438\u0430\u0433\u0440\u0430\u043C\u043C). \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \"+\" \u0434\u043B\u044F \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0438\u044F.")) : (react_1.default.createElement("div", null, structureItems.map((struct, idx) => (react_1.default.createElement("div", { key: struct.path, style: { marginBottom: 16, padding: 10, border: '1px solid var(--vscode-panel-border)', borderRadius: 4 } },
                         react_1.default.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 } },
-                            react_1.default.createElement("div", { style: { fontSize: 13, fontWeight: 'bold', opacity: 0.9 } },
-                                struct.isTable && '📊 Таблица',
-                                struct.isGroup && '📁 Группировка',
-                                struct.isChart && (struct.chartParams?.title ? `📊 Диаграмма: ${struct.chartParams.title}` : '📊 Диаграмма'),
-                                !struct.isTable && !struct.isGroup && !struct.isChart && `Элемент ${idx + 1}`),
+                            react_1.default.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flex: 1 } },
+                                (struct.isGroup || struct.isTable) && (react_1.default.createElement("input", { type: "checkbox", checked: struct.useNode ? String(struct.useNode.text || 'true').toLowerCase() === 'true' : true, onChange: (e) => {
+                                        const checked = e.target.checked;
+                                        if (struct.useNode) {
+                                            onUpdateNode(struct.useNode.path, (n) => ({ ...n, text: checked ? 'true' : 'false' }));
+                                        }
+                                        else {
+                                            onUpdateNode(struct.path, (n) => {
+                                                const useChild = { path: '', tag: 'dcsset:use', attrs: {}, text: checked ? 'true' : 'false', children: [] };
+                                                return { ...n, children: [...(n.children || []), useChild] };
+                                            });
+                                        }
+                                    }, title: "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C/\u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0433\u0440\u0443\u043F\u043F\u0438\u0440\u043E\u0432\u043A\u0443" })),
+                                react_1.default.createElement("div", { style: { fontSize: 13, fontWeight: 'bold', opacity: 0.9 } },
+                                    struct.isTable && '📊 Таблица',
+                                    struct.isGroup && (struct.groupDisplayLabel ? `📁 ${struct.groupDisplayLabel}` : '📁 Группировка'),
+                                    struct.isChart && (struct.chartParams?.title ? `📊 Диаграмма: ${struct.chartParams.title}` : '📊 Диаграмма'),
+                                    !struct.isTable && !struct.isGroup && !struct.isChart && `Элемент ${idx + 1}`)),
                             react_1.default.createElement("button", { type: "button", className: "edt-icon-btn", title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u044B", onClick: () => handleDeleteStructureItem(struct.path) }, "\u00D7")),
                         struct.isTable ? (react_1.default.createElement("div", null,
                             struct.columnStructure && (react_1.default.createElement("div", { style: { marginBottom: 12 } },
                                 react_1.default.createElement("div", { style: { fontSize: 12, fontWeight: 'bold', marginBottom: 6, opacity: 0.8 } }, "\uD83D\uDCCB \u041A\u043E\u043B\u043E\u043D\u043A\u0438"),
-                                react_1.default.createElement(NestedGroupingView, { structure: struct.columnStructure, level: 0, onUpdateNode: onUpdateNode }))),
+                                react_1.default.createElement(NestedGroupingView, { structure: struct.columnStructure, level: 0, onUpdateNode: onUpdateNode, groupingOtherSettingsExpanded: groupingOtherSettingsExpanded, setGroupingOtherSettingsExpanded: setGroupingOtherSettingsExpanded }))),
                             struct.rowStructure && (react_1.default.createElement("div", null,
                                 react_1.default.createElement("div", { style: { fontSize: 12, fontWeight: 'bold', marginBottom: 6, opacity: 0.8 } }, "\uD83D\uDCCA \u0421\u0442\u0440\u043E\u043A\u0438"),
-                                react_1.default.createElement(NestedGroupingView, { structure: struct.rowStructure, level: 0, onUpdateNode: onUpdateNode }))),
+                                react_1.default.createElement(NestedGroupingView, { structure: struct.rowStructure, level: 0, onUpdateNode: onUpdateNode, groupingOtherSettingsExpanded: groupingOtherSettingsExpanded, setGroupingOtherSettingsExpanded: setGroupingOtherSettingsExpanded }))),
                             !struct.columnStructure && !struct.rowStructure && (react_1.default.createElement("div", { className: "dcs-empty", style: { fontSize: 12, padding: 6 } }, "\u041D\u0435\u0442 \u043F\u043E\u043B\u0435\u0439 \u0432 \u0442\u0430\u0431\u043B\u0438\u0446\u0435")))) : struct.isChart ? (react_1.default.createElement("div", null,
                             react_1.default.createElement("table", { className: "edt-grid__table" },
                                 react_1.default.createElement("thead", null,
@@ -2194,7 +2491,46 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                                                 react_1.default.createElement("option", { value: "Items" }, "\u042D\u043B\u0435\u043C\u0435\u043D\u0442\u044B"),
                                                 react_1.default.createElement("option", { value: "Hierarchy" }, "\u0418\u0435\u0440\u0430\u0440\u0445\u0438\u044F"),
                                                 react_1.default.createElement("option", { value: "OnlyHierarchy" }, "\u0422\u043E\u043B\u044C\u043A\u043E \u0438\u0435\u0440\u0430\u0440\u0445\u0438\u044F")))));
-                                })))) : (react_1.default.createElement("div", { className: "dcs-empty", style: { fontSize: 12, padding: 6 } }, "\u041D\u0435\u0442 \u043F\u043E\u043B\u0435\u0439 \u0433\u0440\u0443\u043F\u043F\u0438\u0440\u043E\u0432\u043A\u0438")),
+                                })))) : struct.isAutoMode ? (react_1.default.createElement("div", { style: { fontSize: 12, padding: 6, opacity: 0.85 } }, "\u0410\u0432\u0442\u043E (\u0432\u0441\u0435 \u043F\u043E\u043B\u044F \u0438\u0437 \u043E\u0442\u0431\u043E\u0440\u0430)")) : (react_1.default.createElement("div", { className: "dcs-empty", style: { fontSize: 12, padding: 6 } }, "\u041D\u0435\u0442 \u043F\u043E\u043B\u0435\u0439 \u0433\u0440\u0443\u043F\u043F\u0438\u0440\u043E\u0432\u043A\u0438")),
+                            struct.outputParams && struct.outputParams.length > 0 && struct.structNode && (react_1.default.createElement("div", { style: { marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--vscode-panel-border)' } },
+                                react_1.default.createElement("div", { role: "button", tabIndex: 0, onClick: () => setGroupingOtherSettingsExpanded((prev) => ({ ...prev, [struct.path]: !(prev[struct.path] ?? true) })), onKeyDown: (e) => e.key === 'Enter' && setGroupingOtherSettingsExpanded((prev) => ({ ...prev, [struct.path]: !(prev[struct.path] ?? true) })), style: { fontSize: 12, fontWeight: 'bold', marginBottom: 8, opacity: 0.8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 } },
+                                    react_1.default.createElement("span", { style: { transform: (groupingOtherSettingsExpanded[struct.path] ?? true) ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' } }, "\u25B6"),
+                                    "\u0414\u0440\u0443\u0433\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438"),
+                                (groupingOtherSettingsExpanded[struct.path] ?? true) && (react_1.default.createElement("table", { className: "edt-grid__table" },
+                                    react_1.default.createElement("thead", null,
+                                        react_1.default.createElement("tr", null,
+                                            react_1.default.createElement("th", { style: { width: 28, paddingRight: 4 }, title: "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C/\u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043F\u0430\u0440\u0430\u043C\u0435\u0442\u0440" }),
+                                            react_1.default.createElement("th", { style: { width: '38%' } }, "\u041F\u0430\u0440\u0430\u043C\u0435\u0442\u0440"),
+                                            react_1.default.createElement("th", { style: { width: '54%' } }, "\u0417\u043D\u0430\u0447\u0435\u043D\u0438\u0435"))),
+                                    react_1.default.createElement("tbody", null, struct.outputParams.map((op, opIdx) => {
+                                        const paramDef = dcsGroupingParams_1.GROUPING_PARAM_MAP.get(op.parameter);
+                                        const options = paramDef?.options;
+                                        const paramLabel = paramDef?.label || op.parameter.replace(/([а-яa-z])([А-ЯA-Z])/g, '$1 $2');
+                                        const isChild = !!paramDef?.parentParameter;
+                                        const handleValueChange = (newVal) => {
+                                            if (!struct.structNode)
+                                                return;
+                                            // Всегда обновляем через structNode: valueNode.path может быть '' у новых узлов
+                                            onUpdateNode(struct.structNode.path, (n) => upsertOutputParameter(n, op.parameter, newVal, op.use));
+                                        };
+                                        const handleUseChange = (checked) => {
+                                            if (!struct.structNode)
+                                                return;
+                                            if (op.node) {
+                                                onUpdateNode(struct.structNode.path, (n) => setOutputParameterUse(n, op.parameter, checked));
+                                            }
+                                            else if (checked) {
+                                                onUpdateNode(struct.structNode.path, (n) => upsertOutputParameter(n, op.parameter, '', true));
+                                            }
+                                        };
+                                        return (react_1.default.createElement("tr", { key: opIdx },
+                                            react_1.default.createElement("td", { style: { paddingRight: 4, verticalAlign: 'middle' } },
+                                                react_1.default.createElement("input", { type: "checkbox", checked: op.use, onChange: (e) => handleUseChange(e.target.checked), title: op.use ? 'Параметр включён' : 'Параметр выключен' })),
+                                            react_1.default.createElement("td", { style: { opacity: op.use ? 0.9 : 0.5, paddingLeft: isChild ? 24 : undefined } }, paramLabel),
+                                            react_1.default.createElement("td", null, options ? (react_1.default.createElement("select", { className: "edt-props-editor__input", value: op.value, onChange: (e) => handleValueChange(e.target.value), disabled: !op.use },
+                                                react_1.default.createElement("option", { value: "" }, "\u2014"),
+                                                options.map((opt) => (react_1.default.createElement("option", { key: opt.value, value: opt.value }, opt.label))))) : (react_1.default.createElement("input", { className: "edt-props-editor__input", value: op.value, onChange: (e) => handleValueChange(e.target.value), placeholder: "\u2014", disabled: !op.use })))));
+                                    })))))),
                             struct.nestedCharts && struct.nestedCharts.length > 0 && (react_1.default.createElement("div", { style: { marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--vscode-panel-border)' } },
                                 react_1.default.createElement("div", { style: { fontSize: 12, fontWeight: 'bold', marginBottom: 8, opacity: 0.8 } }, "\u0412\u043B\u043E\u0436\u0435\u043D\u043D\u044B\u0435 \u0434\u0438\u0430\u0433\u0440\u0430\u043C\u043C\u044B:"),
                                 struct.nestedCharts.map((chart, chartIdx) => (react_1.default.createElement("div", { key: chartIdx, style: { marginBottom: 8, padding: 8, border: '1px solid var(--vscode-panel-border)', borderRadius: 4, marginLeft: 16 } },
@@ -2213,7 +2549,9 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                                     react_1.default.createElement("div", { style: { fontSize: 11, opacity: 0.7 } },
                                         "\u0422\u0438\u043F: ",
                                         nested.chartParams?.chartType || 'не указан'))) : (react_1.default.createElement(react_1.default.Fragment, null,
-                                    react_1.default.createElement("div", { style: { fontSize: 12, fontWeight: 'bold', marginBottom: 6, opacity: 0.9 } }, "\uD83D\uDCC1 \u0412\u043B\u043E\u0436\u0435\u043D\u043D\u0430\u044F \u0433\u0440\u0443\u043F\u043F\u0438\u0440\u043E\u0432\u043A\u0430"),
+                                    react_1.default.createElement("div", { style: { fontSize: 12, fontWeight: 'bold', marginBottom: 6, opacity: 0.9 } },
+                                        "\uD83D\uDCC1 ",
+                                        nested.groupDisplayLabel || 'Вложенная группировка'),
                                     nested.fields && nested.fields.length > 0 ? (react_1.default.createElement("table", { className: "edt-grid__table" },
                                         react_1.default.createElement("thead", null,
                                             react_1.default.createElement("tr", null,
@@ -2238,7 +2576,47 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                                                         react_1.default.createElement("option", { value: "Items" }, "\u042D\u043B\u0435\u043C\u0435\u043D\u0442\u044B"),
                                                         react_1.default.createElement("option", { value: "Hierarchy" }, "\u0418\u0435\u0440\u0430\u0440\u0445\u0438\u044F"),
                                                         react_1.default.createElement("option", { value: "OnlyHierarchy" }, "\u0422\u043E\u043B\u044C\u043A\u043E \u0438\u0435\u0440\u0430\u0440\u0445\u0438\u044F")))));
-                                        })))) : (react_1.default.createElement("div", { className: "dcs-empty", style: { fontSize: 12, padding: 6 } }, "\u041D\u0435\u0442 \u043F\u043E\u043B\u0435\u0439 \u0433\u0440\u0443\u043F\u043F\u0438\u0440\u043E\u0432\u043A\u0438")),
+                                        })))) : nested.isAutoMode ? (react_1.default.createElement("div", { style: { fontSize: 12, padding: 6, opacity: 0.85 } }, "\u0410\u0432\u0442\u043E (\u0432\u0441\u0435 \u043F\u043E\u043B\u044F \u0438\u0437 \u043E\u0442\u0431\u043E\u0440\u0430)")) : (react_1.default.createElement("div", { className: "dcs-empty", style: { fontSize: 12, padding: 6 } }, "\u041D\u0435\u0442 \u043F\u043E\u043B\u0435\u0439 \u0433\u0440\u0443\u043F\u043F\u0438\u0440\u043E\u0432\u043A\u0438")),
+                                    nested.outputParams && nested.outputParams.length > 0 && nested.structNode && (react_1.default.createElement("div", { style: { marginTop: 8, fontSize: 11 } },
+                                        react_1.default.createElement("div", { role: "button", tabIndex: 0, onClick: () => setGroupingOtherSettingsExpanded((prev) => ({ ...prev, [nested.path]: !(prev[nested.path] ?? true) })), onKeyDown: (e) => e.key === 'Enter' && setGroupingOtherSettingsExpanded((prev) => ({ ...prev, [nested.path]: !(prev[nested.path] ?? true) })), style: { fontWeight: 'bold', marginBottom: 4, opacity: 0.8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 } },
+                                            react_1.default.createElement("span", { style: { transform: (groupingOtherSettingsExpanded[nested.path] ?? true) ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' } }, "\u25B6"),
+                                            "\u0414\u0440\u0443\u0433\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438"),
+                                        (groupingOtherSettingsExpanded[nested.path] ?? true) && (react_1.default.createElement("table", { className: "edt-grid__table", style: { fontSize: 11 } },
+                                            react_1.default.createElement("thead", null,
+                                                react_1.default.createElement("tr", null,
+                                                    react_1.default.createElement("th", { style: { width: 28, paddingRight: 4 }, title: "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C/\u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043F\u0430\u0440\u0430\u043C\u0435\u0442\u0440" }),
+                                                    react_1.default.createElement("th", { style: { width: '42%' } }, "\u041F\u0430\u0440\u0430\u043C\u0435\u0442\u0440"),
+                                                    react_1.default.createElement("th", { style: { width: '50%' } }, "\u0417\u043D\u0430\u0447\u0435\u043D\u0438\u0435"))),
+                                            react_1.default.createElement("tbody", null, nested.outputParams.map((op, opIdx) => {
+                                                const paramDef = dcsGroupingParams_1.GROUPING_PARAM_MAP.get(op.parameter);
+                                                const options = paramDef?.options;
+                                                const paramLabel = paramDef?.label || op.parameter.replace(/([а-яa-z])([А-ЯA-Z])/g, '$1 $2');
+                                                const isChild = !!paramDef?.parentParameter;
+                                                const opUse = op.use !== undefined ? op.use : true;
+                                                const handleValueChange = (newVal) => {
+                                                    if (!nested.structNode)
+                                                        return;
+                                                    const opUse = op.use !== undefined ? op.use : true;
+                                                    onUpdateNode(nested.structNode.path, (n) => upsertOutputParameter(n, op.parameter, newVal, opUse));
+                                                };
+                                                const handleUseChange = (checked) => {
+                                                    if (!nested.structNode)
+                                                        return;
+                                                    if (op.node) {
+                                                        onUpdateNode(nested.structNode.path, (n) => setOutputParameterUse(n, op.parameter, checked));
+                                                    }
+                                                    else if (checked) {
+                                                        onUpdateNode(nested.structNode.path, (n) => upsertOutputParameter(n, op.parameter, '', true));
+                                                    }
+                                                };
+                                                return (react_1.default.createElement("tr", { key: opIdx },
+                                                    react_1.default.createElement("td", { style: { paddingRight: 4, verticalAlign: 'middle' } },
+                                                        react_1.default.createElement("input", { type: "checkbox", checked: opUse, onChange: (e) => handleUseChange(e.target.checked), title: opUse ? 'Параметр включён' : 'Параметр выключен' })),
+                                                    react_1.default.createElement("td", { style: { opacity: opUse ? 0.9 : 0.5, paddingLeft: isChild ? 24 : undefined } }, paramLabel),
+                                                    react_1.default.createElement("td", null, options ? (react_1.default.createElement("select", { className: "edt-props-editor__input", style: { fontSize: 11 }, value: op.value, onChange: (e) => handleValueChange(e.target.value), disabled: !opUse },
+                                                        react_1.default.createElement("option", { value: "" }, "\u2014"),
+                                                        options.map((opt) => (react_1.default.createElement("option", { key: opt.value, value: opt.value }, opt.label))))) : (react_1.default.createElement("input", { className: "edt-props-editor__input", style: { fontSize: 11 }, value: op.value, onChange: (e) => handleValueChange(e.target.value), placeholder: "\u2014", disabled: !opUse })))));
+                                            })))))),
                                     nested.nested && nested.nested.length > 0 && nested.nested.map((nn, nnIdx) => (react_1.default.createElement("div", { key: nnIdx, style: { marginTop: 8, padding: 6, border: '1px solid var(--vscode-panel-border)', borderRadius: 4, marginLeft: 16 } }, nn.isChart ? (react_1.default.createElement(react_1.default.Fragment, null,
                                         react_1.default.createElement("div", { style: { fontSize: 11, fontWeight: 'bold', marginBottom: 4, opacity: 0.8 } },
                                             "\uD83D\uDCCA ",
@@ -2259,14 +2637,6 @@ const DcsSettingsVariantDetails = ({ node, onUpdateNode, onUpdateNodeReindex, sc
                                                             } }))));
                                             }))))))))))))))))))))))),
                     react_1.default.createElement("div", { style: { marginTop: 10, fontSize: 12, opacity: 0.7 } }, "\u0413\u0440\u0443\u043F\u043F\u0438\u0440\u043E\u0432\u043A\u0438 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u044F\u044E\u0442 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0443 \u043E\u0442\u0447\u0435\u0442\u0430. \u041C\u043E\u0433\u0443\u0442 \u0431\u044B\u0442\u044C \u043F\u0440\u043E\u0441\u0442\u044B\u043C\u0438 (Group), \u0442\u0430\u0431\u043B\u0438\u0447\u043D\u044B\u043C\u0438 (Table) \u0441 \u043A\u043E\u043B\u043E\u043D\u043A\u0430\u043C\u0438 \u0438 \u0441\u0442\u0440\u043E\u043A\u0430\u043C\u0438, \u0438\u043B\u0438 \u0434\u0438\u0430\u0433\u0440\u0430\u043C\u043C\u0430\u043C\u0438 (Chart)."))),
-                activeSettingsTab === 'params' && (react_1.default.createElement("div", null,
-                    dataParams.length === 0 ? (react_1.default.createElement("div", { className: "dcs-empty" }, "\u041D\u0435\u0442 \u043F\u0430\u0440\u0430\u043C\u0435\u0442\u0440\u043E\u0432 \u0434\u0430\u043D\u043D\u044B\u0445 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445.")) : (react_1.default.createElement("table", { className: "edt-grid__table" },
-                        react_1.default.createElement("thead", null,
-                            react_1.default.createElement("tr", null,
-                                react_1.default.createElement("th", null, "\u041F\u0430\u0440\u0430\u043C\u0435\u0442\u0440"))),
-                        react_1.default.createElement("tbody", null, dataParams.map((p) => (react_1.default.createElement("tr", { key: p.path },
-                            react_1.default.createElement("td", null, p.parameter || '(не указан)'))))))),
-                    react_1.default.createElement("div", { style: { marginTop: 10, fontSize: 12, opacity: 0.7 } }, "\u0417\u043D\u0430\u0447\u0435\u043D\u0438\u044F \u043F\u0430\u0440\u0430\u043C\u0435\u0442\u0440\u043E\u0432 \u043D\u0430\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044E\u0442\u0441\u044F \u0432 \u0441\u0435\u043A\u0446\u0438\u0438 dataParameters. \u041F\u043E\u043B\u043D\u043E\u0435 \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u043D\u0430 \u0432\u043A\u043B\u0430\u0434\u043A\u0435 \"\u041F\u0440\u043E\u0447\u0435\u0435\"."))),
                 activeSettingsTab === 'other' && (react_1.default.createElement("div", null,
                     react_1.default.createElement("div", { style: { fontSize: 12, opacity: 0.7, marginBottom: 8 } }, "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u043D\u043E\u0435 \u043F\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0432\u0441\u0435\u0445 \u0443\u0437\u043B\u043E\u0432 settings. \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u0434\u043B\u044F \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u044F structure, conditionalAppearance \u0438 \u0434\u0440\u0443\u0433\u0438\u0445 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043A."),
                     react_1.default.createElement("div", { style: { border: '1px solid var(--vscode-panel-border)', borderRadius: 3, padding: 8, maxHeight: 400, overflow: 'auto', fontSize: 11, fontFamily: 'monospace' } },
@@ -2347,6 +2717,15 @@ const DcsEditorApp = ({ vscode }) => {
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
     }, []);
+    // Fallback: если редактор запроса открыт, а дерево не пришло — запрашиваем
+    (0, react_1.useEffect)(() => {
+        if (!isQueryEditorOpen || metadataTree)
+            return;
+        const id = window.setTimeout(() => {
+            vscode.postMessage({ type: 'requestMetadataTree' });
+        }, 300);
+        return () => window.clearTimeout(id);
+    }, [isQueryEditorOpen, metadataTree, vscode]);
     const selectedNode = (0, react_1.useMemo)(() => getNodeAtPath(schemaChildren, selectedPath), [schemaChildren, selectedPath]);
     const datasets = (0, react_1.useMemo)(() => {
         return schemaChildren

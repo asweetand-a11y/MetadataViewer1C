@@ -15,6 +15,7 @@ import { parseFormXmlFull, ParsedFormFull } from "./xmlParsers/formParser";
 import { parseFormXmlFullXmldom, ParsedFormFullXmldom } from "./xmlParsers/formParserXmldom";
 import { serializeFormToXml } from "./xmlParsers/formSerializerXmldom";
 import { normalizeXML, validateXML } from "./utils/xmlUtils";
+import { validateXmlStructure } from "./validation/xmlStructureValidator";
 import { CommitFileLogger } from "./utils/commitFileLogger";
 import { statusBarProgress, contextStatusBar } from "./extension";
 
@@ -217,6 +218,7 @@ export class FormPreviewer {
   private webpanel: vscode.WebviewPanel | undefined = undefined;
   private currentDomDocument: Document | null = null; // DOM документ для сохранения
   private currentRootAttrs: Record<string, any> | undefined = undefined; // Атрибуты корня
+  private extensionUri: vscode.Uri | undefined = undefined;
 
   constructor(confPath: string, rootFilePath: string, filePath: string) {
     this.confPath = confPath;
@@ -230,6 +232,7 @@ export class FormPreviewer {
    * @param title Заголовок узла дерева
    */
   public async openPreview(extensionUri: vscode.Uri, title?: string | vscode.TreeItemLabel) {
+    this.extensionUri = extensionUri;
     if (!fs.existsSync(this.filePath)) {
       vscode.window.showInformationMessage(`File ${this.filePath} does not exist.`);
       return;
@@ -358,8 +361,23 @@ export class FormPreviewer {
           const updatedXml = serializeFormToXml(formDataWithDom);
           const normalizedXml = normalizeXML(updatedXml);
 
-          if (!validateXML(normalizedXml)) {
-            throw new Error('Результат сохранения не является валидным XML');
+          const validation = validateXML(normalizedXml);
+          if (!validation.valid) {
+            throw new Error(validation.error ?? 'Результат сохранения не является валидным XML');
+          }
+
+          const structureValidationEnabled = vscode.workspace.getConfiguration('metadataViewer').get<boolean>('structureValidationEnabled', true);
+          if (structureValidationEnabled && this.extensionUri) {
+            const structureResult = validateXmlStructure(normalizedXml, {
+              extensionPath: this.extensionUri.fsPath,
+              filePath: formPath,
+              rootTag: 'Form'
+            });
+            if (!structureResult.valid && structureResult.errors?.length) {
+              const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+              vscode.window.showErrorMessage(`Ошибка структуры XML формы: ${errorMessage}`);
+              throw new Error(`XML structure validation failed: ${errorMessage}`);
+            }
           }
 
           // ВАЖНО: Добавляем BOM (Byte Order Mark) для UTF-8, как в оригинальных файлах 1С

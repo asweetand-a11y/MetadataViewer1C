@@ -160,19 +160,9 @@ export function validateXML(xml: string): { valid: boolean; error?: string } {
             
             return { valid: true };
         } catch (parseError) {
-            // Если парсинг упал с ошибкой, это не обязательно означает, что XML некорректен
-            // Может быть проблема с парсером или с конкретной структурой XML
             const parseErrorMessage = parseError instanceof Error ? parseError.message : String(parseError);
-            
-            // Проверяем, является ли это известной проблемой парсера
-            if (parseErrorMessage.includes('addChild') || parseErrorMessage.includes('Cannot read properties')) {
-                // Это известная проблема парсера - считаем XML валидным, но с предупреждением
-                console.warn('[validateXML] Парсер не смог обработать XML, но это может быть проблема парсера, а не XML:', parseErrorMessage);
-                return { valid: true }; // Считаем валидным, т.к. проблема может быть в парсере
-            }
-            
-            // Для других ошибок возвращаем ошибку
-            throw parseError;
+            // НЕ возвращаем valid: true при ошибках парсера — 1С XDTO может отклонить такой XML.
+            return { valid: false, error: `Ошибка парсинга XML: ${parseErrorMessage}` };
         }
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);

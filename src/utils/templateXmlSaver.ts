@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import { TemplateDocument } from '../templatInterfaces';
 import { CommitFileLogger } from './commitFileLogger';
 import { validatePath } from './fileUtils';
+import { normalizeXML, validateXML } from './xmlUtils';
 
 /**
  * Сохраняет макет в XML файл с сохранением структуры через xmldom
@@ -49,9 +50,11 @@ export function saveTemplateToXml(
     const serializer = new XMLSerializer();
     let updatedXml = serializer.serializeToString(xmlDoc);
 
-    // Добавляем XML декларацию, если её нет
-    if (!updatedXml.startsWith('<?xml')) {
-        updatedXml = '<?xml version="1.0" encoding="UTF-8"?>\n' + updatedXml;
+    updatedXml = normalizeXML(updatedXml);
+
+    const validation = validateXML(updatedXml);
+    if (!validation.valid) {
+        throw new Error(validation.error ?? 'Результат сохранения не является валидным XML');
     }
 
     // Сохраняем файл с BOM (как в оригинальных файлах 1С)

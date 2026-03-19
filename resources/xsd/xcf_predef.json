@@ -1,0 +1,294 @@
+{
+  "roots": [
+    "ChildItems",
+    "Code",
+    "Description",
+    "IsFolder",
+    "Item",
+    "Name",
+    "PredefinedData",
+    "Type"
+  ],
+  "elements": {
+    "ChildItems": {
+      "children": [
+        "Item"
+      ],
+      "childMin": {
+        "Item": 1
+      },
+      "childMax": {
+        "Item": -1
+      },
+      "allowAny": false
+    },
+    "Code": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "Description": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "IsFolder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "Item": {
+      "children": [
+        "Name",
+        "Code",
+        "Description",
+        "IsFolder",
+        "ChildItems",
+        "Type"
+      ],
+      "childMin": {
+        "Name": 1,
+        "Code": 1,
+        "Description": 1,
+        "IsFolder": 1,
+        "ChildItems": 0,
+        "Type": 0
+      },
+      "childMax": {
+        "Name": 1,
+        "Code": 1,
+        "Description": 1,
+        "IsFolder": 1,
+        "ChildItems": 1,
+        "Type": 1
+      },
+      "allowAny": false
+    },
+    "Name": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "PredefinedData": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "Type": {
+      "children": [
+        "Type",
+        "NumberQualifiers"
+      ],
+      "childMin": {
+        "Type": 1,
+        "NumberQualifiers": 0
+      },
+      "childMax": {
+        "Type": -1,
+        "NumberQualifiers": 1
+      },
+      "allowAny": false
+    },
+    "AllowedLength": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "AllowedSign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "DateFractions": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "DateQualifiers": {
+      "children": [
+        "DateFractions"
+      ],
+      "childMin": {
+        "DateFractions": 1
+      },
+      "childMax": {
+        "DateFractions": 1
+      },
+      "allowAny": false
+    },
+    "Digits": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "FractionDigits": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "Length": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "NumberQualifiers": {
+      "children": [
+        "Digits",
+        "FractionDigits",
+        "AllowedSign"
+      ],
+      "childMin": {
+        "Digits": 1,
+        "FractionDigits": 1,
+        "AllowedSign": 1
+      },
+      "childMax": {
+        "Digits": 1,
+        "FractionDigits": 1,
+        "AllowedSign": 1
+      },
+      "allowAny": false
+    },
+    "Property": {
+      "children": [
+        "Value"
+      ],
+      "childMin": {
+        "Value": 1
+      },
+      "childMax": {
+        "Value": 1
+      },
+      "allowAny": false
+    },
+    "StringQualifiers": {
+      "children": [
+        "Length",
+        "AllowedLength"
+      ],
+      "childMin": {
+        "Length": 1,
+        "AllowedLength": 1
+      },
+      "childMax": {
+        "Length": 1,
+        "AllowedLength": 1
+      },
+      "allowAny": false
+    },
+    "TypeId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "TypeSet": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "Value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "content": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "date": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "endDate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "item": {
+      "children": [
+        "lang",
+        "content"
+      ],
+      "childMin": {
+        "lang": 1,
+        "content": 1
+      },
+      "childMax": {
+        "lang": 1,
+        "content": 1
+      },
+      "allowAny": false
+    },
+    "lang": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "lastId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "startDate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    },
+    "valueType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false
+    },
+    "variant": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true
+    }
+  },
+  "source": "http_v8.1c.ru_8.3_xcf_predef.xsd"
+}
