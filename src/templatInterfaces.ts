@@ -31,6 +31,8 @@ export interface TemplateColumns {
 	id?: string;  // Может отсутствовать для формата по умолчанию
 	size: number;
 	columnsItem: ColumnsItem[];
+	/** Общий formatIndex группы колонок (<columns><formatIndex>), 1-based как в XML */
+	formatIndex?: number;
 }
 
 interface ColumnsItem {
@@ -53,6 +55,8 @@ export interface TemplateFormat {
 	topBorder?: number;
 	bottomBorder?: number;
 	rightBorder?: number;
+	/** Общий цвет рамки (элемент borderColor в format), «Авто» в 1С — как правило отсутствует или стиль */
+	borderColor?: string;
 	// Свойства границ: тип линии, толщина, цвет
 	leftBorderLineType?: string;  // сплошная, точечная, двойная, редкий пунктир, частый пунктир, большой пунктир
 	leftBorderWidth?: number;     // толщина в пикселях
@@ -67,10 +71,15 @@ export interface TemplateFormat {
 	rightBorderWidth?: number;
 	rightBorderColor?: string;
 	textPlacement?: string;  // Wrap, Clip, None
+	textOrientation?: number;  // Угол ориентации текста в градусах (0, 90, 180, 270)
 	font?: number;
 	fillType?: string;  // Parameter, Text
 	indent?: number;
 	autoIndent?: number;
+	leftMargin?: number;
+	rightMargin?: number;
+	topMargin?: number;
+	bottomMargin?: number;
 	textColor?: string;  // Может быть стиль: "style:NegativeTextColor"
 	backColor?: string;  // Может быть стиль: "style:ToolTipBackColor"
 	format?: TemplateTextData;  // Вложенный формат для чисел/дат (структура с v8:item/v8:content)

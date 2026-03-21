@@ -34,8 +34,9 @@ const FormatBuilder_1 = require("./FormatBuilder");
 const ColorPickerDialog_1 = require("./ColorPickerDialog");
 const FontBuilderDialog_1 = require("./FontBuilderDialog");
 const templateUtils_1 = require("../../../utils/templateUtils");
+const spreadsheetCellLineType_1 = require("../../../utils/spreadsheetCellLineType");
 require("./template-editor.css");
-const TemplatePropertiesPanel = ({ templateDocument, selectedCell, selectedRange, onFillPatternToggle, onParameterNameChange, onTemplateTextChange, onCreateNote, onUpdateNote, onDeleteNote, onDetailParameterChange, onFormatChange, onFontChange, onAlignmentChange, onBordersChange, onColorsChange, onClose }) => {
+const TemplatePropertiesPanel = ({ templateDocument, selectedCell, selectedRange, onFillPatternToggle, onParameterNameChange, onTemplateTextChange, onCreateNote, onUpdateNote, onDeleteNote, onDetailParameterChange, onFormatChange, onFontChange, onAlignmentChange, onColorsChange, onClose }) => {
     const [isNoteDialogOpen, setIsNoteDialogOpen] = (0, react_1.useState)(false);
     const [editingNote, setEditingNote] = (0, react_1.useState)(null);
     const [isFormatBuilderOpen, setIsFormatBuilderOpen] = (0, react_1.useState)(false);
@@ -43,42 +44,25 @@ const TemplatePropertiesPanel = ({ templateDocument, selectedCell, selectedRange
     const [isColorPickerOpen, setIsColorPickerOpen] = (0, react_1.useState)(false);
     const [colorPickerMode, setColorPickerMode] = (0, react_1.useState)('text');
     const [isFontBuilderOpen, setIsFontBuilderOpen] = (0, react_1.useState)(false);
+    const selRow = selectedCell?.row;
+    const selCol = selectedCell?.col;
+    const effectiveFormat = (0, react_1.useMemo)(() => {
+        if (selRow === undefined || selCol === undefined) {
+            return null;
+        }
+        return (0, templateUtils_1.getEffectiveFormat)(templateDocument, selRow, selCol);
+    }, [templateDocument, selRow, selCol]);
+    const effectiveFont = (0, react_1.useMemo)(() => {
+        if (selRow === undefined || selCol === undefined) {
+            return null;
+        }
+        return (0, templateUtils_1.getEffectiveFont)(templateDocument, selRow, selCol);
+    }, [templateDocument, selRow, selCol]);
     if (!selectedCell) {
         return (react_1.default.createElement("div", { className: "template-properties-empty" }, "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u044F\u0447\u0435\u0439\u043A\u0443 \u0434\u043B\u044F \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u044F \u0441\u0432\u043E\u0439\u0441\u0442\u0432"));
     }
     const cell = (0, templateUtils_1.findCellByPosition)(templateDocument, selectedCell.row, selectedCell.col);
     const fillPattern = (0, templateUtils_1.getCellFillPattern)(templateDocument, selectedCell.row, selectedCell.col);
-    const effectiveFormat = (0, templateUtils_1.getEffectiveFormat)(templateDocument, selectedCell.row, selectedCell.col);
-    const effectiveFont = (0, templateUtils_1.getEffectiveFont)(templateDocument, selectedCell.row, selectedCell.col);
-    // Функция для извлечения строки из цвета (может быть объектом или строкой)
-    const extractColorString = (color) => {
-        if (!color)
-            return '';
-        if (typeof color === 'string') {
-            // Если это строка "[object Object]", возвращаем пустую строку
-            if (color === '[object Object]')
-                return '';
-            return color;
-        }
-        if (typeof color === 'object') {
-            // Пытаемся извлечь строку из различных структур объекта
-            if (color['#text'])
-                return color['#text'];
-            if (color['$'] && color['$']['xmlns:d3p1']) {
-                // Сложная структура с namespace
-                return String(color);
-            }
-            // Если объект, пытаемся найти строковое значение
-            for (const key in color) {
-                if (typeof color[key] === 'string' && color[key] !== '[object Object]') {
-                    return color[key];
-                }
-            }
-            // Если ничего не нашли, возвращаем пустую строку
-            return '';
-        }
-        return String(color);
-    };
     let parameterName = '';
     let templateText = '';
     let detailParameter = '';
@@ -207,40 +191,103 @@ const TemplatePropertiesPanel = ({ templateDocument, selectedCell, selectedRange
                             react_1.default.createElement("option", { value: "Clip" }, "\u041E\u0431\u0440\u0435\u0437\u043A\u0430"),
                             react_1.default.createElement("option", { value: "None" }, "\u041D\u0435\u0442"))),
                     react_1.default.createElement("div", { className: "template-properties-format-field" },
-                        react_1.default.createElement("label", null, "\u0413\u0440\u0430\u043D\u0438\u0446\u044B:"),
+                        react_1.default.createElement("label", null, "\u041E\u0440\u0438\u0435\u043D\u0442\u0430\u0446\u0438\u044F \u0442\u0435\u043A\u0441\u0442\u0430 (\u00B0):"),
+                        react_1.default.createElement("select", { value: effectiveFormat?.textOrientation !== undefined ? String(effectiveFormat.textOrientation) : '', onChange: (e) => {
+                                const val = e.target.value;
+                                const updated = (0, templateUtils_1.updateCellFormat)(templateDocument, selectedCell.row, selectedCell.col, {
+                                    textOrientation: val === '' ? undefined : parseInt(val, 10)
+                                });
+                                onFormatChange?.(updated);
+                            }, className: "template-properties-input" },
+                            react_1.default.createElement("option", { value: "" }, "0 (\u0433\u043E\u0440\u0438\u0437\u043E\u043D\u0442\u0430\u043B\u044C\u043D\u043E)"),
+                            react_1.default.createElement("option", { value: "90" }, "90 (\u0432\u0435\u0440\u0442\u0438\u043A\u0430\u043B\u044C\u043D\u043E)"),
+                            react_1.default.createElement("option", { value: "180" }, "180"),
+                            react_1.default.createElement("option", { value: "270" }, "270"))),
+                    react_1.default.createElement("div", { className: "template-properties-format-field" },
+                        react_1.default.createElement("label", null, "\u041E\u0442\u0441\u0442\u0443\u043F:"),
+                        react_1.default.createElement("input", { type: "number", value: effectiveFormat?.indent ?? '', onChange: (e) => {
+                                const val = e.target.value;
+                                const updated = (0, templateUtils_1.updateCellFormat)(templateDocument, selectedCell.row, selectedCell.col, {
+                                    indent: val === '' ? undefined : parseInt(val, 10)
+                                });
+                                onFormatChange?.(updated);
+                            }, placeholder: "0", className: "template-properties-input", min: "0" })),
+                    react_1.default.createElement("div", { className: "template-properties-format-field" },
+                        react_1.default.createElement("label", null, "\u0410\u0432\u0442\u043E\u043E\u0442\u0441\u0442\u0443\u043F:"),
+                        react_1.default.createElement("input", { type: "number", value: effectiveFormat?.autoIndent ?? '', onChange: (e) => {
+                                const val = e.target.value;
+                                const updated = (0, templateUtils_1.updateCellFormat)(templateDocument, selectedCell.row, selectedCell.col, {
+                                    autoIndent: val === '' ? undefined : parseInt(val, 10)
+                                });
+                                onFormatChange?.(updated);
+                            }, placeholder: "0", className: "template-properties-input", min: "0" })),
+                    react_1.default.createElement("div", { className: "template-properties-format-field" },
+                        react_1.default.createElement("label", null, "\u041E\u0442\u0441\u0442\u0443\u043F\u044B (\u0421\u043B\u0435\u0432\u0430 / \u0421\u043F\u0440\u0430\u0432\u0430 / \u0421\u0432\u0435\u0440\u0445\u0443 / \u0421\u043D\u0438\u0437\u0443):"),
                         react_1.default.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' } },
-                            react_1.default.createElement("label", { style: { fontSize: 'calc(var(--vscode-font-size) - 1px)' } },
-                                react_1.default.createElement("input", { type: "checkbox", checked: effectiveFormat?.leftBorder === 1, onChange: (e) => {
-                                        onBordersChange?.({
-                                            left: e.target.checked ? 1 : 0
+                            react_1.default.createElement("input", { type: "number", value: effectiveFormat?.leftMargin ?? '', onChange: (e) => {
+                                    const val = e.target.value;
+                                    const updated = (0, templateUtils_1.updateCellFormat)(templateDocument, selectedCell.row, selectedCell.col, {
+                                        leftMargin: val === '' ? undefined : parseInt(val, 10)
+                                    });
+                                    onFormatChange?.(updated);
+                                }, placeholder: "\u0421\u043B\u0435\u0432\u0430", className: "template-properties-input", min: "0", title: "\u0421\u043B\u0435\u0432\u0430" }),
+                            react_1.default.createElement("input", { type: "number", value: effectiveFormat?.rightMargin ?? '', onChange: (e) => {
+                                    const val = e.target.value;
+                                    const updated = (0, templateUtils_1.updateCellFormat)(templateDocument, selectedCell.row, selectedCell.col, {
+                                        rightMargin: val === '' ? undefined : parseInt(val, 10)
+                                    });
+                                    onFormatChange?.(updated);
+                                }, placeholder: "\u0421\u043F\u0440\u0430\u0432\u0430", className: "template-properties-input", min: "0", title: "\u0421\u043F\u0440\u0430\u0432\u0430" }),
+                            react_1.default.createElement("input", { type: "number", value: effectiveFormat?.topMargin ?? '', onChange: (e) => {
+                                    const val = e.target.value;
+                                    const updated = (0, templateUtils_1.updateCellFormat)(templateDocument, selectedCell.row, selectedCell.col, {
+                                        topMargin: val === '' ? undefined : parseInt(val, 10)
+                                    });
+                                    onFormatChange?.(updated);
+                                }, placeholder: "\u0421\u0432\u0435\u0440\u0445\u0443", className: "template-properties-input", min: "0", title: "\u0421\u0432\u0435\u0440\u0445\u0443" }),
+                            react_1.default.createElement("input", { type: "number", value: effectiveFormat?.bottomMargin ?? '', onChange: (e) => {
+                                    const val = e.target.value;
+                                    const updated = (0, templateUtils_1.updateCellFormat)(templateDocument, selectedCell.row, selectedCell.col, {
+                                        bottomMargin: val === '' ? undefined : parseInt(val, 10)
+                                    });
+                                    onFormatChange?.(updated);
+                                }, placeholder: "\u0421\u043D\u0438\u0437\u0443", className: "template-properties-input", min: "0", title: "\u0421\u043D\u0438\u0437\u0443" }))),
+                    react_1.default.createElement("div", { className: "template-properties-format-field" },
+                        react_1.default.createElement("label", null, "\u0413\u0440\u0430\u043D\u0438\u0446\u044B (\u0442\u0438\u043F \u043B\u0438\u043D\u0438\u0438 \u043F\u043E \u0441\u0442\u043E\u0440\u043E\u043D\u0430\u043C, \u043A\u0430\u043A \u0432 1\u0421):"),
+                        react_1.default.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' } },
+                            [
+                                ['Граница слева', 'leftBorder'],
+                                ['Граница сверху', 'topBorder'],
+                                ['Граница справа', 'rightBorder'],
+                                ['Граница снизу', 'bottomBorder'],
+                                ['Обвести (рамка)', 'border'],
+                            ].map(([label, field]) => (react_1.default.createElement("label", { key: field, style: { fontSize: 'calc(var(--vscode-font-size) - 1px)' } },
+                                label,
+                                react_1.default.createElement("select", { className: "template-properties-input", style: { marginTop: '4px', width: '100%' }, value: (0, templateUtils_1.formatBorderLineCode)(effectiveFormat?.[field]), title: "\u041A\u043E\u0434\u044B 0\u20266 \u2014 SpreadsheetDocumentCellLineType (EDT)", onChange: (e) => {
+                                        const v = parseInt(e.target.value, 10);
+                                        const updated = (0, templateUtils_1.updateCellFormat)(templateDocument, selectedCell.row, selectedCell.col, {
+                                            [field]: v,
                                         });
-                                    }, style: { marginRight: '4px' } }),
-                                "\u0421\u043B\u0435\u0432\u0430"),
-                            react_1.default.createElement("label", { style: { fontSize: 'calc(var(--vscode-font-size) - 1px)' } },
-                                react_1.default.createElement("input", { type: "checkbox", checked: effectiveFormat?.topBorder === 1, onChange: (e) => {
-                                        onBordersChange?.({
-                                            top: e.target.checked ? 1 : 0
-                                        });
-                                    }, style: { marginRight: '4px' } }),
-                                "\u0421\u0432\u0435\u0440\u0445\u0443"),
-                            react_1.default.createElement("label", { style: { fontSize: 'calc(var(--vscode-font-size) - 1px)' } },
-                                react_1.default.createElement("input", { type: "checkbox", checked: effectiveFormat?.rightBorder === 1, onChange: (e) => {
-                                        onBordersChange?.({
-                                            right: e.target.checked ? 1 : 0
-                                        });
-                                    }, style: { marginRight: '4px' } }),
-                                "\u0421\u043F\u0440\u0430\u0432\u0430"),
-                            react_1.default.createElement("label", { style: { fontSize: 'calc(var(--vscode-font-size) - 1px)' } },
-                                react_1.default.createElement("input", { type: "checkbox", checked: effectiveFormat?.bottomBorder === 1, onChange: (e) => {
-                                        onBordersChange?.({
-                                            bottom: e.target.checked ? 1 : 0
-                                        });
-                                    }, style: { marginRight: '4px' } }),
-                                "\u0421\u043D\u0438\u0437\u0443"))),
+                                        onFormatChange?.(updated);
+                                    } }, spreadsheetCellLineType_1.SPREADSHEET_CELL_LINE_TYPE_OPTIONS_WITH_NONE.map((o) => (react_1.default.createElement("option", { key: o.value, value: o.value },
+                                    "\u2014 ",
+                                    o.label))))))),
+                            react_1.default.createElement("div", { className: "template-properties-format-field", style: { marginBottom: 0 } },
+                                react_1.default.createElement("label", null, "\u0426\u0432\u0435\u0442 \u0440\u0430\u043C\u043A\u0438:"),
+                                react_1.default.createElement("div", { style: { display: 'flex', gap: '4px', alignItems: 'center', marginTop: '4px' } },
+                                    react_1.default.createElement("input", { type: "text", value: (0, templateUtils_1.extractTemplateFormatColorString)(effectiveFormat?.borderColor) || '', readOnly: true, placeholder: "\u0410\u0432\u0442\u043E", className: "template-properties-input", style: { flex: 1 } }),
+                                    react_1.default.createElement("button", { className: "template-properties-button-small", type: "button", onClick: () => {
+                                            setColorPickerMode('border');
+                                            setIsColorPickerOpen(true);
+                                        }, title: "\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0446\u0432\u0435\u0442 \u0440\u0430\u043C\u043A\u0438" }, "\uD83C\uDFA8"),
+                                    react_1.default.createElement("button", { className: "template-properties-button-small", type: "button", title: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C (\u0430\u0432\u0442\u043E)", onClick: () => {
+                                            const updated = (0, templateUtils_1.updateCellFormat)(templateDocument, selectedCell.row, selectedCell.col, { borderColor: undefined });
+                                            onFormatChange?.(updated);
+                                        } }, "\u2715"))))),
                     react_1.default.createElement("div", { className: "template-properties-format-field" },
                         react_1.default.createElement("label", null, "\u0426\u0432\u0435\u0442 \u0442\u0435\u043A\u0441\u0442\u0430:"),
                         react_1.default.createElement("div", { style: { display: 'flex', gap: '4px', alignItems: 'center' } },
-                            react_1.default.createElement("input", { type: "text", value: extractColorString(effectiveFormat?.textColor), readOnly: true, placeholder: "\u043D\u0435 \u0437\u0430\u0434\u0430\u043D", className: "template-properties-input", style: { flex: 1 } }),
+                            react_1.default.createElement("input", { type: "text", value: (0, templateUtils_1.extractTemplateFormatColorString)(effectiveFormat?.textColor), readOnly: true, placeholder: "\u043D\u0435 \u0437\u0430\u0434\u0430\u043D", className: "template-properties-input", style: { flex: 1 } }),
                             react_1.default.createElement("button", { className: "template-properties-button-small", onClick: () => {
                                     setColorPickerMode('text');
                                     setIsColorPickerOpen(true);
@@ -248,7 +295,7 @@ const TemplatePropertiesPanel = ({ templateDocument, selectedCell, selectedRange
                     react_1.default.createElement("div", { className: "template-properties-format-field" },
                         react_1.default.createElement("label", null, "\u0426\u0432\u0435\u0442 \u0444\u043E\u043D\u0430:"),
                         react_1.default.createElement("div", { style: { display: 'flex', gap: '4px', alignItems: 'center' } },
-                            react_1.default.createElement("input", { type: "text", value: extractColorString(effectiveFormat?.backColor), readOnly: true, placeholder: "\u043D\u0435 \u0437\u0430\u0434\u0430\u043D", className: "template-properties-input", style: { flex: 1 } }),
+                            react_1.default.createElement("input", { type: "text", value: (0, templateUtils_1.extractTemplateFormatColorString)(effectiveFormat?.backColor), readOnly: true, placeholder: "\u043D\u0435 \u0437\u0430\u0434\u0430\u043D", className: "template-properties-input", style: { flex: 1 } }),
                             react_1.default.createElement("button", { className: "template-properties-button-small", onClick: () => {
                                     setColorPickerMode('back');
                                     setIsColorPickerOpen(true);
@@ -326,8 +373,26 @@ const TemplatePropertiesPanel = ({ templateDocument, selectedCell, selectedRange
                 onFormatChange?.(updated);
                 setIsFormatBuilderOpen(false);
             }, onCancel: () => setIsFormatBuilderOpen(false) })),
-        react_1.default.createElement(ColorPickerDialog_1.ColorPickerDialog, { isOpen: isColorPickerOpen, currentColor: colorPickerMode === 'text' ? (effectiveFormat?.textColor || '') : (effectiveFormat?.backColor || ''), title: colorPickerMode === 'text' ? 'Выбор цвета текста' : 'Выбор цвета фона', onSave: (color) => {
-                if (colorPickerMode === 'text') {
+        react_1.default.createElement(ColorPickerDialog_1.ColorPickerDialog, { isOpen: isColorPickerOpen, currentColor: colorPickerMode === 'text'
+                ? (0, templateUtils_1.extractTemplateFormatColorString)(effectiveFormat?.textColor)
+                : colorPickerMode === 'back'
+                    ? (0, templateUtils_1.extractTemplateFormatColorString)(effectiveFormat?.backColor)
+                    : (0, templateUtils_1.extractTemplateFormatColorString)(effectiveFormat?.borderColor), title: colorPickerMode === 'text'
+                ? 'Выбор цвета текста'
+                : colorPickerMode === 'back'
+                    ? 'Выбор цвета фона'
+                    : 'Выбор цвета рамки', onSave: (color) => {
+                if (!selectedCell) {
+                    setIsColorPickerOpen(false);
+                    return;
+                }
+                if (colorPickerMode === 'border') {
+                    const updated = (0, templateUtils_1.updateCellFormat)(templateDocument, selectedCell.row, selectedCell.col, {
+                        borderColor: color || undefined,
+                    });
+                    onFormatChange?.(updated);
+                }
+                else if (colorPickerMode === 'text') {
                     onColorsChange?.(color || undefined, effectiveFormat?.backColor);
                 }
                 else {

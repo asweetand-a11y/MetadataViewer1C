@@ -31,10 +31,14 @@ exports.TemplateTable = void 0;
 const react_1 = __importStar(require("react"));
 const templateUtils_1 = require("../../../utils/templateUtils");
 const templateUtils_2 = require("../../../utils/templateUtils");
+const spreadsheetCellLineType_1 = require("../../../utils/spreadsheetCellLineType");
 require("./template-editor.css");
 const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSelect, onRangeSelect, onCellEdit, frozenRows = 0, frozenColumns = 0, showGrid = true, showHeaders = true, zoom = 1.0, showNotes = true, showNamedAreaBorders = true }) => {
     const [cellContents, setCellContents] = (0, react_1.useState)(new Map());
     const tableRef = (0, react_1.useRef)(null);
+    const leftScrollRef = (0, react_1.useRef)(null);
+    const rightScrollRef = (0, react_1.useRef)(null);
+    const rightHeaderScrollRef = (0, react_1.useRef)(null);
     const [isDragging, setIsDragging] = (0, react_1.useState)(false);
     const [dragStart, setDragStart] = (0, react_1.useState)(null);
     const [activeRowIndex, setActiveRowIndex] = (0, react_1.useState)(null);
@@ -69,6 +73,72 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
             });
         }
         setCellContents(contents);
+    }, [templateDocument]);
+    // Синхронизация вертикальной прокрутки левой и правой панелей
+    (0, react_1.useEffect)(() => {
+        const left = leftScrollRef.current;
+        const right = rightScrollRef.current;
+        if (!left || !right)
+            return;
+        let syncing = false;
+        const syncLeftToRight = () => {
+            if (syncing)
+                return;
+            syncing = true;
+            right.scrollTop = left.scrollTop;
+            syncing = false;
+        };
+        const syncRightToLeft = () => {
+            if (syncing)
+                return;
+            syncing = true;
+            left.scrollTop = right.scrollTop;
+            syncing = false;
+        };
+        left.addEventListener('scroll', syncLeftToRight);
+        right.addEventListener('scroll', syncRightToLeft);
+        return () => {
+            left.removeEventListener('scroll', syncLeftToRight);
+            right.removeEventListener('scroll', syncRightToLeft);
+        };
+    }, []);
+    // Синхронизация горизонтальной прокрутки заголовков колонок и данных
+    (0, react_1.useEffect)(() => {
+        const header = rightHeaderScrollRef.current;
+        const body = rightScrollRef.current;
+        if (!header || !body)
+            return;
+        let syncing = false;
+        const syncHeaderToBody = () => {
+            if (syncing)
+                return;
+            syncing = true;
+            body.scrollLeft = header.scrollLeft;
+            syncing = false;
+        };
+        const syncBodyToHeader = () => {
+            if (syncing)
+                return;
+            syncing = true;
+            header.scrollLeft = body.scrollLeft;
+            syncing = false;
+        };
+        header.addEventListener('scroll', syncHeaderToBody);
+        body.addEventListener('scroll', syncBodyToHeader);
+        return () => {
+            header.removeEventListener('scroll', syncHeaderToBody);
+            body.removeEventListener('scroll', syncBodyToHeader);
+        };
+    }, []);
+    // Начальная синхронизация прокрутки после рендера
+    (0, react_1.useEffect)(() => {
+        const right = rightScrollRef.current;
+        const left = leftScrollRef.current;
+        const header = rightHeaderScrollRef.current;
+        if (right && left)
+            left.scrollTop = right.scrollTop;
+        if (right && header)
+            header.scrollLeft = right.scrollLeft;
     }, [templateDocument]);
     // Функция для получения группы колонок по умолчанию
     const getDefaultColumnsGroup = (0, react_1.useCallback)(() => {
@@ -130,33 +200,8 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
         return String(height).includes('px') ? String(height) : `${height}px`;
     }, [templateDocument]);
     // Функция для преобразования типа линии, толщины и цвета в CSS border
-    const getBorderStyle = react_1.default.useCallback((borderType, lineType, width, color) => {
-        if (!borderType || borderType === 0) {
-            return undefined;
-        }
-        // Преобразуем тип линии в CSS border-style
-        let borderStyle = 'solid'; // по умолчанию сплошная
-        if (lineType) {
-            const lineTypeLower = lineType.toLowerCase();
-            if (lineTypeLower.includes('точечн') || lineTypeLower.includes('dotted')) {
-                borderStyle = 'dotted';
-            }
-            else if (lineTypeLower.includes('пунктир') || lineTypeLower.includes('dashed')) {
-                borderStyle = 'dashed';
-            }
-            else if (lineTypeLower.includes('двойн') || lineTypeLower.includes('double')) {
-                borderStyle = 'double';
-            }
-            else if (lineTypeLower.includes('сплошн') || lineTypeLower.includes('solid')) {
-                borderStyle = 'solid';
-            }
-        }
-        // Используем толщину из параметра или значение по умолчанию
-        const borderWidth = width !== undefined ? `${width}px` : '1px';
-        // Используем цвет из параметра или значение по умолчанию
-        const borderColor = color || 'var(--vscode-panel-border)';
-        return `${borderWidth} ${borderStyle} ${borderColor}`;
-    }, []);
+    /** CSS для границы по коду SpreadsheetDocumentCellLineType (см. spreadsheetCellLineType.ts). */
+    const getBorderStyle = react_1.default.useCallback((borderLineCode, lineType, width, color) => (0, spreadsheetCellLineType_1.buildCellBorderCss)(borderLineCode, { lineType, widthPx: width, color }), []);
     // Вычисление максимального количества колонок (учитываем все группы колонок)
     const maxColumns = react_1.default.useMemo(() => {
         let max = 0;
@@ -190,6 +235,28 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
         }
         return Math.max(max, 10);
     }, [templateDocument]);
+    /** Диапазон «вся строка» (клик по номеру строки / Shift): подсвечиваем все строки диапазона */
+    const fullWidthRowSelection = react_1.default.useMemo(() => {
+        if (!selectedRange) {
+            return null;
+        }
+        if (selectedRange.startCol !== 0 || selectedRange.endCol !== maxColumns - 1) {
+            return null;
+        }
+        return selectedRange;
+    }, [selectedRange, maxColumns]);
+    /** Диапазон «вся колонка» (клик по заголовку колонки): полная высота макета */
+    const fullHeightColumnSelection = react_1.default.useMemo(() => {
+        if (!selectedRange) {
+            return null;
+        }
+        const minR = (0, templateUtils_1.getMinRowIndex)(templateDocument);
+        const maxR = (0, templateUtils_1.getMaxRowIndex)(templateDocument);
+        if (selectedRange.startRow !== minR || selectedRange.endRow !== maxR) {
+            return null;
+        }
+        return selectedRange;
+    }, [selectedRange, templateDocument]);
     // Получение содержимого ячейки
     const getCellContent = (0, react_1.useCallback)((row, col) => {
         const key = `${row}_${col}`;
@@ -457,353 +524,414 @@ const TemplateTable = ({ templateDocument, selectedCell, selectedRange, onCellSe
     const rows = templateDocument.rowsItem || [];
     const columns = templateDocument.columns || [];
     return (react_1.default.createElement("div", { className: "template-table-container" },
-        react_1.default.createElement("table", { ref: tableRef, className: `template-table ${showGrid ? 'show-grid' : ''} ${showHeaders ? 'show-headers' : ''}`, style: { tableLayout: 'fixed' } },
-            react_1.default.createElement("colgroup", null,
-                react_1.default.createElement("col", { style: { width: '150px' } }),
-                react_1.default.createElement("col", { style: { width: '40px' } }),
-                Array.from({ length: maxColumns }, (_, col) => {
-                    // Заголовки колонок используют формат по умолчанию
-                    const defaultColumnsGroup = getDefaultColumnsGroup();
-                    const columnWidth = getColumnWidth(col, defaultColumnsGroup);
-                    const widthValue = columnWidth.includes('px') ? columnWidth : `${columnWidth}px`;
-                    return (react_1.default.createElement("col", { key: col, style: { width: widthValue } }));
-                })),
-            react_1.default.createElement("thead", null,
-                react_1.default.createElement("tr", { className: "template-table-named-areas-row" },
-                    react_1.default.createElement("th", { className: "template-table-named-area-header" }),
-                    react_1.default.createElement("th", { className: "template-table-row-header" }),
-                    Array.from({ length: maxColumns }, (_, col) => {
-                        // Определяем активную строку для динамического переключения
-                        const activeRow = currentActiveRowIndex;
-                        let activeColumnsID = undefined;
-                        if (activeRow !== null) {
-                            const activeRowData = rows.find(r => {
-                                const rIndex = r.index !== undefined ? r.index : rows.indexOf(r);
-                                return rIndex === activeRow;
-                            });
-                            if (activeRowData) {
-                                activeColumnsID = activeRowData.row.columnsID;
-                            }
-                        }
-                        // Используем columnsID активной строки, если есть, иначе формат по умолчанию
-                        const namedAreasForColumn = (0, templateUtils_2.getNamedAreasForColumn)(templateDocument, col, activeColumnsID);
-                        const prevNamedAreas = col > 0 ? (0, templateUtils_2.getNamedAreasForColumn)(templateDocument, col - 1, activeColumnsID) : [];
-                        // Проверяем, отличается ли набор областей от предыдущей колонки
-                        const shouldShow = namedAreasForColumn.length > 0 && (prevNamedAreas.length === 0 ||
-                            prevNamedAreas.length !== namedAreasForColumn.length ||
-                            !prevNamedAreas.every((area, idx) => idx < namedAreasForColumn.length &&
-                                area.name === namedAreasForColumn[idx].name &&
-                                area.startCol === namedAreasForColumn[idx].startCol));
-                        const areaNames = namedAreasForColumn.map(area => area.name).join(', ');
-                        return (react_1.default.createElement("th", { key: col, className: `template-table-named-area-column-header ${isFrozenColumn(col) ? 'frozen' : ''}` }, shouldShow && (react_1.default.createElement("span", { className: "named-area-label" }, areaNames))));
-                    })),
-                react_1.default.createElement("tr", null,
-                    react_1.default.createElement("th", { className: "template-table-named-area-header" }),
-                    react_1.default.createElement("th", { className: "template-table-row-header" }),
-                    Array.from({ length: maxColumns }, (_, col) => {
-                        // Заголовки колонок используют формат по умолчанию
-                        // Но при наличии активной строки могут отображать ширину из её формата для визуального выравнивания
-                        const activeRow = currentActiveRowIndex;
-                        let columnsGroupForHeader = null;
-                        if (activeRow !== null) {
-                            // Если есть активная строка, используем её формат колонок для заголовков
-                            const activeRowData = rows.find(r => {
-                                const rIndex = r.index !== undefined ? r.index : rows.indexOf(r);
-                                return rIndex === activeRow;
-                            });
-                            if (activeRowData) {
-                                columnsGroupForHeader = getColumnsForRow(activeRowData);
-                            }
-                        }
-                        // Если не нашли формат активной строки, используем формат по умолчанию
-                        if (!columnsGroupForHeader) {
-                            columnsGroupForHeader = getDefaultColumnsGroup();
-                        }
-                        const columnWidth = getColumnWidth(col, columnsGroupForHeader);
-                        const widthValue = columnWidth.includes('px') ? columnWidth : `${columnWidth}px`;
-                        return (react_1.default.createElement("th", { key: col, className: `template-table-column-header ${isFrozenColumn(col) ? 'frozen' : ''}`, style: {
-                                width: widthValue,
-                                minWidth: widthValue
-                            }, onClick: (e) => handleColumnHeaderClick(col, e), title: "\u041A\u043B\u0438\u043A\u043D\u0438\u0442\u0435, \u0447\u0442\u043E\u0431\u044B \u0432\u044B\u0434\u0435\u043B\u0438\u0442\u044C \u0432\u0441\u044E \u043A\u043E\u043B\u043E\u043D\u043A\u0443" }, col + 1));
-                    }))),
-            react_1.default.createElement("tbody", null, rows.map((templateRow, arrayIndex) => {
-                // Используем реальный индекс строки из данных, а не индекс массива
-                const rowIndex = templateRow.index !== undefined ? templateRow.index : arrayIndex;
-                const activeRow = currentActiveRowIndex;
-                const isActive = activeRow === rowIndex;
-                // Определяем формат строки
-                const columnsGroup = getColumnsForRow(templateRow);
-                const rowColumnsID = templateRow.row.columnsID;
-                // Получаем именованные области с учетом columnsID
-                // Учитываем активную строку для динамического переключения
-                let displayColumnsID = rowColumnsID;
-                let activeRowData = undefined;
-                if (activeRow !== null) {
-                    // Ищем строку с нужным индексом
-                    // Важно: используем тот же способ определения индекса, что и при рендеринге
-                    activeRowData = rows.find((r, idx) => {
-                        const rIndex = r.index !== undefined ? r.index : idx;
-                        return rIndex === activeRow;
-                    });
-                    if (activeRow === rowIndex) {
-                        // Для активной строки используем её columnsID
-                        displayColumnsID = rowColumnsID;
-                    }
-                    else if (activeRowData) {
-                        // Для неактивных строк при наличии активной строки используем columnsID активной строки
-                        displayColumnsID = activeRowData.row.columnsID;
-                    }
-                }
-                // Для подписей используем columnsID текущей строки (не активной), чтобы области всегда отображались
-                const namedAreasForRow = (0, templateUtils_2.getNamedAreasForRow)(templateDocument, rowIndex, rowColumnsID);
-                // Показываем все области, содержащие эту строку (для ясности на каждой строке)
-                const areaNames = namedAreasForRow.map(area => area.name).join(', ');
-                const heightValue = getRowHeight(rowIndex);
-                return (react_1.default.createElement("tr", { key: rowIndex, className: `${isFrozenRow(rowIndex) ? 'frozen' : ''} ${isActive ? 'active-row' : ''}`, style: {
-                        height: heightValue,
-                        minHeight: heightValue,
-                        overflow: 'visible' // Разрешаем перекрытие содержимого
-                    }, onMouseEnter: () => handleRowMouseEnter(rowIndex), onMouseLeave: handleRowMouseLeave },
-                    react_1.default.createElement("td", { className: "template-table-named-area-cell" }, areaNames && (react_1.default.createElement("span", { className: "named-area-label" }, areaNames))),
-                    react_1.default.createElement("td", { className: "template-table-row-header", onClick: (e) => handleRowHeaderClick(rowIndex, e), title: "\u041A\u043B\u0438\u043A\u043D\u0438\u0442\u0435, \u0447\u0442\u043E\u0431\u044B \u0432\u044B\u0434\u0435\u043B\u0438\u0442\u044C \u0432\u0441\u044E \u0441\u0442\u0440\u043E\u043A\u0443" }, rowIndex + 1),
-                    Array.from({ length: maxColumns }, (_, col) => {
-                        const merged = getMergedCells(rowIndex, col);
-                        // Пропускаем ячейки, которые являются частью объединения, но не началом
-                        // Если isStart = false, значит ячейка является частью объединения и должна быть пропущена
-                        if (!merged.isStart) {
-                            return null;
-                        }
-                        const cell = (0, templateUtils_2.findCellByPosition)(templateDocument, rowIndex, col);
-                        const content = getCellContent(rowIndex, col);
-                        const selected = isCellSelected(rowIndex, col);
-                        const fillPattern = (0, templateUtils_2.getCellFillPattern)(templateDocument, rowIndex, col);
-                        // Проверяем наличие примечания
-                        const hasNote = cell?.c?.note !== undefined;
-                        // Проверяем, входит ли ячейка в именованные области (для tooltip и границ)
-                        // Используем columnsID текущей строки для фильтрации областей
-                        const namedAreasForCell = getNamedAreasForCell(rowIndex, col, rowColumnsID);
-                        const namedAreaNames = namedAreasForCell.map(area => area.name).join(', ');
-                        // Определяем границы именованных областей для текущей ячейки
-                        const boundaryClasses = [];
-                        if (showNamedAreaBorders) {
-                            namedAreasForCell.forEach(area => {
-                                // Исключаем области типа Rectangle из отображения границ
-                                if (area.areaType !== 'Rectangle') {
-                                    const boundary = (0, templateUtils_2.isCellOnNamedAreaBoundary)(templateDocument, rowIndex, col, area);
-                                    if (boundary.top)
-                                        boundaryClasses.push('named-area-border-top');
-                                    if (boundary.bottom)
-                                        boundaryClasses.push('named-area-border-bottom');
-                                    if (boundary.left)
-                                        boundaryClasses.push('named-area-border-left');
-                                    if (boundary.right)
-                                        boundaryClasses.push('named-area-border-right');
+        react_1.default.createElement("div", { className: "template-table-row" },
+            react_1.default.createElement("div", { className: "template-table-left-column" },
+                react_1.default.createElement("div", { className: "template-table-left-top" },
+                    react_1.default.createElement("table", { className: `template-table template-table-left ${showGrid ? 'show-grid' : ''} ${showHeaders ? 'show-headers' : ''}`, style: { tableLayout: 'fixed' } },
+                        react_1.default.createElement("colgroup", null,
+                            react_1.default.createElement("col", { style: { width: '150px' } }),
+                            react_1.default.createElement("col", { style: { width: '40px' } })),
+                        react_1.default.createElement("thead", null,
+                            react_1.default.createElement("tr", { className: "template-table-named-areas-row" },
+                                react_1.default.createElement("th", { className: "template-table-named-area-header" }),
+                                react_1.default.createElement("th", { className: "template-table-row-header" })),
+                            react_1.default.createElement("tr", null,
+                                react_1.default.createElement("th", { className: "template-table-named-area-header" }),
+                                react_1.default.createElement("th", { className: "template-table-row-header" }))))),
+                react_1.default.createElement("div", { ref: leftScrollRef, className: "template-table-left-bottom" },
+                    react_1.default.createElement("table", { className: `template-table template-table-left ${showGrid ? 'show-grid' : ''} ${showHeaders ? 'show-headers' : ''}`, style: { tableLayout: 'fixed' } },
+                        react_1.default.createElement("colgroup", null,
+                            react_1.default.createElement("col", { style: { width: '150px' } }),
+                            react_1.default.createElement("col", { style: { width: '40px' } })),
+                        react_1.default.createElement("tbody", null, rows.map((templateRow, arrayIndex) => {
+                            const rowIndex = templateRow.index !== undefined ? templateRow.index : arrayIndex;
+                            const activeRow = currentActiveRowIndex;
+                            const isActive = activeRow === rowIndex;
+                            const inFullRowRange = fullWidthRowSelection !== null &&
+                                rowIndex >= fullWidthRowSelection.startRow &&
+                                rowIndex <= fullWidthRowSelection.endRow;
+                            const highlightSidebarRow = isActive || inFullRowRange;
+                            const namedAreasForRow = (0, templateUtils_2.getNamedAreasForRow)(templateDocument, rowIndex, templateRow.row.columnsID);
+                            const areaNames = namedAreasForRow.map(area => area.name).join(', ');
+                            const heightValue = getRowHeight(rowIndex);
+                            return (react_1.default.createElement("tr", { key: rowIndex, className: highlightSidebarRow ? 'active-row' : '', style: { height: heightValue, minHeight: heightValue }, onMouseEnter: () => handleRowMouseEnter(rowIndex), onMouseLeave: handleRowMouseLeave },
+                                react_1.default.createElement("td", { className: "template-table-named-area-cell" }, areaNames && react_1.default.createElement("span", { className: "named-area-label" }, areaNames)),
+                                react_1.default.createElement("td", { className: "template-table-row-header", onClick: (e) => handleRowHeaderClick(rowIndex, e), title: "\u041A\u043B\u0438\u043A\u043D\u0438\u0442\u0435, \u0447\u0442\u043E\u0431\u044B \u0432\u044B\u0434\u0435\u043B\u0438\u0442\u044C \u0432\u0441\u044E \u0441\u0442\u0440\u043E\u043A\u0443" }, rowIndex + 1)));
+                        }))))),
+            react_1.default.createElement("div", { className: "template-table-right-column" },
+                react_1.default.createElement("div", { ref: rightHeaderScrollRef, className: "template-table-right-top" },
+                    react_1.default.createElement("table", { className: `template-table template-table-right-header ${showGrid ? 'show-grid' : ''} ${showHeaders ? 'show-headers' : ''}`, style: { tableLayout: 'fixed' } },
+                        react_1.default.createElement("colgroup", null, Array.from({ length: maxColumns }, (_, col) => {
+                            const defaultColumnsGroup = getDefaultColumnsGroup();
+                            const columnWidth = getColumnWidth(col, defaultColumnsGroup);
+                            const widthValue = columnWidth.includes('px') ? columnWidth : `${columnWidth}px`;
+                            return react_1.default.createElement("col", { key: col, style: { width: widthValue } });
+                        })),
+                        react_1.default.createElement("thead", null,
+                            react_1.default.createElement("tr", { className: "template-table-named-areas-row" }, Array.from({ length: maxColumns }, (_, col) => {
+                                // Определяем активную строку для динамического переключения
+                                const activeRow = currentActiveRowIndex;
+                                let activeColumnsID = undefined;
+                                if (activeRow !== null) {
+                                    const activeRowData = rows.find(r => {
+                                        const rIndex = r.index !== undefined ? r.index : rows.indexOf(r);
+                                        return rIndex === activeRow;
+                                    });
+                                    if (activeRowData) {
+                                        activeColumnsID = activeRowData.row.columnsID;
+                                    }
                                 }
-                            });
-                        }
-                        // Получаем форматирование ячейки
-                        const cellFormat = (0, templateUtils_2.getEffectiveFormat)(templateDocument, rowIndex, col);
-                        const cellFont = (0, templateUtils_2.getEffectiveFont)(templateDocument, rowIndex, col);
-                        // Формируем стили для ячейки
-                        const cellStyle = {};
-                        // Применяем ширину колонки динамически в зависимости от активной строки
-                        // Если есть активная строка, все строки используют её формат для визуального выравнивания
-                        // Используем activeRow и activeRowData, которые уже определены в начале map для строк
-                        // Важно: используем алгоритм 1С для вычисления ширины колонок
-                        let columnWidth;
-                        if (activeRow !== null && activeRowData) {
-                            // Есть активная строка - используем её формат колонок для всех строк
-                            const activeColumnsGroup = getColumnsForRow(activeRowData);
-                            columnWidth = getColumnWidth(col, activeColumnsGroup);
-                        }
-                        else {
-                            // Нет активной строки или не найдена - используем формат текущей строки
-                            columnWidth = getColumnWidth(col, columnsGroup);
-                        }
-                        cellStyle.width = columnWidth;
-                        cellStyle.minWidth = columnWidth;
-                        if (cellFormat) {
-                            // Выравнивание
-                            if (cellFormat.horizontalAlignment) {
-                                cellStyle.textAlign = cellFormat.horizontalAlignment.toLowerCase();
-                            }
-                            if (cellFormat.verticalAlignment) {
-                                cellStyle.verticalAlign = cellFormat.verticalAlignment.toLowerCase();
-                            }
-                            // Цвета
-                            if (cellFormat.textColor) {
-                                const textColorStr = typeof cellFormat.textColor === 'string' ? cellFormat.textColor : String(cellFormat.textColor);
-                                if (!textColorStr.startsWith('style:')) {
-                                    cellStyle.color = textColorStr;
+                                // Используем columnsID активной строки, если есть, иначе формат по умолчанию
+                                const namedAreasForColumn = (0, templateUtils_2.getNamedAreasForColumn)(templateDocument, col, activeColumnsID);
+                                const prevNamedAreas = col > 0 ? (0, templateUtils_2.getNamedAreasForColumn)(templateDocument, col - 1, activeColumnsID) : [];
+                                // Проверяем, отличается ли набор областей от предыдущей колонки
+                                const shouldShow = namedAreasForColumn.length > 0 && (prevNamedAreas.length === 0 ||
+                                    prevNamedAreas.length !== namedAreasForColumn.length ||
+                                    !prevNamedAreas.every((area, idx) => idx < namedAreasForColumn.length &&
+                                        area.name === namedAreasForColumn[idx].name &&
+                                        area.startCol === namedAreasForColumn[idx].startCol));
+                                const areaNames = namedAreasForColumn.map(area => area.name).join(', ');
+                                const isColSelected = selectedRange && col >= selectedRange.startCol && col <= selectedRange.endCol &&
+                                    selectedRange.startRow === (0, templateUtils_1.getMinRowIndex)(templateDocument) && selectedRange.endRow === (0, templateUtils_1.getMaxRowIndex)(templateDocument);
+                                return (react_1.default.createElement("th", { key: col, className: `template-table-named-area-column-header ${isFrozenColumn(col) ? 'frozen' : ''} ${isColSelected ? 'active-column' : ''}`, onClick: (e) => handleColumnHeaderClick(col, e), title: `Колонка ${col + 1}. Кликните, чтобы выделить` },
+                                    react_1.default.createElement("span", { className: "template-column-number", style: { color: 'var(--vscode-foreground)', display: 'block', marginBottom: 2 } }, col + 1),
+                                    shouldShow && (react_1.default.createElement("span", { className: "named-area-label" }, areaNames))));
+                            })),
+                            react_1.default.createElement("tr", null, Array.from({ length: maxColumns }, (_, col) => {
+                                // Заголовки колонок используют формат по умолчанию
+                                // Но при наличии активной строки могут отображать ширину из её формата для визуального выравнивания
+                                const activeRow = currentActiveRowIndex;
+                                let columnsGroupForHeader = null;
+                                if (activeRow !== null) {
+                                    // Если есть активная строка, используем её формат колонок для заголовков
+                                    const activeRowData = rows.find(r => {
+                                        const rIndex = r.index !== undefined ? r.index : rows.indexOf(r);
+                                        return rIndex === activeRow;
+                                    });
+                                    if (activeRowData) {
+                                        columnsGroupForHeader = getColumnsForRow(activeRowData);
+                                    }
+                                }
+                                // Если не нашли формат активной строки, используем формат по умолчанию
+                                if (!columnsGroupForHeader) {
+                                    columnsGroupForHeader = getDefaultColumnsGroup();
+                                }
+                                const columnWidth = getColumnWidth(col, columnsGroupForHeader);
+                                const widthValue = columnWidth.includes('px') ? columnWidth : `${columnWidth}px`;
+                                const isColSelected = selectedRange && col >= selectedRange.startCol && col <= selectedRange.endCol &&
+                                    selectedRange.startRow === (0, templateUtils_1.getMinRowIndex)(templateDocument) && selectedRange.endRow === (0, templateUtils_1.getMaxRowIndex)(templateDocument);
+                                return (react_1.default.createElement("th", { key: col, className: `template-table-column-header ${isFrozenColumn(col) ? 'frozen' : ''} ${isColSelected ? 'active-column' : ''}`, style: {
+                                        width: widthValue,
+                                        minWidth: widthValue,
+                                        minHeight: 24
+                                    }, onClick: (e) => handleColumnHeaderClick(col, e), title: `Колонка ${col + 1}. Кликните, чтобы выделить`, "data-col": col },
+                                    react_1.default.createElement("span", { className: "template-column-number", style: { color: 'var(--vscode-foreground)' } }, col + 1)));
+                            }))))),
+                react_1.default.createElement("div", { ref: rightScrollRef, className: "template-table-right-bottom" },
+                    react_1.default.createElement("table", { ref: tableRef, className: `template-table ${showGrid ? 'show-grid' : ''} ${showHeaders ? 'show-headers' : ''}`, style: { tableLayout: 'fixed' } },
+                        react_1.default.createElement("colgroup", null, Array.from({ length: maxColumns }, (_, col) => {
+                            const defaultColumnsGroup = getDefaultColumnsGroup();
+                            const columnWidth = getColumnWidth(col, defaultColumnsGroup);
+                            const widthValue = columnWidth.includes('px') ? columnWidth : `${columnWidth}px`;
+                            return react_1.default.createElement("col", { key: col, style: { width: widthValue } });
+                        })),
+                        react_1.default.createElement("tbody", null, rows.map((templateRow, arrayIndex) => {
+                            // Используем реальный индекс строки из данных, а не индекс массива
+                            const rowIndex = templateRow.index !== undefined ? templateRow.index : arrayIndex;
+                            const activeRow = currentActiveRowIndex;
+                            const isActive = activeRow === rowIndex;
+                            const inFullRowRange = fullWidthRowSelection !== null &&
+                                rowIndex >= fullWidthRowSelection.startRow &&
+                                rowIndex <= fullWidthRowSelection.endRow;
+                            const highlightDataRow = isActive || inFullRowRange;
+                            // Определяем формат строки
+                            const columnsGroup = getColumnsForRow(templateRow);
+                            const rowColumnsID = templateRow.row.columnsID;
+                            // Получаем именованные области с учетом columnsID
+                            // Учитываем активную строку для динамического переключения
+                            let displayColumnsID = rowColumnsID;
+                            let activeRowData = undefined;
+                            if (activeRow !== null) {
+                                // Ищем строку с нужным индексом
+                                // Важно: используем тот же способ определения индекса, что и при рендеринге
+                                activeRowData = rows.find((r, idx) => {
+                                    const rIndex = r.index !== undefined ? r.index : idx;
+                                    return rIndex === activeRow;
+                                });
+                                if (activeRow === rowIndex) {
+                                    // Для активной строки используем её columnsID
+                                    displayColumnsID = rowColumnsID;
+                                }
+                                else if (activeRowData) {
+                                    // Для неактивных строк при наличии активной строки используем columnsID активной строки
+                                    displayColumnsID = activeRowData.row.columnsID;
                                 }
                             }
-                            if (cellFormat.backColor) {
-                                const backColorStr = typeof cellFormat.backColor === 'string' ? cellFormat.backColor : String(cellFormat.backColor);
-                                if (!backColorStr.startsWith('style:')) {
-                                    cellStyle.backgroundColor = backColorStr;
+                            const heightValue = getRowHeight(rowIndex);
+                            return (react_1.default.createElement("tr", { key: rowIndex, className: `${isFrozenRow(rowIndex) ? 'frozen' : ''} ${highlightDataRow ? 'active-row' : ''}`, style: {
+                                    height: heightValue,
+                                    minHeight: heightValue,
+                                    overflow: 'visible' // Разрешаем перекрытие содержимого
+                                }, onMouseEnter: () => handleRowMouseEnter(rowIndex), onMouseLeave: handleRowMouseLeave }, Array.from({ length: maxColumns }, (_, col) => {
+                                const columnBandHighlight = fullHeightColumnSelection !== null &&
+                                    col >= fullHeightColumnSelection.startCol &&
+                                    col <= fullHeightColumnSelection.endCol;
+                                const merged = getMergedCells(rowIndex, col);
+                                // Пропускаем ячейки, которые являются частью объединения, но не началом
+                                // Если isStart = false, значит ячейка является частью объединения и должна быть пропущена
+                                if (!merged.isStart) {
+                                    return null;
                                 }
-                            }
-                            // Размещение текста
-                            // Проверяем, является ли ячейка объединенной
-                            const isMerged = merged.colspan > 1 || merged.rowspan > 1;
-                            // Определяем режим размещения текста
-                            // Если cellFormat === null, используем режим Auto по умолчанию
-                            const textPlacement = cellFormat?.textPlacement;
-                            if (textPlacement === 'Wrap') {
-                                // Режим Wrap - текст переносится, высота строки может увеличиваться
-                                cellStyle.whiteSpace = 'normal';
-                                cellStyle.wordWrap = 'break-word';
-                                cellStyle.overflow = 'visible';
-                            }
-                            else if (textPlacement === 'Clip') {
-                                // Режим Clip - текст обрезается с ellipsis
-                                cellStyle.whiteSpace = 'nowrap';
-                                cellStyle.overflow = 'hidden';
-                                cellStyle.textOverflow = 'ellipsis';
-                            }
-                            else {
-                                // Режим "Auto" (по умолчанию) - текст может перекрывать соседние ячейки
-                                // НО: если ячейка объединена, текст должен обрезаться
-                                if (isMerged) {
-                                    cellStyle.whiteSpace = 'nowrap';
-                                    cellStyle.overflow = 'hidden';
-                                    cellStyle.textOverflow = 'ellipsis';
+                                const cell = (0, templateUtils_2.findCellByPosition)(templateDocument, rowIndex, col);
+                                const content = getCellContent(rowIndex, col);
+                                const selected = isCellSelected(rowIndex, col);
+                                const fillPattern = (0, templateUtils_2.getCellFillPattern)(templateDocument, rowIndex, col);
+                                // Проверяем наличие примечания
+                                const hasNote = cell?.c?.note !== undefined;
+                                // Проверяем, входит ли ячейка в именованные области (для tooltip и границ)
+                                // Используем columnsID текущей строки для фильтрации областей
+                                const namedAreasForCell = getNamedAreasForCell(rowIndex, col, rowColumnsID);
+                                const namedAreaNames = namedAreasForCell.map(area => area.name).join(', ');
+                                // Определяем границы именованных областей для текущей ячейки
+                                const boundaryClasses = [];
+                                if (showNamedAreaBorders) {
+                                    namedAreasForCell.forEach(area => {
+                                        // Исключаем области типа Rectangle из отображения границ
+                                        if (area.areaType !== 'Rectangle') {
+                                            const boundary = (0, templateUtils_2.isCellOnNamedAreaBoundary)(templateDocument, rowIndex, col, area);
+                                            if (boundary.top)
+                                                boundaryClasses.push('named-area-border-top');
+                                            if (boundary.bottom)
+                                                boundaryClasses.push('named-area-border-bottom');
+                                            if (boundary.left)
+                                                boundaryClasses.push('named-area-border-left');
+                                            if (boundary.right)
+                                                boundaryClasses.push('named-area-border-right');
+                                        }
+                                    });
+                                }
+                                // Получаем форматирование ячейки
+                                const cellFormat = (0, templateUtils_2.getEffectiveFormat)(templateDocument, rowIndex, col);
+                                const cellFont = (0, templateUtils_2.getEffectiveFont)(templateDocument, rowIndex, col);
+                                // Формируем стили для ячейки
+                                const cellStyle = {};
+                                // Применяем ширину колонки динамически в зависимости от активной строки
+                                // Если есть активная строка, все строки используют её формат для визуального выравнивания
+                                // Используем activeRow и activeRowData, которые уже определены в начале map для строк
+                                // Важно: используем алгоритм 1С для вычисления ширины колонок
+                                let columnWidth;
+                                if (activeRow !== null && activeRowData) {
+                                    // Есть активная строка - используем её формат колонок для всех строк
+                                    const activeColumnsGroup = getColumnsForRow(activeRowData);
+                                    columnWidth = getColumnWidth(col, activeColumnsGroup);
                                 }
                                 else {
-                                    // Обычная ячейка - текст может перекрывать соседние ячейки
-                                    // Используем overflow: hidden для ячейки, чтобы обрезать по вертикали
-                                    // Абсолютное позиционирование содержимого позволит перекрывать соседние ячейки горизонтально
-                                    cellStyle.overflow = 'hidden'; // Обрезаем по вертикали, чтобы высота строки не увеличивалась
-                                    cellStyle.position = 'relative'; // Для абсолютного позиционирования содержимого
+                                    // Нет активной строки или не найдена - используем формат текущей строки
+                                    columnWidth = getColumnWidth(col, columnsGroup);
                                 }
-                            }
-                            // Ширина и высота
-                            if (cellFormat.width) {
-                                const widthStr = typeof cellFormat.width === 'string' ? cellFormat.width : String(cellFormat.width);
-                                cellStyle.width = widthStr.includes('px') ? widthStr : `${widthStr}px`;
-                            }
-                            if (cellFormat.height) {
-                                const heightStr = typeof cellFormat.height === 'string' ? cellFormat.height : String(cellFormat.height);
-                                cellStyle.height = heightStr.includes('px') ? heightStr : `${heightStr}px`;
-                            }
-                            // Границы с учетом типа линии, толщины и цвета
-                            if (cellFormat.border === 1) {
-                                // Если установлена общая граница, используем её для всех сторон
-                                const borderStyle = getBorderStyle(1, cellFormat.leftBorderLineType || cellFormat.topBorderLineType || cellFormat.bottomBorderLineType || cellFormat.rightBorderLineType, cellFormat.leftBorderWidth || cellFormat.topBorderWidth || cellFormat.bottomBorderWidth || cellFormat.rightBorderWidth, cellFormat.leftBorderColor || cellFormat.topBorderColor || cellFormat.bottomBorderColor || cellFormat.rightBorderColor);
-                                cellStyle.border = borderStyle || '1px solid var(--vscode-panel-border)';
-                            }
-                            else {
-                                // Применяем границы для каждой стороны отдельно
-                                if (cellFormat.leftBorder === 1) {
-                                    const leftBorderStyle = getBorderStyle(cellFormat.leftBorder, cellFormat.leftBorderLineType, cellFormat.leftBorderWidth, cellFormat.leftBorderColor);
-                                    if (leftBorderStyle) {
-                                        cellStyle.borderLeft = leftBorderStyle;
+                                cellStyle.width = columnWidth;
+                                cellStyle.minWidth = columnWidth;
+                                if (cellFormat) {
+                                    // Выравнивание
+                                    if (cellFormat.horizontalAlignment) {
+                                        cellStyle.textAlign = cellFormat.horizontalAlignment.toLowerCase();
+                                    }
+                                    if (cellFormat.verticalAlignment) {
+                                        cellStyle.verticalAlign = cellFormat.verticalAlignment.toLowerCase();
+                                    }
+                                    // Цвета
+                                    if (cellFormat.textColor) {
+                                        const textColorStr = typeof cellFormat.textColor === 'string' ? cellFormat.textColor : String(cellFormat.textColor);
+                                        if (!textColorStr.startsWith('style:')) {
+                                            cellStyle.color = textColorStr;
+                                        }
+                                    }
+                                    if (cellFormat.backColor) {
+                                        const backColorStr = typeof cellFormat.backColor === 'string' ? cellFormat.backColor : String(cellFormat.backColor);
+                                        if (!backColorStr.startsWith('style:')) {
+                                            cellStyle.backgroundColor = backColorStr;
+                                        }
+                                    }
+                                    // Размещение текста
+                                    // Проверяем, является ли ячейка объединенной
+                                    const isMerged = merged.colspan > 1 || merged.rowspan > 1;
+                                    // Определяем режим размещения текста
+                                    // Если cellFormat === null, используем режим Auto по умолчанию
+                                    const textPlacement = cellFormat?.textPlacement;
+                                    if (textPlacement === 'Wrap') {
+                                        // Режим Wrap - текст переносится, высота строки может увеличиваться
+                                        cellStyle.whiteSpace = 'normal';
+                                        cellStyle.wordWrap = 'break-word';
+                                        cellStyle.overflow = 'visible';
+                                    }
+                                    else if (textPlacement === 'Clip') {
+                                        // Режим Clip - текст обрезается с ellipsis
+                                        cellStyle.whiteSpace = 'nowrap';
+                                        cellStyle.overflow = 'hidden';
+                                        cellStyle.textOverflow = 'ellipsis';
                                     }
                                     else {
-                                        cellStyle.borderLeft = '1px solid var(--vscode-panel-border)';
+                                        // Режим "Auto" (по умолчанию) - текст может перекрывать соседние ячейки
+                                        // НО: если ячейка объединена, текст должен обрезаться
+                                        if (isMerged) {
+                                            cellStyle.whiteSpace = 'nowrap';
+                                            cellStyle.overflow = 'hidden';
+                                            cellStyle.textOverflow = 'ellipsis';
+                                        }
+                                        else {
+                                            // Обычная ячейка - текст может перекрывать соседние ячейки
+                                            // Используем overflow: hidden для ячейки, чтобы обрезать по вертикали
+                                            // Абсолютное позиционирование содержимого позволит перекрывать соседние ячейки горизонтально
+                                            cellStyle.overflow = 'hidden'; // Обрезаем по вертикали, чтобы высота строки не увеличивалась
+                                            cellStyle.position = 'relative'; // Для абсолютного позиционирования содержимого
+                                        }
                                     }
-                                }
-                                if (cellFormat.topBorder === 1) {
-                                    const topBorderStyle = getBorderStyle(cellFormat.topBorder, cellFormat.topBorderLineType, cellFormat.topBorderWidth, cellFormat.topBorderColor);
-                                    if (topBorderStyle) {
-                                        cellStyle.borderTop = topBorderStyle;
+                                    // Ориентация текста — разрешаем переполнение для отображения повёрнутого текста
+                                    if (cellFormat.textOrientation !== undefined && cellFormat.textOrientation !== 0) {
+                                        cellStyle.overflow = 'visible';
+                                    }
+                                    // Ширина и высота
+                                    if (cellFormat.width) {
+                                        const widthStr = typeof cellFormat.width === 'string' ? cellFormat.width : String(cellFormat.width);
+                                        cellStyle.width = widthStr.includes('px') ? widthStr : `${widthStr}px`;
+                                    }
+                                    if (cellFormat.height) {
+                                        const heightStr = typeof cellFormat.height === 'string' ? cellFormat.height : String(cellFormat.height);
+                                        cellStyle.height = heightStr.includes('px') ? heightStr : `${heightStr}px`;
+                                    }
+                                    // Границы: код строки + цвет (borderColor — общий, как в 1С; стороны могут переопределить).
+                                    // Цвет из XML может быть объектом — иначе String() даёт невалидный CSS и граница не рисуется.
+                                    const fillBorderColor = (specific) => (0, templateUtils_2.resolveTemplateBorderColorForCss)(specific) ??
+                                        (0, templateUtils_2.resolveTemplateBorderColorForCss)(cellFormat.borderColor);
+                                    const outlineBorderCode = (0, templateUtils_2.formatBorderLineCode)(cellFormat.border);
+                                    if (outlineBorderCode > 0) {
+                                        const borderStyle = getBorderStyle(outlineBorderCode, cellFormat.leftBorderLineType || cellFormat.topBorderLineType || cellFormat.bottomBorderLineType || cellFormat.rightBorderLineType, cellFormat.leftBorderWidth || cellFormat.topBorderWidth || cellFormat.bottomBorderWidth || cellFormat.rightBorderWidth, fillBorderColor([cellFormat.leftBorderColor, cellFormat.topBorderColor, cellFormat.bottomBorderColor, cellFormat.rightBorderColor].find((x) => (0, templateUtils_2.resolveTemplateBorderColorForCss)(x))));
+                                        cellStyle.border = borderStyle || '1px solid var(--vscode-panel-border)';
                                     }
                                     else {
-                                        cellStyle.borderTop = '1px solid var(--vscode-panel-border)';
+                                        if ((0, templateUtils_2.formatBorderLineCode)(cellFormat.leftBorder) > 0) {
+                                            const leftBorderStyle = getBorderStyle(cellFormat.leftBorder, cellFormat.leftBorderLineType, cellFormat.leftBorderWidth, fillBorderColor(cellFormat.leftBorderColor));
+                                            cellStyle.borderLeft = leftBorderStyle || '1px solid var(--vscode-panel-border)';
+                                        }
+                                        if ((0, templateUtils_2.formatBorderLineCode)(cellFormat.topBorder) > 0) {
+                                            const topBorderStyle = getBorderStyle(cellFormat.topBorder, cellFormat.topBorderLineType, cellFormat.topBorderWidth, fillBorderColor(cellFormat.topBorderColor));
+                                            cellStyle.borderTop = topBorderStyle || '1px solid var(--vscode-panel-border)';
+                                        }
+                                        if ((0, templateUtils_2.formatBorderLineCode)(cellFormat.bottomBorder) > 0) {
+                                            const bottomBorderStyle = getBorderStyle(cellFormat.bottomBorder, cellFormat.bottomBorderLineType, cellFormat.bottomBorderWidth, fillBorderColor(cellFormat.bottomBorderColor));
+                                            cellStyle.borderBottom = bottomBorderStyle || '1px solid var(--vscode-panel-border)';
+                                        }
+                                        if ((0, templateUtils_2.formatBorderLineCode)(cellFormat.rightBorder) > 0) {
+                                            const rightBorderStyle = getBorderStyle(cellFormat.rightBorder, cellFormat.rightBorderLineType, cellFormat.rightBorderWidth, fillBorderColor(cellFormat.rightBorderColor));
+                                            cellStyle.borderRight = rightBorderStyle || '1px solid var(--vscode-panel-border)';
+                                        }
                                     }
                                 }
-                                if (cellFormat.bottomBorder === 1) {
-                                    const bottomBorderStyle = getBorderStyle(cellFormat.bottomBorder, cellFormat.bottomBorderLineType, cellFormat.bottomBorderWidth, cellFormat.bottomBorderColor);
-                                    if (bottomBorderStyle) {
-                                        cellStyle.borderBottom = bottomBorderStyle;
+                                // Стили шрифта
+                                const contentStyle = {};
+                                // Для режима Auto с перекрытием текста используем абсолютное позиционирование
+                                // чтобы текст мог перекрывать соседние ячейки
+                                const isMerged = merged.colspan > 1 || merged.rowspan > 1;
+                                const textPlacement = cellFormat?.textPlacement;
+                                const isAutoMode = !textPlacement || textPlacement === 'Auto' || textPlacement === 'Normal';
+                                if (isAutoMode && !isMerged) {
+                                    // Абсолютное позиционирование позволяет тексту перекрывать соседние ячейки
+                                    // даже если родительский контейнер имеет overflow: auto
+                                    contentStyle.position = 'absolute';
+                                    contentStyle.left = '0';
+                                    contentStyle.top = '0';
+                                    contentStyle.whiteSpace = 'nowrap';
+                                    contentStyle.zIndex = 2; // Чтобы текст был поверх соседних ячеек
+                                    contentStyle.minWidth = '100%'; // Минимальная ширина равна ширине ячейки
+                                }
+                                if (cellFont) {
+                                    if (cellFont['$_faceName']) {
+                                        contentStyle.fontFamily = cellFont['$_faceName'];
                                     }
-                                    else {
-                                        cellStyle.borderBottom = '1px solid var(--vscode-panel-border)';
+                                    if (cellFont['$_height']) {
+                                        contentStyle.fontSize = `${cellFont['$_height']}pt`;
+                                    }
+                                    if (cellFont['$_bold'] === 'true') {
+                                        contentStyle.fontWeight = 'bold';
+                                    }
+                                    if (cellFont['$_italic'] === 'true') {
+                                        contentStyle.fontStyle = 'italic';
+                                    }
+                                    if (cellFont['$_underline'] === 'true') {
+                                        contentStyle.textDecoration = 'underline';
+                                    }
+                                    if (cellFont['$_strikeout'] === 'true') {
+                                        contentStyle.textDecoration = contentStyle.textDecoration ?
+                                            `${contentStyle.textDecoration} line-through` : 'line-through';
+                                    }
+                                    const scale = cellFont['$_scale'] ? parseFloat(cellFont['$_scale']) || 100 : 100;
+                                    const orientation = cellFormat?.textOrientation ?? 0;
+                                    const transforms = [];
+                                    if (scale !== 100) {
+                                        transforms.push(`scale(${scale / 100})`);
+                                    }
+                                    if (orientation !== 0) {
+                                        transforms.push(`rotate(${orientation}deg)`);
+                                    }
+                                    if (transforms.length > 0) {
+                                        contentStyle.transform = transforms.join(' ');
+                                        // Для вертикального текста (90°) — pivot слева по центру, как в 1С
+                                        const deg = orientation % 360;
+                                        contentStyle.transformOrigin = (deg === 90 || deg === 270) ? 'left center' : 'top left';
                                     }
                                 }
-                                if (cellFormat.rightBorder === 1) {
-                                    const rightBorderStyle = getBorderStyle(cellFormat.rightBorder, cellFormat.rightBorderLineType, cellFormat.rightBorderWidth, cellFormat.rightBorderColor);
-                                    if (rightBorderStyle) {
-                                        cellStyle.borderRight = rightBorderStyle;
-                                    }
-                                    else {
-                                        cellStyle.borderRight = '1px solid var(--vscode-panel-border)';
-                                    }
+                                // Ориентация текста без шрифта (только rotate)
+                                if (cellFormat?.textOrientation && cellFormat.textOrientation !== 0 && !cellFont) {
+                                    const deg = cellFormat.textOrientation % 360;
+                                    contentStyle.transform = `rotate(${cellFormat.textOrientation}deg)`;
+                                    contentStyle.transformOrigin = (deg === 90 || deg === 270) ? 'left center' : 'top left';
                                 }
-                            }
-                        }
-                        // Стили шрифта
-                        const contentStyle = {};
-                        // Для режима Auto с перекрытием текста используем абсолютное позиционирование
-                        // чтобы текст мог перекрывать соседние ячейки
-                        const isMerged = merged.colspan > 1 || merged.rowspan > 1;
-                        const textPlacement = cellFormat?.textPlacement;
-                        const isAutoMode = !textPlacement || textPlacement === 'Auto' || textPlacement === 'Normal';
-                        if (isAutoMode && !isMerged) {
-                            // Абсолютное позиционирование позволяет тексту перекрывать соседние ячейки
-                            // даже если родительский контейнер имеет overflow: auto
-                            contentStyle.position = 'absolute';
-                            contentStyle.left = '0';
-                            contentStyle.top = '0';
-                            contentStyle.whiteSpace = 'nowrap';
-                            contentStyle.zIndex = 2; // Чтобы текст был поверх соседних ячеек
-                            contentStyle.minWidth = '100%'; // Минимальная ширина равна ширине ячейки
-                        }
-                        if (cellFont) {
-                            if (cellFont['$_faceName']) {
-                                contentStyle.fontFamily = cellFont['$_faceName'];
-                            }
-                            if (cellFont['$_height']) {
-                                contentStyle.fontSize = `${cellFont['$_height']}pt`;
-                            }
-                            if (cellFont['$_bold'] === 'true') {
-                                contentStyle.fontWeight = 'bold';
-                            }
-                            if (cellFont['$_italic'] === 'true') {
-                                contentStyle.fontStyle = 'italic';
-                            }
-                            if (cellFont['$_underline'] === 'true') {
-                                contentStyle.textDecoration = 'underline';
-                            }
-                            if (cellFont['$_strikeout'] === 'true') {
-                                contentStyle.textDecoration = contentStyle.textDecoration ?
-                                    `${contentStyle.textDecoration} line-through` : 'line-through';
-                            }
-                            if (cellFont['$_scale']) {
-                                const scale = parseFloat(cellFont['$_scale']) || 100;
-                                contentStyle.transform = `scale(${scale / 100})`;
-                                contentStyle.transformOrigin = 'top left';
-                            }
-                        }
-                        return (react_1.default.createElement("td", { key: col, className: `template-table-cell ${selected ? 'selected' : ''} ${isFrozenColumn(col) ? 'frozen' : ''} ${hasNote ? 'has-note' : ''} ${isMerged ? 'merged-cell' : ''} ${boundaryClasses.join(' ')}`, colSpan: merged.colspan, rowSpan: merged.rowspan, onClick: (e) => handleCellClick(rowIndex, col, e), onMouseDown: (e) => handleMouseDown(rowIndex, col, e), onMouseEnter: (e) => {
-                                e.stopPropagation();
-                                handleRowMouseEnter(rowIndex);
-                            }, onMouseLeave: (e) => {
-                                // Не обрабатываем, если переходим на другую ячейку в той же строке
-                                const relatedTarget = e.relatedTarget;
-                                if (!relatedTarget ||
-                                    typeof relatedTarget !== 'object' ||
-                                    !('closest' in relatedTarget) ||
-                                    typeof relatedTarget.closest !== 'function' ||
-                                    !relatedTarget.closest('tr')) {
-                                    handleRowMouseLeave(e);
+                                // Отступы
+                                if (cellFormat?.leftMargin !== undefined && cellFormat.leftMargin !== 0) {
+                                    contentStyle.paddingLeft = `${cellFormat.leftMargin}px`;
                                 }
-                            }, "data-row": rowIndex, "data-col": col, "data-fill-pattern": fillPattern, "data-text-placement": cellFormat?.textPlacement || 'Auto', style: cellStyle, title: namedAreaNames ? `Именованные области: ${namedAreaNames}` : undefined },
-                            react_1.default.createElement("div", { className: "template-cell-content", contentEditable: merged.isStart, suppressContentEditableWarning: true, style: contentStyle, onBlur: (e) => {
-                                    if (merged.isStart) {
-                                        const newText = e.currentTarget.textContent || '';
-                                        handleCellContentChange(rowIndex, col, newText);
-                                    }
-                                }, onKeyDown: (e) => {
-                                    if (merged.isStart && e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        // Переход к следующей строке
-                                        onCellSelect({ row: rowIndex + 1, col });
-                                    }
-                                } }, content),
-                            hasNote && showNotes && (react_1.default.createElement("div", { className: "template-cell-note-indicator", title: "\u041F\u0440\u0438\u043C\u0435\u0447\u0430\u043D\u0438\u0435" }, "\uD83D\uDCCC"))));
-                    })));
-            })))));
+                                if (cellFormat?.rightMargin !== undefined && cellFormat.rightMargin !== 0) {
+                                    contentStyle.paddingRight = `${cellFormat.rightMargin}px`;
+                                }
+                                if (cellFormat?.topMargin !== undefined && cellFormat.topMargin !== 0) {
+                                    contentStyle.paddingTop = `${cellFormat.topMargin}px`;
+                                }
+                                if (cellFormat?.bottomMargin !== undefined && cellFormat.bottomMargin !== 0) {
+                                    contentStyle.paddingBottom = `${cellFormat.bottomMargin}px`;
+                                }
+                                if (cellFormat?.indent !== undefined && cellFormat.indent !== 0) {
+                                    const currentLeft = contentStyle.paddingLeft ? parseFloat(String(contentStyle.paddingLeft)) : 0;
+                                    contentStyle.paddingLeft = `${currentLeft + cellFormat.indent}px`;
+                                }
+                                return (react_1.default.createElement("td", { key: col, className: `template-table-cell ${selected ? 'selected' : ''} ${columnBandHighlight ? 'active-column-cells' : ''} ${isFrozenColumn(col) ? 'frozen' : ''} ${hasNote ? 'has-note' : ''} ${isMerged ? 'merged-cell' : ''} ${boundaryClasses.join(' ')}`, colSpan: merged.colspan, rowSpan: merged.rowspan, onClick: (e) => handleCellClick(rowIndex, col, e), onMouseDown: (e) => handleMouseDown(rowIndex, col, e), onMouseEnter: (e) => {
+                                        e.stopPropagation();
+                                        handleRowMouseEnter(rowIndex);
+                                    }, onMouseLeave: (e) => {
+                                        // Не обрабатываем, если переходим на другую ячейку в той же строке
+                                        const relatedTarget = e.relatedTarget;
+                                        if (!relatedTarget ||
+                                            typeof relatedTarget !== 'object' ||
+                                            !('closest' in relatedTarget) ||
+                                            typeof relatedTarget.closest !== 'function' ||
+                                            !relatedTarget.closest('tr')) {
+                                            handleRowMouseLeave(e);
+                                        }
+                                    }, "data-row": rowIndex, "data-col": col, "data-fill-pattern": fillPattern, "data-text-placement": cellFormat?.textPlacement || 'Auto', style: cellStyle, title: namedAreaNames ? `Именованные области: ${namedAreaNames}` : undefined },
+                                    react_1.default.createElement("div", { className: "template-cell-content", contentEditable: merged.isStart, suppressContentEditableWarning: true, style: contentStyle, onBlur: (e) => {
+                                            if (merged.isStart) {
+                                                const newText = e.currentTarget.textContent || '';
+                                                handleCellContentChange(rowIndex, col, newText);
+                                            }
+                                        }, onKeyDown: (e) => {
+                                            if (merged.isStart && e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                // Переход к следующей строке
+                                                onCellSelect({ row: rowIndex + 1, col });
+                                            }
+                                        } }, content),
+                                    hasNote && showNotes && (react_1.default.createElement("div", { className: "template-cell-note-indicator", title: "\u041F\u0440\u0438\u043C\u0435\u0447\u0430\u043D\u0438\u0435" }, "\uD83D\uDCCC"))));
+                            })));
+                        }))))))));
 };
 exports.TemplateTable = TemplateTable;
 //# sourceMappingURL=TemplateTable.js.map

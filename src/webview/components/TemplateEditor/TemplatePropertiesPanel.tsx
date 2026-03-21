@@ -2,14 +2,15 @@
  * Панель свойств ячейки для редактора макетов 1С
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CellPosition, CellRange, NamedArea } from '../../../templatInterfaces';
 import { FillPatternToggle } from './FillPatternToggle';
 import { CellNoteDialog } from './CellNoteDialog';
 import { FormatBuilder } from './FormatBuilder';
 import { ColorPickerDialog } from './ColorPickerDialog';
 import { FontBuilderDialog } from './FontBuilderDialog';
-import { getCellFillPattern, findCellByPosition, extractTextFromTemplateTextData, getEffectiveFormat, getEffectiveFont, updateCellFormat, updateCellFont, updateCellAlignment, updateCellBorders, updateCellColors } from '../../../utils/templateUtils';
+import { getCellFillPattern, findCellByPosition, extractTextFromTemplateTextData, getEffectiveFormat, getEffectiveFont, formatBorderLineCode, updateCellFormat, updateCellFont, updateCellAlignment, updateCellColors, extractTemplateFormatColorString } from '../../../utils/templateUtils';
+import { SPREADSHEET_CELL_LINE_TYPE_OPTIONS_WITH_NONE } from '../../../utils/spreadsheetCellLineType';
 import { TemplateDocument, TemplateFormat, TemplateFont, TemplateTextData } from '../../../templatInterfaces';
 import './template-editor.css';
 
@@ -27,7 +28,6 @@ interface TemplatePropertiesPanelProps {
     onFormatChange?: (updatedDocument: TemplateDocument) => void;
     onFontChange?: (updatedDocument: TemplateDocument) => void;
     onAlignmentChange?: (horizontal?: string, vertical?: string) => void;
-    onBordersChange?: (borders: { left?: number; top?: number; bottom?: number; right?: number }) => void;
     onColorsChange?: (textColor?: string, backColor?: string) => void;
     onClose?: () => void;
 }
@@ -46,7 +46,6 @@ export const TemplatePropertiesPanel: React.FC<TemplatePropertiesPanelProps> = (
     onFormatChange,
     onFontChange,
     onAlignmentChange,
-    onBordersChange,
     onColorsChange,
     onClose
 }) => {
@@ -55,8 +54,24 @@ export const TemplatePropertiesPanel: React.FC<TemplatePropertiesPanelProps> = (
     const [isFormatBuilderOpen, setIsFormatBuilderOpen] = useState(false);
     const [formatBuilderType, setFormatBuilderType] = useState<'number' | 'date' | 'boolean' | 'string'>('number');
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
-    const [colorPickerMode, setColorPickerMode] = useState<'text' | 'back'>('text');
+    const [colorPickerMode, setColorPickerMode] = useState<'text' | 'back' | 'border'>('text');
     const [isFontBuilderOpen, setIsFontBuilderOpen] = useState(false);
+
+    const selRow = selectedCell?.row;
+    const selCol = selectedCell?.col;
+    const effectiveFormat = useMemo(() => {
+        if (selRow === undefined || selCol === undefined) {
+            return null;
+        }
+        return getEffectiveFormat(templateDocument, selRow, selCol);
+    }, [templateDocument, selRow, selCol]);
+
+    const effectiveFont = useMemo(() => {
+        if (selRow === undefined || selCol === undefined) {
+            return null;
+        }
+        return getEffectiveFont(templateDocument, selRow, selCol);
+    }, [templateDocument, selRow, selCol]);
 
     if (!selectedCell) {
         return (
@@ -68,35 +83,6 @@ export const TemplatePropertiesPanel: React.FC<TemplatePropertiesPanelProps> = (
 
     const cell = findCellByPosition(templateDocument, selectedCell.row, selectedCell.col);
     const fillPattern = getCellFillPattern(templateDocument, selectedCell.row, selectedCell.col);
-    const effectiveFormat = getEffectiveFormat(templateDocument, selectedCell.row, selectedCell.col);
-    const effectiveFont = getEffectiveFont(templateDocument, selectedCell.row, selectedCell.col);
-    
-    // Функция для извлечения строки из цвета (может быть объектом или строкой)
-    const extractColorString = (color: any): string => {
-        if (!color) return '';
-        if (typeof color === 'string') {
-            // Если это строка "[object Object]", возвращаем пустую строку
-            if (color === '[object Object]') return '';
-            return color;
-        }
-        if (typeof color === 'object') {
-            // Пытаемся извлечь строку из различных структур объекта
-            if (color['#text']) return color['#text'];
-            if (color['$'] && color['$']['xmlns:d3p1']) {
-                // Сложная структура с namespace
-                return String(color);
-            }
-            // Если объект, пытаемся найти строковое значение
-            for (const key in color) {
-                if (typeof color[key] === 'string' && color[key] !== '[object Object]') {
-                    return color[key];
-                }
-            }
-            // Если ничего не нашли, возвращаем пустую строку
-            return '';
-        }
-        return String(color);
-    };
     
     let parameterName = '';
     let templateText = '';
@@ -318,60 +304,198 @@ export const TemplatePropertiesPanel: React.FC<TemplatePropertiesPanelProps> = (
                                 </select>
                             </div>
                             <div className="template-properties-format-field">
-                                <label>Границы:</label>
+                                <label>Ориентация текста (°):</label>
+                                <select
+                                    value={effectiveFormat?.textOrientation !== undefined ? String(effectiveFormat.textOrientation) : ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        const updated = updateCellFormat(templateDocument, selectedCell.row, selectedCell.col, {
+                                            textOrientation: val === '' ? undefined : parseInt(val, 10)
+                                        });
+                                        onFormatChange?.(updated);
+                                    }}
+                                    className="template-properties-input"
+                                >
+                                    <option value="">0 (горизонтально)</option>
+                                    <option value="90">90 (вертикально)</option>
+                                    <option value="180">180</option>
+                                    <option value="270">270</option>
+                                </select>
+                            </div>
+                            <div className="template-properties-format-field">
+                                <label>Отступ:</label>
+                                <input
+                                    type="number"
+                                    value={effectiveFormat?.indent ?? ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        const updated = updateCellFormat(templateDocument, selectedCell.row, selectedCell.col, {
+                                            indent: val === '' ? undefined : parseInt(val, 10)
+                                        });
+                                        onFormatChange?.(updated);
+                                    }}
+                                    placeholder="0"
+                                    className="template-properties-input"
+                                    min="0"
+                                />
+                            </div>
+                            <div className="template-properties-format-field">
+                                <label>Автоотступ:</label>
+                                <input
+                                    type="number"
+                                    value={effectiveFormat?.autoIndent ?? ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        const updated = updateCellFormat(templateDocument, selectedCell.row, selectedCell.col, {
+                                            autoIndent: val === '' ? undefined : parseInt(val, 10)
+                                        });
+                                        onFormatChange?.(updated);
+                                    }}
+                                    placeholder="0"
+                                    className="template-properties-input"
+                                    min="0"
+                                />
+                            </div>
+                            <div className="template-properties-format-field">
+                                <label>Отступы (Слева / Справа / Сверху / Снизу):</label>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                                    <label style={{ fontSize: 'calc(var(--vscode-font-size) - 1px)' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={effectiveFormat?.leftBorder === 1}
-                                            onChange={(e) => {
-                                                onBordersChange?.({
-                                                    left: e.target.checked ? 1 : 0
-                                                });
-                                            }}
-                                            style={{ marginRight: '4px' }}
-                                        />
-                                        Слева
-                                    </label>
-                                    <label style={{ fontSize: 'calc(var(--vscode-font-size) - 1px)' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={effectiveFormat?.topBorder === 1}
-                                            onChange={(e) => {
-                                                onBordersChange?.({
-                                                    top: e.target.checked ? 1 : 0
-                                                });
-                                            }}
-                                            style={{ marginRight: '4px' }}
-                                        />
-                                        Сверху
-                                    </label>
-                                    <label style={{ fontSize: 'calc(var(--vscode-font-size) - 1px)' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={effectiveFormat?.rightBorder === 1}
-                                            onChange={(e) => {
-                                                onBordersChange?.({
-                                                    right: e.target.checked ? 1 : 0
-                                                });
-                                            }}
-                                            style={{ marginRight: '4px' }}
-                                        />
-                                        Справа
-                                    </label>
-                                    <label style={{ fontSize: 'calc(var(--vscode-font-size) - 1px)' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={effectiveFormat?.bottomBorder === 1}
-                                            onChange={(e) => {
-                                                onBordersChange?.({
-                                                    bottom: e.target.checked ? 1 : 0
-                                                });
-                                            }}
-                                            style={{ marginRight: '4px' }}
-                                        />
-                                        Снизу
-                                    </label>
+                                    <input
+                                        type="number"
+                                        value={effectiveFormat?.leftMargin ?? ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const updated = updateCellFormat(templateDocument, selectedCell.row, selectedCell.col, {
+                                                leftMargin: val === '' ? undefined : parseInt(val, 10)
+                                            });
+                                            onFormatChange?.(updated);
+                                        }}
+                                        placeholder="Слева"
+                                        className="template-properties-input"
+                                        min="0"
+                                        title="Слева"
+                                    />
+                                    <input
+                                        type="number"
+                                        value={effectiveFormat?.rightMargin ?? ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const updated = updateCellFormat(templateDocument, selectedCell.row, selectedCell.col, {
+                                                rightMargin: val === '' ? undefined : parseInt(val, 10)
+                                            });
+                                            onFormatChange?.(updated);
+                                        }}
+                                        placeholder="Справа"
+                                        className="template-properties-input"
+                                        min="0"
+                                        title="Справа"
+                                    />
+                                    <input
+                                        type="number"
+                                        value={effectiveFormat?.topMargin ?? ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const updated = updateCellFormat(templateDocument, selectedCell.row, selectedCell.col, {
+                                                topMargin: val === '' ? undefined : parseInt(val, 10)
+                                            });
+                                            onFormatChange?.(updated);
+                                        }}
+                                        placeholder="Сверху"
+                                        className="template-properties-input"
+                                        min="0"
+                                        title="Сверху"
+                                    />
+                                    <input
+                                        type="number"
+                                        value={effectiveFormat?.bottomMargin ?? ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const updated = updateCellFormat(templateDocument, selectedCell.row, selectedCell.col, {
+                                                bottomMargin: val === '' ? undefined : parseInt(val, 10)
+                                            });
+                                            onFormatChange?.(updated);
+                                        }}
+                                        placeholder="Снизу"
+                                        className="template-properties-input"
+                                        min="0"
+                                        title="Снизу"
+                                    />
+                                </div>
+                            </div>
+                            <div className="template-properties-format-field">
+                                <label>Границы (тип линии по сторонам, как в 1С):</label>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                                    {(
+                                        [
+                                            ['Граница слева', 'leftBorder'],
+                                            ['Граница сверху', 'topBorder'],
+                                            ['Граница справа', 'rightBorder'],
+                                            ['Граница снизу', 'bottomBorder'],
+                                            ['Обвести (рамка)', 'border'],
+                                        ] as const
+                                    ).map(([label, field]) => (
+                                        <label key={field} style={{ fontSize: 'calc(var(--vscode-font-size) - 1px)' }}>
+                                            {label}
+                                            <select
+                                                className="template-properties-input"
+                                                style={{ marginTop: '4px', width: '100%' }}
+                                                value={formatBorderLineCode(effectiveFormat?.[field])}
+                                                title="Коды 0…6 — SpreadsheetDocumentCellLineType (EDT)"
+                                                onChange={(e) => {
+                                                    const v = parseInt(e.target.value, 10);
+                                                    const updated = updateCellFormat(templateDocument, selectedCell.row, selectedCell.col, {
+                                                        [field]: v,
+                                                    });
+                                                    onFormatChange?.(updated);
+                                                }}
+                                            >
+                                                {SPREADSHEET_CELL_LINE_TYPE_OPTIONS_WITH_NONE.map((o) => (
+                                                    <option key={o.value} value={o.value}>
+                                                        — {o.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </label>
+                                    ))}
+                                    <div className="template-properties-format-field" style={{ marginBottom: 0 }}>
+                                        <label>Цвет рамки:</label>
+                                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginTop: '4px' }}>
+                                            <input
+                                                type="text"
+                                                value={extractTemplateFormatColorString(effectiveFormat?.borderColor) || ''}
+                                                readOnly
+                                                placeholder="Авто"
+                                                className="template-properties-input"
+                                                style={{ flex: 1 }}
+                                            />
+                                            <button
+                                                className="template-properties-button-small"
+                                                type="button"
+                                                onClick={() => {
+                                                    setColorPickerMode('border');
+                                                    setIsColorPickerOpen(true);
+                                                }}
+                                                title="Выбрать цвет рамки"
+                                            >
+                                                🎨
+                                            </button>
+                                            <button
+                                                className="template-properties-button-small"
+                                                type="button"
+                                                title="Сбросить (авто)"
+                                                onClick={() => {
+                                                    const updated = updateCellFormat(
+                                                        templateDocument,
+                                                        selectedCell.row,
+                                                        selectedCell.col,
+                                                        { borderColor: undefined }
+                                                    );
+                                                    onFormatChange?.(updated);
+                                                }}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div className="template-properties-format-field">
@@ -379,7 +503,7 @@ export const TemplatePropertiesPanel: React.FC<TemplatePropertiesPanelProps> = (
                                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                     <input
                                         type="text"
-                                        value={extractColorString(effectiveFormat?.textColor)}
+                                        value={extractTemplateFormatColorString(effectiveFormat?.textColor)}
                                         readOnly
                                         placeholder="не задан"
                                         className="template-properties-input"
@@ -402,7 +526,7 @@ export const TemplatePropertiesPanel: React.FC<TemplatePropertiesPanelProps> = (
                                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                     <input
                                         type="text"
-                                        value={extractColorString(effectiveFormat?.backColor)}
+                                        value={extractTemplateFormatColorString(effectiveFormat?.backColor)}
                                         readOnly
                                         placeholder="не задан"
                                         className="template-properties-input"
@@ -602,10 +726,31 @@ export const TemplatePropertiesPanel: React.FC<TemplatePropertiesPanelProps> = (
             )}
             <ColorPickerDialog
                 isOpen={isColorPickerOpen}
-                currentColor={colorPickerMode === 'text' ? (effectiveFormat?.textColor || '') : (effectiveFormat?.backColor || '')}
-                title={colorPickerMode === 'text' ? 'Выбор цвета текста' : 'Выбор цвета фона'}
+                currentColor={
+                    colorPickerMode === 'text'
+                        ? extractTemplateFormatColorString(effectiveFormat?.textColor)
+                        : colorPickerMode === 'back'
+                          ? extractTemplateFormatColorString(effectiveFormat?.backColor)
+                          : extractTemplateFormatColorString(effectiveFormat?.borderColor)
+                }
+                title={
+                    colorPickerMode === 'text'
+                        ? 'Выбор цвета текста'
+                        : colorPickerMode === 'back'
+                          ? 'Выбор цвета фона'
+                          : 'Выбор цвета рамки'
+                }
                 onSave={(color) => {
-                    if (colorPickerMode === 'text') {
+                    if (!selectedCell) {
+                        setIsColorPickerOpen(false);
+                        return;
+                    }
+                    if (colorPickerMode === 'border') {
+                        const updated = updateCellFormat(templateDocument, selectedCell.row, selectedCell.col, {
+                            borderColor: color || undefined,
+                        });
+                        onFormatChange?.(updated);
+                    } else if (colorPickerMode === 'text') {
                         onColorsChange?.(color || undefined, effectiveFormat?.backColor);
                     } else {
                         onColorsChange?.(effectiveFormat?.textColor, color || undefined);

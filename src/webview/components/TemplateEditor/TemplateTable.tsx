@@ -6,7 +6,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TemplateDocument, TemplateRow, TemplateCell, CellPosition, CellRange, TemplateColumns } from '../../../templatInterfaces';
 import { calculateColumnWidth, calculateRowHeight, getMinRowIndex, getMaxRowIndex } from '../../../utils/templateUtils';
-import { findCellByPosition, getCellFillPattern, extractTextFromTemplateTextData, extractStringValue, getEffectiveFormat, getEffectiveFont, getAllNamedAreas, findNamedAreaByPosition, getNamedAreaForRow, getNamedAreaForColumn, getNamedAreasForRow, getNamedAreasForColumn, isCellOnNamedAreaBoundary } from '../../../utils/templateUtils';
+import { findCellByPosition, getCellFillPattern, extractTextFromTemplateTextData, extractStringValue, getEffectiveFormat, getEffectiveFont, formatBorderLineCode, getAllNamedAreas, findNamedAreaByPosition, getNamedAreaForRow, getNamedAreaForColumn, getNamedAreasForRow, getNamedAreasForColumn, isCellOnNamedAreaBoundary, resolveTemplateBorderColorForCss } from '../../../utils/templateUtils';
+import { buildCellBorderCss } from '../../../utils/spreadsheetCellLineType';
 import { NamedArea } from '../../../templatInterfaces';
 import './template-editor.css';
 
@@ -43,6 +44,9 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
 }) => {
     const [cellContents, setCellContents] = useState<Map<string, string>>(new Map());
     const tableRef = useRef<HTMLTableElement>(null);
+    const leftScrollRef = useRef<HTMLDivElement>(null);
+    const rightScrollRef = useRef<HTMLDivElement>(null);
+    const rightHeaderScrollRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState<CellPosition | null>(null);
     const [activeRowIndex, setActiveRowIndex] = useState<number | null>(null);
@@ -80,6 +84,67 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
         }
         
         setCellContents(contents);
+    }, [templateDocument]);
+
+    // Синхронизация вертикальной прокрутки левой и правой панелей
+    useEffect(() => {
+        const left = leftScrollRef.current;
+        const right = rightScrollRef.current;
+        if (!left || !right) return;
+        let syncing = false;
+        const syncLeftToRight = () => {
+            if (syncing) return;
+            syncing = true;
+            right.scrollTop = left.scrollTop;
+            syncing = false;
+        };
+        const syncRightToLeft = () => {
+            if (syncing) return;
+            syncing = true;
+            left.scrollTop = right.scrollTop;
+            syncing = false;
+        };
+        left.addEventListener('scroll', syncLeftToRight);
+        right.addEventListener('scroll', syncRightToLeft);
+        return () => {
+            left.removeEventListener('scroll', syncLeftToRight);
+            right.removeEventListener('scroll', syncRightToLeft);
+        };
+    }, []);
+
+    // Синхронизация горизонтальной прокрутки заголовков колонок и данных
+    useEffect(() => {
+        const header = rightHeaderScrollRef.current;
+        const body = rightScrollRef.current;
+        if (!header || !body) return;
+        let syncing = false;
+        const syncHeaderToBody = () => {
+            if (syncing) return;
+            syncing = true;
+            body.scrollLeft = header.scrollLeft;
+            syncing = false;
+        };
+        const syncBodyToHeader = () => {
+            if (syncing) return;
+            syncing = true;
+            header.scrollLeft = body.scrollLeft;
+            syncing = false;
+        };
+        header.addEventListener('scroll', syncHeaderToBody);
+        body.addEventListener('scroll', syncBodyToHeader);
+        return () => {
+            header.removeEventListener('scroll', syncHeaderToBody);
+            body.removeEventListener('scroll', syncBodyToHeader);
+        };
+    }, []);
+
+    // Начальная синхронизация прокрутки после рендера
+    useEffect(() => {
+        const right = rightScrollRef.current;
+        const left = leftScrollRef.current;
+        const header = rightHeaderScrollRef.current;
+        if (right && left) left.scrollTop = right.scrollTop;
+        if (right && header) header.scrollLeft = right.scrollLeft;
     }, [templateDocument]);
 
     // Функция для получения группы колонок по умолчанию
@@ -151,39 +216,14 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
     }, [templateDocument]);
 
     // Функция для преобразования типа линии, толщины и цвета в CSS border
+    /** CSS для границы по коду SpreadsheetDocumentCellLineType (см. spreadsheetCellLineType.ts). */
     const getBorderStyle = React.useCallback((
-        borderType: number | undefined,
+        borderLineCode: number | string | undefined,
         lineType?: string,
         width?: number,
         color?: string
-    ): string | undefined => {
-        if (!borderType || borderType === 0) {
-            return undefined;
-        }
-
-        // Преобразуем тип линии в CSS border-style
-        let borderStyle = 'solid'; // по умолчанию сплошная
-        if (lineType) {
-            const lineTypeLower = lineType.toLowerCase();
-            if (lineTypeLower.includes('точечн') || lineTypeLower.includes('dotted')) {
-                borderStyle = 'dotted';
-            } else if (lineTypeLower.includes('пунктир') || lineTypeLower.includes('dashed')) {
-                borderStyle = 'dashed';
-            } else if (lineTypeLower.includes('двойн') || lineTypeLower.includes('double')) {
-                borderStyle = 'double';
-            } else if (lineTypeLower.includes('сплошн') || lineTypeLower.includes('solid')) {
-                borderStyle = 'solid';
-            }
-        }
-
-        // Используем толщину из параметра или значение по умолчанию
-        const borderWidth = width !== undefined ? `${width}px` : '1px';
-
-        // Используем цвет из параметра или значение по умолчанию
-        const borderColor = color || 'var(--vscode-panel-border)';
-
-        return `${borderWidth} ${borderStyle} ${borderColor}`;
-    }, []);
+    ): string | undefined =>
+        buildCellBorderCss(borderLineCode, { lineType, widthPx: width, color }), []);
 
     // Вычисление максимального количества колонок (учитываем все группы колонок)
     const maxColumns = React.useMemo(() => {
@@ -218,6 +258,30 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
         }
         return Math.max(max, 10);
     }, [templateDocument]);
+
+    /** Диапазон «вся строка» (клик по номеру строки / Shift): подсвечиваем все строки диапазона */
+    const fullWidthRowSelection = React.useMemo((): CellRange | null => {
+        if (!selectedRange) {
+            return null;
+        }
+        if (selectedRange.startCol !== 0 || selectedRange.endCol !== maxColumns - 1) {
+            return null;
+        }
+        return selectedRange;
+    }, [selectedRange, maxColumns]);
+
+    /** Диапазон «вся колонка» (клик по заголовку колонки): полная высота макета */
+    const fullHeightColumnSelection = React.useMemo((): CellRange | null => {
+        if (!selectedRange) {
+            return null;
+        }
+        const minR = getMinRowIndex(templateDocument);
+        const maxR = getMaxRowIndex(templateDocument);
+        if (selectedRange.startRow !== minR || selectedRange.endRow !== maxR) {
+            return null;
+        }
+        return selectedRange;
+    }, [selectedRange, templateDocument]);
 
     // Получение содержимого ячейки
     const getCellContent = useCallback((row: number, col: number): string => {
@@ -518,31 +582,83 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
 
     return (
         <div className="template-table-container">
-            <table 
-                ref={tableRef} 
-                className={`template-table ${showGrid ? 'show-grid' : ''} ${showHeaders ? 'show-headers' : ''}`}
-                style={{ tableLayout: 'fixed' }}
-            >
-                <colgroup>
-                    <col style={{ width: '150px' }} />
-                    <col style={{ width: '40px' }} />
-                    {Array.from({ length: maxColumns }, (_, col) => {
-                        // Заголовки колонок используют формат по умолчанию
-                        const defaultColumnsGroup = getDefaultColumnsGroup();
-                        const columnWidth = getColumnWidth(col, defaultColumnsGroup);
-                        const widthValue = columnWidth.includes('px') ? columnWidth : `${columnWidth}px`;
-                        return (
-                            <col 
-                                key={col} 
-                                style={{ width: widthValue }} 
-                            />
-                        );
-                    })}
-                </colgroup>
-                <thead>
+            <div className="template-table-row">
+                <div className="template-table-left-column">
+                    <div className="template-table-left-top">
+                        <table className={`template-table template-table-left ${showGrid ? 'show-grid' : ''} ${showHeaders ? 'show-headers' : ''}`} style={{ tableLayout: 'fixed' }}>
+                            <colgroup>
+                                <col style={{ width: '150px' }} />
+                                <col style={{ width: '40px' }} />
+                            </colgroup>
+                            <thead>
+                                <tr className="template-table-named-areas-row">
+                                    <th className="template-table-named-area-header"></th>
+                                    <th className="template-table-row-header"></th>
+                                </tr>
+                                <tr>
+                                    <th className="template-table-named-area-header"></th>
+                                    <th className="template-table-row-header"></th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                    <div ref={leftScrollRef} className="template-table-left-bottom">
+                        <table className={`template-table template-table-left ${showGrid ? 'show-grid' : ''} ${showHeaders ? 'show-headers' : ''}`} style={{ tableLayout: 'fixed' }}>
+                            <colgroup>
+                                <col style={{ width: '150px' }} />
+                                <col style={{ width: '40px' }} />
+                            </colgroup>
+                            <tbody>
+                        {rows.map((templateRow, arrayIndex) => {
+                            const rowIndex = templateRow.index !== undefined ? templateRow.index : arrayIndex;
+                            const activeRow = currentActiveRowIndex;
+                            const isActive = activeRow === rowIndex;
+                            const inFullRowRange =
+                                fullWidthRowSelection !== null &&
+                                rowIndex >= fullWidthRowSelection.startRow &&
+                                rowIndex <= fullWidthRowSelection.endRow;
+                            const highlightSidebarRow = isActive || inFullRowRange;
+                            const namedAreasForRow = getNamedAreasForRow(templateDocument, rowIndex, templateRow.row.columnsID);
+                            const areaNames = namedAreasForRow.map(area => area.name).join(', ');
+                            const heightValue = getRowHeight(rowIndex);
+                            return (
+                                <tr
+                                    key={rowIndex}
+                                    className={highlightSidebarRow ? 'active-row' : ''}
+                                    style={{ height: heightValue, minHeight: heightValue }}
+                                    onMouseEnter={() => handleRowMouseEnter(rowIndex)}
+                                    onMouseLeave={handleRowMouseLeave}
+                                >
+                                    <td className="template-table-named-area-cell">
+                                        {areaNames && <span className="named-area-label">{areaNames}</span>}
+                                    </td>
+                                    <td
+                                        className="template-table-row-header"
+                                        onClick={(e) => handleRowHeaderClick(rowIndex, e)}
+                                        title="Кликните, чтобы выделить всю строку"
+                                    >
+                                        {rowIndex + 1}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div className="template-table-right-column">
+                    <div ref={rightHeaderScrollRef} className="template-table-right-top">
+                        <table className={`template-table template-table-right-header ${showGrid ? 'show-grid' : ''} ${showHeaders ? 'show-headers' : ''}`} style={{ tableLayout: 'fixed' }}>
+                            <colgroup>
+                                {Array.from({ length: maxColumns }, (_, col) => {
+                                    const defaultColumnsGroup = getDefaultColumnsGroup();
+                                    const columnWidth = getColumnWidth(col, defaultColumnsGroup);
+                                    const widthValue = columnWidth.includes('px') ? columnWidth : `${columnWidth}px`;
+                                    return <col key={col} style={{ width: widthValue }} />;
+                                })}
+                            </colgroup>
+                            <thead>
                     <tr className="template-table-named-areas-row">
-                        <th className="template-table-named-area-header"></th>
-                        <th className="template-table-row-header"></th>
                         {Array.from({ length: maxColumns }, (_, col) => {
                             // Определяем активную строку для динамического переключения
                             const activeRow = currentActiveRowIndex;
@@ -571,11 +687,16 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                                 )
                             );
                             const areaNames = namedAreasForColumn.map(area => area.name).join(', ');
+                            const isColSelected = selectedRange && col >= selectedRange.startCol && col <= selectedRange.endCol &&
+                                selectedRange.startRow === getMinRowIndex(templateDocument) && selectedRange.endRow === getMaxRowIndex(templateDocument);
                             return (
                                 <th
                                     key={col}
-                                    className={`template-table-named-area-column-header ${isFrozenColumn(col) ? 'frozen' : ''}`}
+                                    className={`template-table-named-area-column-header ${isFrozenColumn(col) ? 'frozen' : ''} ${isColSelected ? 'active-column' : ''}`}
+                                    onClick={(e) => handleColumnHeaderClick(col, e)}
+                                    title={`Колонка ${col + 1}. Кликните, чтобы выделить`}
                                 >
+                                    <span className="template-column-number" style={{ color: 'var(--vscode-foreground)', display: 'block', marginBottom: 2 }}>{col + 1}</span>
                                     {shouldShow && (
                                         <span className="named-area-label">{areaNames}</span>
                                     )}
@@ -584,8 +705,6 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                         })}
                     </tr>
                     <tr>
-                        <th className="template-table-named-area-header"></th>
-                        <th className="template-table-row-header"></th>
                         {Array.from({ length: maxColumns }, (_, col) => {
                             // Заголовки колонок используют формат по умолчанию
                             // Но при наличии активной строки могут отображать ширину из её формата для визуального выравнивания
@@ -610,29 +729,54 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                             
                             const columnWidth = getColumnWidth(col, columnsGroupForHeader);
                             const widthValue = columnWidth.includes('px') ? columnWidth : `${columnWidth}px`;
+                            const isColSelected = selectedRange && col >= selectedRange.startCol && col <= selectedRange.endCol &&
+                                selectedRange.startRow === getMinRowIndex(templateDocument) && selectedRange.endRow === getMaxRowIndex(templateDocument);
                             return (
                                 <th
                                     key={col}
-                                    className={`template-table-column-header ${isFrozenColumn(col) ? 'frozen' : ''}`}
+                                    className={`template-table-column-header ${isFrozenColumn(col) ? 'frozen' : ''} ${isColSelected ? 'active-column' : ''}`}
                                     style={{ 
                                         width: widthValue,
-                                        minWidth: widthValue
+                                        minWidth: widthValue,
+                                        minHeight: 24
                                     }}
                                     onClick={(e) => handleColumnHeaderClick(col, e)}
-                                    title="Кликните, чтобы выделить всю колонку"
+                                    title={`Колонка ${col + 1}. Кликните, чтобы выделить`}
+                                    data-col={col}
                                 >
-                                    {col + 1}
+                                    <span className="template-column-number" style={{ color: 'var(--vscode-foreground)' }}>{col + 1}</span>
                                 </th>
                             );
                         })}
                     </tr>
-                </thead>
-                <tbody>
+                            </thead>
+                        </table>
+                    </div>
+                    <div ref={rightScrollRef} className="template-table-right-bottom">
+                        <table
+                            ref={tableRef}
+                            className={`template-table ${showGrid ? 'show-grid' : ''} ${showHeaders ? 'show-headers' : ''}`}
+                            style={{ tableLayout: 'fixed' }}
+                        >
+                            <colgroup>
+                                {Array.from({ length: maxColumns }, (_, col) => {
+                                    const defaultColumnsGroup = getDefaultColumnsGroup();
+                                    const columnWidth = getColumnWidth(col, defaultColumnsGroup);
+                                    const widthValue = columnWidth.includes('px') ? columnWidth : `${columnWidth}px`;
+                                    return <col key={col} style={{ width: widthValue }} />;
+                                })}
+                            </colgroup>
+                            <tbody>
                     {rows.map((templateRow, arrayIndex) => {
                         // Используем реальный индекс строки из данных, а не индекс массива
                         const rowIndex = templateRow.index !== undefined ? templateRow.index : arrayIndex;
                         const activeRow = currentActiveRowIndex;
                         const isActive = activeRow === rowIndex;
+                        const inFullRowRange =
+                            fullWidthRowSelection !== null &&
+                            rowIndex >= fullWidthRowSelection.startRow &&
+                            rowIndex <= fullWidthRowSelection.endRow;
+                        const highlightDataRow = isActive || inFullRowRange;
                         
                         // Определяем формат строки
                         const columnsGroup = getColumnsForRow(templateRow);
@@ -658,15 +802,11 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                             }
                         }
                         
-                        // Для подписей используем columnsID текущей строки (не активной), чтобы области всегда отображались
-                        const namedAreasForRow = getNamedAreasForRow(templateDocument, rowIndex, rowColumnsID);
-                        // Показываем все области, содержащие эту строку (для ясности на каждой строке)
-                        const areaNames = namedAreasForRow.map(area => area.name).join(', ');
                         const heightValue = getRowHeight(rowIndex);
                         return (
                             <tr 
                                 key={rowIndex} 
-                                className={`${isFrozenRow(rowIndex) ? 'frozen' : ''} ${isActive ? 'active-row' : ''}`}
+                                className={`${isFrozenRow(rowIndex) ? 'frozen' : ''} ${highlightDataRow ? 'active-row' : ''}`}
                                 style={{ 
                                     height: heightValue,
                                     minHeight: heightValue,
@@ -675,19 +815,11 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                                 onMouseEnter={() => handleRowMouseEnter(rowIndex)}
                                 onMouseLeave={handleRowMouseLeave}
                             >
-                                <td className="template-table-named-area-cell">
-                                    {areaNames && (
-                                        <span className="named-area-label">{areaNames}</span>
-                                    )}
-                                </td>
-                                <td 
-                                    className="template-table-row-header"
-                                    onClick={(e) => handleRowHeaderClick(rowIndex, e)}
-                                    title="Кликните, чтобы выделить всю строку"
-                                >
-                                    {rowIndex + 1}
-                                </td>
                                 {Array.from({ length: maxColumns }, (_, col) => {
+                                        const columnBandHighlight =
+                                            fullHeightColumnSelection !== null &&
+                                            col >= fullHeightColumnSelection.startCol &&
+                                            col <= fullHeightColumnSelection.endCol;
                                         const merged = getMergedCells(rowIndex, col);
                                         
                                         // Пропускаем ячейки, которые являются частью объединения, но не началом
@@ -804,6 +936,10 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                                                 }
                                             }
                                             
+                                            // Ориентация текста — разрешаем переполнение для отображения повёрнутого текста
+                                            if (cellFormat.textOrientation !== undefined && cellFormat.textOrientation !== 0) {
+                                                cellStyle.overflow = 'visible';
+                                            }
                                             // Ширина и высота
                                             if (cellFormat.width) {
                                                 const widthStr = typeof cellFormat.width === 'string' ? cellFormat.width : String(cellFormat.width);
@@ -814,69 +950,61 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                                                 cellStyle.height = heightStr.includes('px') ? heightStr : `${heightStr}px`;
                                             }
                                             
-                                            // Границы с учетом типа линии, толщины и цвета
-                                            if (cellFormat.border === 1) {
-                                                // Если установлена общая граница, используем её для всех сторон
+                                            // Границы: код строки + цвет (borderColor — общий, как в 1С; стороны могут переопределить).
+                                            // Цвет из XML может быть объектом — иначе String() даёт невалидный CSS и граница не рисуется.
+                                            const fillBorderColor = (specific?: unknown) =>
+                                                resolveTemplateBorderColorForCss(specific) ??
+                                                resolveTemplateBorderColorForCss(cellFormat.borderColor);
+
+                                            const outlineBorderCode = formatBorderLineCode(cellFormat.border);
+                                            if (outlineBorderCode > 0) {
                                                 const borderStyle = getBorderStyle(
-                                                    1,
+                                                    outlineBorderCode,
                                                     cellFormat.leftBorderLineType || cellFormat.topBorderLineType || cellFormat.bottomBorderLineType || cellFormat.rightBorderLineType,
                                                     cellFormat.leftBorderWidth || cellFormat.topBorderWidth || cellFormat.bottomBorderWidth || cellFormat.rightBorderWidth,
-                                                    cellFormat.leftBorderColor || cellFormat.topBorderColor || cellFormat.bottomBorderColor || cellFormat.rightBorderColor
+                                                    fillBorderColor(
+                                                        [cellFormat.leftBorderColor, cellFormat.topBorderColor, cellFormat.bottomBorderColor, cellFormat.rightBorderColor].find(
+                                                            (x) => resolveTemplateBorderColorForCss(x)
+                                                        )
+                                                    )
                                                 );
                                                 cellStyle.border = borderStyle || '1px solid var(--vscode-panel-border)';
                                             } else {
-                                                // Применяем границы для каждой стороны отдельно
-                                                if (cellFormat.leftBorder === 1) {
+                                                if (formatBorderLineCode(cellFormat.leftBorder) > 0) {
                                                     const leftBorderStyle = getBorderStyle(
                                                         cellFormat.leftBorder,
                                                         cellFormat.leftBorderLineType,
                                                         cellFormat.leftBorderWidth,
-                                                        cellFormat.leftBorderColor
+                                                        fillBorderColor(cellFormat.leftBorderColor)
                                                     );
-                                                    if (leftBorderStyle) {
-                                                        cellStyle.borderLeft = leftBorderStyle;
-                                                    } else {
-                                                        cellStyle.borderLeft = '1px solid var(--vscode-panel-border)';
-                                                    }
+                                                    cellStyle.borderLeft = leftBorderStyle || '1px solid var(--vscode-panel-border)';
                                                 }
-                                                if (cellFormat.topBorder === 1) {
+                                                if (formatBorderLineCode(cellFormat.topBorder) > 0) {
                                                     const topBorderStyle = getBorderStyle(
                                                         cellFormat.topBorder,
                                                         cellFormat.topBorderLineType,
                                                         cellFormat.topBorderWidth,
-                                                        cellFormat.topBorderColor
+                                                        fillBorderColor(cellFormat.topBorderColor)
                                                     );
-                                                    if (topBorderStyle) {
-                                                        cellStyle.borderTop = topBorderStyle;
-                                                    } else {
-                                                        cellStyle.borderTop = '1px solid var(--vscode-panel-border)';
-                                                    }
+                                                    cellStyle.borderTop = topBorderStyle || '1px solid var(--vscode-panel-border)';
                                                 }
-                                                if (cellFormat.bottomBorder === 1) {
+                                                if (formatBorderLineCode(cellFormat.bottomBorder) > 0) {
                                                     const bottomBorderStyle = getBorderStyle(
                                                         cellFormat.bottomBorder,
                                                         cellFormat.bottomBorderLineType,
                                                         cellFormat.bottomBorderWidth,
-                                                        cellFormat.bottomBorderColor
+                                                        fillBorderColor(cellFormat.bottomBorderColor)
                                                     );
-                                                    if (bottomBorderStyle) {
-                                                        cellStyle.borderBottom = bottomBorderStyle;
-                                                    } else {
-                                                        cellStyle.borderBottom = '1px solid var(--vscode-panel-border)';
-                                                    }
+                                                    cellStyle.borderBottom = bottomBorderStyle || '1px solid var(--vscode-panel-border)';
                                                 }
-                                                if (cellFormat.rightBorder === 1) {
+                                                if (formatBorderLineCode(cellFormat.rightBorder) > 0) {
                                                     const rightBorderStyle = getBorderStyle(
                                                         cellFormat.rightBorder,
                                                         cellFormat.rightBorderLineType,
                                                         cellFormat.rightBorderWidth,
-                                                        cellFormat.rightBorderColor
+                                                        fillBorderColor(cellFormat.rightBorderColor)
                                                     );
-                                                    if (rightBorderStyle) {
-                                                        cellStyle.borderRight = rightBorderStyle;
-                                                    } else {
-                                                        cellStyle.borderRight = '1px solid var(--vscode-panel-border)';
-                                                    }
+                                                    cellStyle.borderRight = rightBorderStyle || '1px solid var(--vscode-panel-border)';
                                                 }
                                             }
                                         }
@@ -921,17 +1049,50 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                                                 contentStyle.textDecoration = contentStyle.textDecoration ? 
                                                     `${contentStyle.textDecoration} line-through` : 'line-through';
                                             }
-                                            if (cellFont['$_scale']) {
-                                                const scale = parseFloat(cellFont['$_scale']) || 100;
-                                                contentStyle.transform = `scale(${scale / 100})`;
-                                                contentStyle.transformOrigin = 'top left';
+                                            const scale = cellFont['$_scale'] ? parseFloat(cellFont['$_scale']) || 100 : 100;
+                                            const orientation = cellFormat?.textOrientation ?? 0;
+                                            const transforms: string[] = [];
+                                            if (scale !== 100) {
+                                                transforms.push(`scale(${scale / 100})`);
                                             }
+                                            if (orientation !== 0) {
+                                                transforms.push(`rotate(${orientation}deg)`);
+                                            }
+                                            if (transforms.length > 0) {
+                                                contentStyle.transform = transforms.join(' ');
+                                                // Для вертикального текста (90°) — pivot слева по центру, как в 1С
+                                                const deg = orientation % 360;
+                                                contentStyle.transformOrigin = (deg === 90 || deg === 270) ? 'left center' : 'top left';
+                                            }
+                                        }
+                                        // Ориентация текста без шрифта (только rotate)
+                                        if (cellFormat?.textOrientation && cellFormat.textOrientation !== 0 && !cellFont) {
+                                            const deg = cellFormat.textOrientation % 360;
+                                            contentStyle.transform = `rotate(${cellFormat.textOrientation}deg)`;
+                                            contentStyle.transformOrigin = (deg === 90 || deg === 270) ? 'left center' : 'top left';
+                                        }
+                                        // Отступы
+                                        if (cellFormat?.leftMargin !== undefined && cellFormat.leftMargin !== 0) {
+                                            contentStyle.paddingLeft = `${cellFormat.leftMargin}px`;
+                                        }
+                                        if (cellFormat?.rightMargin !== undefined && cellFormat.rightMargin !== 0) {
+                                            contentStyle.paddingRight = `${cellFormat.rightMargin}px`;
+                                        }
+                                        if (cellFormat?.topMargin !== undefined && cellFormat.topMargin !== 0) {
+                                            contentStyle.paddingTop = `${cellFormat.topMargin}px`;
+                                        }
+                                        if (cellFormat?.bottomMargin !== undefined && cellFormat.bottomMargin !== 0) {
+                                            contentStyle.paddingBottom = `${cellFormat.bottomMargin}px`;
+                                        }
+                                        if (cellFormat?.indent !== undefined && cellFormat.indent !== 0) {
+                                            const currentLeft = contentStyle.paddingLeft ? parseFloat(String(contentStyle.paddingLeft)) : 0;
+                                            contentStyle.paddingLeft = `${currentLeft + cellFormat.indent}px`;
                                         }
 
                                         return (
                                             <td
                                                 key={col}
-                                                className={`template-table-cell ${selected ? 'selected' : ''} ${isFrozenColumn(col) ? 'frozen' : ''} ${hasNote ? 'has-note' : ''} ${isMerged ? 'merged-cell' : ''} ${boundaryClasses.join(' ')}`}
+                                                className={`template-table-cell ${selected ? 'selected' : ''} ${columnBandHighlight ? 'active-column-cells' : ''} ${isFrozenColumn(col) ? 'frozen' : ''} ${hasNote ? 'has-note' : ''} ${isMerged ? 'merged-cell' : ''} ${boundaryClasses.join(' ')}`}
                                                 colSpan={merged.colspan}
                                                 rowSpan={merged.rowspan}
                                                 onClick={(e) => handleCellClick(rowIndex, col, e)}
@@ -992,6 +1153,9 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                     })}
                 </tbody>
             </table>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

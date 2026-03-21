@@ -323,14 +323,6 @@ const TemplateEditorApp = ({ vscode }) => {
         setTemplateDocument(updated);
         setIsDirty(true);
     }, [templateDocument, selectedCell]);
-    const handleBordersChange = (0, react_1.useCallback)((borders) => {
-        if (!templateDocument || !selectedCell) {
-            return;
-        }
-        const updated = (0, templateUtils_1.updateCellBorders)(templateDocument, selectedCell.row, selectedCell.col, borders);
-        setTemplateDocument(updated);
-        setIsDirty(true);
-    }, [templateDocument, selectedCell]);
     const handleColorsChange = (0, react_1.useCallback)((textColor, backColor) => {
         if (!templateDocument || !selectedCell) {
             return;
@@ -476,7 +468,7 @@ const TemplateEditorApp = ({ vscode }) => {
             react_1.default.createElement("div", { className: "template-editor-main" },
                 react_1.default.createElement(TemplateTable_1.TemplateTable, { templateDocument: templateDocument, selectedCell: selectedCell, selectedRange: selectedRange, onCellSelect: setSelectedCell, onRangeSelect: setSelectedRange, onCellEdit: handleCellEdit, showGrid: showGrid, showHeaders: showHeaders, zoom: zoom, showNotes: showNotes, frozenRows: frozenRows, frozenColumns: frozenColumns, showNamedAreaBorders: showNamedAreaBorders })),
             showPropertiesPanel && (react_1.default.createElement("div", { className: "template-editor-sidebar" },
-                react_1.default.createElement(TemplatePropertiesPanel_1.TemplatePropertiesPanel, { templateDocument: templateDocument, selectedCell: selectedCell, selectedRange: selectedRange, onFillPatternToggle: handleFillPatternToggle, onParameterNameChange: handleParameterNameChange, onTemplateTextChange: handleTemplateTextChange, onCreateNote: handleCreateNote, onUpdateNote: handleUpdateNote, onDeleteNote: handleDeleteNote, onDetailParameterChange: handleDetailParameterChange, onFormatChange: handleFormatChange, onFontChange: handleFontChange, onAlignmentChange: handleAlignmentChange, onBordersChange: handleBordersChange, onColorsChange: handleColorsChange, onClose: () => setShowPropertiesPanel(false) })))),
+                react_1.default.createElement(TemplatePropertiesPanel_1.TemplatePropertiesPanel, { templateDocument: templateDocument, selectedCell: selectedCell, selectedRange: selectedRange, onFillPatternToggle: handleFillPatternToggle, onParameterNameChange: handleParameterNameChange, onTemplateTextChange: handleTemplateTextChange, onCreateNote: handleCreateNote, onUpdateNote: handleUpdateNote, onDeleteNote: handleDeleteNote, onDetailParameterChange: handleDetailParameterChange, onFormatChange: handleFormatChange, onFontChange: handleFontChange, onAlignmentChange: handleAlignmentChange, onColorsChange: handleColorsChange, onClose: () => setShowPropertiesPanel(false) })))),
         templateDocument && (react_1.default.createElement(NamedAreasDialog_1.NamedAreasDialog, { key: `${showNamedAreasDialog}-${templateDocument.namedItem?.length || 0}-${templateDocument.namedItem?.map(item => item.name).join(',') || ''}`, isOpen: showNamedAreasDialog, namedAreas: Array.from((0, templateUtils_1.getAllNamedAreas)(templateDocument).values()), onCreate: handleCreateNamedArea, onUpdate: handleUpdateNamedArea, onDelete: handleDeleteNamedArea, onCancel: () => setShowNamedAreasDialog(false) }))));
 };
 exports.TemplateEditorApp = TemplateEditorApp;

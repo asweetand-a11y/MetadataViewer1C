@@ -413,7 +413,8 @@ function updateMergeInDom(documentElement, templateDocument, doc) {
     }
 }
 /**
- * Обновляет format (форматы) в DOM
+ * Обновляет format (форматы) в DOM.
+ * 1С использует несколько элементов <format> (каждый — отдельный формат).
  */
 function updateFormatsInDom(documentElement, templateDocument, doc) {
     // Удаляем все существующие format
@@ -423,9 +424,9 @@ function updateFormatsInDom(documentElement, templateDocument, doc) {
             format.parentNode.removeChild(format);
         }
     });
-    // Добавляем новые format
+    // Создаём отдельный элемент format для каждого формата
     if (templateDocument.format && templateDocument.format.length > 0) {
-        templateDocument.format.forEach((format, index) => {
+        templateDocument.format.forEach((format) => {
             const formatElement = doc.createElement('format');
             // Добавляем опциональные элементы формата
             if (format.width !== undefined) {
@@ -478,10 +479,21 @@ function updateFormatsInDom(documentElement, templateDocument, doc) {
                 rightBorderElement.textContent = format.rightBorder.toString();
                 formatElement.appendChild(rightBorderElement);
             }
+            if (format.borderColor !== undefined && format.borderColor !== '') {
+                const borderColorElement = doc.createElement('borderColor');
+                borderColorElement.textContent = String(format.borderColor);
+                formatElement.appendChild(borderColorElement);
+            }
             if (format.textPlacement !== undefined) {
                 const textPlacementElement = doc.createElement('textPlacement');
                 textPlacementElement.textContent = format.textPlacement;
                 formatElement.appendChild(textPlacementElement);
+            }
+            if (format.textOrientation !== undefined) {
+                const textOrientationElement = doc.createElement('textOrientation');
+                // В 1С: 90° хранится как 900 (1/10 градуса)
+                textOrientationElement.textContent = (format.textOrientation * 10).toString();
+                formatElement.appendChild(textOrientationElement);
             }
             if (format.font !== undefined) {
                 const fontElement = doc.createElement('font');
@@ -502,6 +514,26 @@ function updateFormatsInDom(documentElement, templateDocument, doc) {
                 const autoIndentElement = doc.createElement('autoIndent');
                 autoIndentElement.textContent = format.autoIndent.toString();
                 formatElement.appendChild(autoIndentElement);
+            }
+            if (format.leftMargin !== undefined) {
+                const leftMarginElement = doc.createElement('leftMargin');
+                leftMarginElement.textContent = format.leftMargin.toString();
+                formatElement.appendChild(leftMarginElement);
+            }
+            if (format.rightMargin !== undefined) {
+                const rightMarginElement = doc.createElement('rightMargin');
+                rightMarginElement.textContent = format.rightMargin.toString();
+                formatElement.appendChild(rightMarginElement);
+            }
+            if (format.topMargin !== undefined) {
+                const topMarginElement = doc.createElement('topMargin');
+                topMarginElement.textContent = format.topMargin.toString();
+                formatElement.appendChild(topMarginElement);
+            }
+            if (format.bottomMargin !== undefined) {
+                const bottomMarginElement = doc.createElement('bottomMargin');
+                bottomMarginElement.textContent = format.bottomMargin.toString();
+                formatElement.appendChild(bottomMarginElement);
             }
             if (format.textColor !== undefined) {
                 const textColorElement = doc.createElement('textColor');

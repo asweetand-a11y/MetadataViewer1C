@@ -783,11 +783,14 @@ export class MetadataView {
         });
       }
 
-      // Нормализация format: если format имеет item (структура 1С), используем format.item как массив форматов
-      if (doc.format && typeof doc.format === 'object' && !Array.isArray(doc.format) && (doc.format as any).item) {
-        doc.format = (doc.format as any).item;
-      } else if (doc.format && !Array.isArray(doc.format)) {
-        doc.format = [doc.format as any];
+      // Нормализация format: 1С использует несколько элементов <format> (массив) или format.item
+      if (doc.format && typeof doc.format === 'object') {
+        const fmt = doc.format as any;
+        if (!Array.isArray(fmt) && fmt.item) {
+          doc.format = Array.isArray(fmt.item) ? fmt.item : [fmt.item];
+        } else if (!Array.isArray(fmt)) {
+          doc.format = [fmt];
+        }
       }
 
       // Нормализуем структуру макета после парсинга
@@ -889,13 +892,40 @@ export class MetadataView {
         });
       }
       
-      // Нормализуем форматы - обрабатываем вложенные форматы для чисел/дат
+      // Нормализуем форматы - обрабатываем вложенные форматы для чисел/дат и числовые свойства
       if (typedResult.document.format) {
-        typedResult.document.format.forEach(format => {
+        typedResult.document.format.forEach((format: any) => {
           // Если есть вложенный формат (format.format), нормализуем его
-          if ((format as any).format && typeof (format as any).format === 'object') {
-            format.format = (format as any).format as any;
+          if (format.format && typeof format.format === 'object') {
+            format.format = format.format as any;
           }
+          // Нормализация textOrientation: в 1С хранится как 1/10 градуса (900 = 90°)
+          const orientationVal = format.textOrientation ?? format.TextOrientation;
+          if (orientationVal !== undefined && orientationVal !== null) {
+            const n = parseInt(String(orientationVal), 10);
+            if (!isNaN(n)) format.textOrientation = n >= 360 ? Math.round(n / 10) : n;
+          }
+          // Нормализуем числовые свойства (парсер может вернуть строки)
+          const numProps = [
+            'indent',
+            'autoIndent',
+            'leftMargin',
+            'rightMargin',
+            'topMargin',
+            'bottomMargin',
+            'border',
+            'leftBorder',
+            'topBorder',
+            'rightBorder',
+            'bottomBorder',
+          ];
+          numProps.forEach(prop => {
+            const val = format[prop] ?? format[prop.charAt(0).toUpperCase() + prop.slice(1)];
+            if (val !== undefined && val !== null) {
+              const n = parseInt(String(val), 10);
+              if (!isNaN(n)) format[prop] = n;
+            }
+          });
         });
       }
 

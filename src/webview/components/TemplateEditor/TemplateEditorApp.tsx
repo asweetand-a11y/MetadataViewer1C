@@ -8,7 +8,7 @@ import { TemplateDocument, CellPosition, CellRange } from '../../../templatInter
 import { TemplateTable } from './TemplateTable';
 import { TemplateToolbar } from './TemplateToolbar';
 import { TemplatePropertiesPanel } from './TemplatePropertiesPanel';
-import { updateCellText, addRow, deleteRow, addColumn, deleteColumn, setCellAsParameter, setCellAsTemplate, findCellByPosition, mergeCells, unmergeCells, createNamedArea, updateNamedArea, deleteNamedArea, renameNamedArea, createCellNote, updateCellNote, deleteCellNote, updateCellDetailParameter, updateCellAlignment, updateCellBorders, updateCellColors, updateCellFormat, updateCellFont, createNamedRows, createNamedColumns, generateNamedAreaName, getAllNamedAreas, findNamedAreaByPosition, getCellFillPattern, extractTextFromTemplateTextData, getEffectiveFont, getMaxColumns, getMinRowIndex, getMaxRowIndex } from '../../../utils/templateUtils';
+import { updateCellText, addRow, deleteRow, addColumn, deleteColumn, setCellAsParameter, setCellAsTemplate, findCellByPosition, mergeCells, unmergeCells, createNamedArea, updateNamedArea, deleteNamedArea, renameNamedArea, createCellNote, updateCellNote, deleteCellNote, updateCellDetailParameter, updateCellAlignment, updateCellColors, updateCellFormat, updateCellFont, createNamedRows, createNamedColumns, generateNamedAreaName, getAllNamedAreas, findNamedAreaByPosition, getCellFillPattern, extractTextFromTemplateTextData, getEffectiveFont, getMaxColumns, getMinRowIndex, getMaxRowIndex } from '../../../utils/templateUtils';
 import { NamedAreasDialog } from './NamedAreasDialog';
 import { NamedArea } from '../../../templatInterfaces';
 import './template-editor.css';
@@ -411,21 +411,6 @@ export const TemplateEditorApp: React.FC<TemplateEditorAppProps> = ({ vscode }) 
         setIsDirty(true);
     }, [templateDocument, selectedCell]);
 
-    const handleBordersChange = useCallback((borders: { left?: number; top?: number; bottom?: number; right?: number }) => {
-        if (!templateDocument || !selectedCell) {
-            return;
-        }
-
-        const updated = updateCellBorders(
-            templateDocument,
-            selectedCell.row,
-            selectedCell.col,
-            borders
-        );
-        setTemplateDocument(updated);
-        setIsDirty(true);
-    }, [templateDocument, selectedCell]);
-
     const handleColorsChange = useCallback((textColor?: string, backColor?: string) => {
         if (!templateDocument || !selectedCell) {
             return;
@@ -690,7 +675,6 @@ export const TemplateEditorApp: React.FC<TemplateEditorAppProps> = ({ vscode }) 
                             onFormatChange={handleFormatChange}
                             onFontChange={handleFontChange}
                             onAlignmentChange={handleAlignmentChange}
-                            onBordersChange={handleBordersChange}
                             onColorsChange={handleColorsChange}
                             onClose={() => setShowPropertiesPanel(false)}
                         />

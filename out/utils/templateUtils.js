@@ -4,8 +4,8 @@
  * Функции для изменения структуры макета, работы с форматами заполнения и именованными областями
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addColumn = exports.unmergeCells = exports.mergeCells = exports.updateCellText = exports.deleteRow = exports.addRow = exports.isEmptyRow = exports.createEmptyRow = exports.deleteCellNote = exports.createCellNote = exports.updateCellDetailParameter = exports.updateCellNote = exports.updateCellColors = exports.updateCellBorders = exports.updateCellAlignment = exports.updateCellFont = exports.updateCellFormat = exports.getEffectiveFont = exports.getEffectiveFormat = exports.renameNamedArea = exports.deleteNamedArea = exports.updateNamedArea = exports.generateNamedAreaName = exports.createNamedColumns = exports.createNamedRows = exports.createNamedArea = exports.isCellOnNamedAreaBoundary = exports.getNamedAreasForColumn = exports.getNamedAreasForRow = exports.getNamedAreaForColumn = exports.getNamedAreaForRow = exports.findNamedAreaByPosition = exports.validateNamedArea = exports.validateNamedAreaName = exports.getNamedArea = exports.getAllNamedAreas = exports.getMaxRowIndex = exports.getMinRowIndex = exports.getMaxColumns = exports.extractTextFromTemplateTextData = exports.toggleCellFillPattern = exports.setCellAsTemplate = exports.setCellAsParameter = exports.convertParameterToTemplate = exports.parseTemplateParameters = exports.extractParameterFromTemplate = exports.getCellFillPattern = exports.extractStringValue = exports.findCellByPosition = exports.updateTemplateDocument = void 0;
-exports.deleteColumn = exports.calculateRowHeight = exports.calculateColumnWidth = void 0;
+exports.addRow = exports.isEmptyRow = exports.createEmptyRow = exports.deleteCellNote = exports.createCellNote = exports.updateCellDetailParameter = exports.updateCellNote = exports.updateCellColors = exports.updateCellBorders = exports.updateCellAlignment = exports.updateCellFont = exports.updateCellFormat = exports.getEffectiveFont = exports.hasTemplateBorderSide = exports.formatBorderLineCode = exports.resolveTemplateBorderColorForCss = exports.extractTemplateFormatColorString = exports.getEffectiveFormat = exports.resolveColumnsGroupForRow = exports.renameNamedArea = exports.deleteNamedArea = exports.updateNamedArea = exports.generateNamedAreaName = exports.createNamedColumns = exports.createNamedRows = exports.createNamedArea = exports.isCellOnNamedAreaBoundary = exports.getNamedAreasForColumn = exports.getNamedAreasForRow = exports.getNamedAreaForColumn = exports.getNamedAreaForRow = exports.findNamedAreaByPosition = exports.validateNamedArea = exports.validateNamedAreaName = exports.getNamedArea = exports.getAllNamedAreas = exports.getMaxRowIndex = exports.getMinRowIndex = exports.getMaxColumns = exports.extractTextFromTemplateTextData = exports.toggleCellFillPattern = exports.setCellAsTemplate = exports.setCellAsParameter = exports.convertParameterToTemplate = exports.parseTemplateParameters = exports.extractParameterFromTemplate = exports.getCellFillPattern = exports.extractStringValue = exports.findCellByPosition = exports.updateTemplateDocument = void 0;
+exports.deleteColumn = exports.calculateRowHeight = exports.calculateColumnWidth = exports.addColumn = exports.unmergeCells = exports.mergeCells = exports.updateCellText = exports.deleteRow = void 0;
 /**
  * Обновляет документ макета с изменениями
  */
@@ -922,30 +922,153 @@ function renameNamedArea(template, oldName, newName) {
 }
 exports.renameNamedArea = renameNamedArea;
 /**
- * Получает эффективный формат ячейки (с учетом формата строки и ячейки)
+ * Слой формата по 1-based индексу из XML.
+ */
+function getFormatLayerByOneBasedIndex(template, formatIndex1Based) {
+    if (formatIndex1Based === undefined || formatIndex1Based === null || !template.format?.length) {
+        return null;
+    }
+    const idx = Number(formatIndex1Based) - 1;
+    if (!Number.isFinite(idx) || idx < 0 || idx >= template.format.length) {
+        return null;
+    }
+    return template.format[idx] ?? null;
+}
+/**
+ * Наложение слоёв формата: поздние перекрывают ранние (как каскад 1С: колонка/строка/ячейка).
+ */
+function overlayTemplateFormatLayers(...layers) {
+    const acc = {};
+    let sawLayer = false;
+    for (const layer of layers) {
+        if (!layer) {
+            continue;
+        }
+        sawLayer = true;
+        Object.keys(layer).forEach((k) => {
+            const v = layer[k];
+            if (v !== undefined) {
+                acc[k] = v;
+            }
+        });
+    }
+    return sawLayer && Object.keys(acc).length > 0 ? acc : null;
+}
+function getDefaultColumnsGroup(template) {
+    if (!template.columns?.length) {
+        return null;
+    }
+    const defaultGroup = template.columns.find((c) => !c.id);
+    return defaultGroup ?? template.columns[0] ?? null;
+}
+/**
+ * Группа колонок для строки (по columnsID строки или группа по умолчанию).
+ */
+function resolveColumnsGroupForRow(template, rowIndex) {
+    if (!template.columns?.length) {
+        return null;
+    }
+    const templateRow = template.rowsItem?.find((r) => (r.index !== undefined ? r.index : template.rowsItem.indexOf(r)) === rowIndex);
+    const rowColumnsID = templateRow?.row.columnsID;
+    if (rowColumnsID) {
+        return template.columns.find((c) => c.id === rowColumnsID) ?? getDefaultColumnsGroup(template);
+    }
+    return getDefaultColumnsGroup(template);
+}
+exports.resolveColumnsGroupForRow = resolveColumnsGroupForRow;
+/**
+ * Получает эффективный формат ячейки: defaultFormat группы → format группы колонок → формат колонки → строка → ячейка.
+ * Иначе границы из формата колонок (частый случай в типовых макетах) не попадали в визуализацию.
  */
 function getEffectiveFormat(template, row, col) {
+    const layers = [];
+    layers.push(getFormatLayerByOneBasedIndex(template, template.defaultFormatIndex));
+    const columnsGroup = resolveColumnsGroupForRow(template, row);
+    if (columnsGroup) {
+        layers.push(getFormatLayerByOneBasedIndex(template, columnsGroup.formatIndex));
+        const colItem = columnsGroup.columnsItem?.find((item) => item.index === col);
+        const colFi = colItem?.column?.formatIndex ??
+            colItem?.formatIndex;
+        layers.push(getFormatLayerByOneBasedIndex(template, colFi));
+    }
+    const templateRow = template.rowsItem?.find((r) => (r.index !== undefined ? r.index : template.rowsItem.indexOf(r)) === row);
+    if (templateRow?.row) {
+        layers.push(getFormatLayerByOneBasedIndex(template, templateRow.row.formatIndex));
+    }
     const cell = findCellByPosition(template, row, col);
-    // Если у ячейки есть явный formatIndex, используем его
-    if (cell && cell.c && cell.c.f !== undefined) {
-        // formatIndex в XML начинается с 1, в массиве с 0
-        const formatIndex = cell.c.f - 1;
-        if (formatIndex >= 0 && template.format && template.format[formatIndex]) {
-            return template.format[formatIndex];
-        }
+    if (cell?.c?.f !== undefined) {
+        layers.push(getFormatLayerByOneBasedIndex(template, cell.c.f));
     }
-    // Если у ячейки нет явного formatIndex, проверяем формат строки
-    const templateRow = template.rowsItem?.find(r => (r.index !== undefined ? r.index : template.rowsItem.indexOf(r)) === row);
-    if (templateRow && templateRow.row) {
-        const rowFormatIndex = templateRow.row.formatIndex;
-        // formatIndex в XML начинается с 1, в массиве с 0
-        if (rowFormatIndex !== undefined && template.format && template.format[rowFormatIndex - 1]) {
-            return template.format[rowFormatIndex - 1];
-        }
-    }
-    return null;
+    return overlayTemplateFormatLayers(...layers);
 }
 exports.getEffectiveFormat = getEffectiveFormat;
+/**
+ * Извлекает строку цвета из поля формата макета (после парсинга XML значение часто приходит как объект с #text).
+ */
+function extractTemplateFormatColorString(color) {
+    if (color === undefined || color === null) {
+        return '';
+    }
+    if (typeof color === 'string') {
+        if (color === '[object Object]') {
+            return '';
+        }
+        return color;
+    }
+    if (typeof color === 'object') {
+        const o = color;
+        if (typeof o['#text'] === 'string') {
+            return o['#text'];
+        }
+        if (o['$'] && typeof o['$'] === 'object' && o['$']['xmlns:d3p1']) {
+            return String(color);
+        }
+        for (const key of Object.keys(o)) {
+            const v = o[key];
+            if (typeof v === 'string' && v !== '[object Object]') {
+                return v;
+            }
+        }
+        return '';
+    }
+    return String(color);
+}
+exports.extractTemplateFormatColorString = extractTemplateFormatColorString;
+/**
+ * Цвет границы для CSS: неразобранное / стиль 1С → undefined (используется fallback в buildCellBorderCss).
+ */
+function resolveTemplateBorderColorForCss(color) {
+    const s = extractTemplateFormatColorString(color).trim();
+    if (!s || s === '[object Object]') {
+        return undefined;
+    }
+    if (s.startsWith('style:')) {
+        return undefined;
+    }
+    return s;
+}
+exports.resolveTemplateBorderColorForCss = resolveTemplateBorderColorForCss;
+/**
+ * Числовой код линии границы из макета 1С (XML: leftBorder, border и т.д.).
+ * Соответствует `SpreadsheetDocumentCellLineType` в EDT (см. {@link spreadsheetCellLineType.SpreadsheetDocumentCellLineType}).
+ * XSD: `resources/xsd/http_v8.1c.ru_8.2_data_spreadsheet.xsd` — тип `xs:integer`, перечисление в схеме не зафиксировано.
+ */
+function formatBorderLineCode(value) {
+    if (value === undefined || value === null || value === '') {
+        return 0;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+    }
+    const n = parseInt(String(value).trim(), 10);
+    return Number.isFinite(n) ? n : 0;
+}
+exports.formatBorderLineCode = formatBorderLineCode;
+/** Есть ли линия границы по коду стороны или полю border. */
+function hasTemplateBorderSide(value) {
+    return formatBorderLineCode(value) > 0;
+}
+exports.hasTemplateBorderSide = hasTemplateBorderSide;
 /**
  * Получает эффективный шрифт ячейки
  */
@@ -970,12 +1093,20 @@ function updateCellFormat(template, row, col, formatUpdates) {
     if (!cell || !cell.c) {
         return template;
     }
-    // Получаем текущий формат
+    // Получаем текущий формат (включая наследование от строки, если у ячейки нет f)
     let currentFormat = {};
     const oldFormatIndex = cell.c.f;
-    if (oldFormatIndex !== undefined && template.format && template.format[oldFormatIndex] !== undefined) {
-        // Копируем все свойства существующего формата
-        currentFormat = { ...template.format[oldFormatIndex] };
+    const formatArrayIndex = oldFormatIndex !== undefined ? oldFormatIndex - 1 : -1;
+    if (formatArrayIndex >= 0 && template.format && template.format[formatArrayIndex] !== undefined) {
+        // Ячейка имеет явный formatIndex (1-based в XML) — копируем формат
+        currentFormat = { ...template.format[formatArrayIndex] };
+    }
+    else {
+        // Ячейка наследует формат от строки — берём эффективный формат
+        const effective = getEffectiveFormat(template, row, col);
+        if (effective) {
+            currentFormat = { ...effective };
+        }
     }
     // Создаем новый формат на основе текущего с обновленными значениями
     // ВАЖНО: Всегда создаем новый формат, чтобы изолировать изменения от других ячеек
@@ -987,18 +1118,21 @@ function updateCellFormat(template, row, col, formatUpdates) {
     const newFormats = [...(template.format || [])];
     const newFormatIndex = newFormats.length;
     newFormats.push(updatedFormat);
+    // В XML 1С индекс формата 1-based
+    const newFormatIndex1Based = newFormatIndex + 1;
     // Обновляем ячейку с новым индексом формата
-    if (!template.rowsItem || !template.rowsItem[row]) {
+    const rowArrayIndex = template.rowsItem?.findIndex(r => (r.index !== undefined ? r.index : template.rowsItem.indexOf(r)) === row);
+    if (!template.rowsItem || rowArrayIndex === undefined || rowArrayIndex < 0) {
         return template;
     }
     const newRowsItem = [...template.rowsItem];
-    const newRow = { ...newRowsItem[row] };
+    const newRow = { ...newRowsItem[rowArrayIndex] };
     const newRowData = { ...newRow.row };
     if (!newRowData.c) {
         // Если ячеек нет, создаем массив с одной ячейкой
         newRowData.c = [{
                 i: col,
-                c: { f: newFormatIndex }
+                c: { f: newFormatIndex1Based }
             }];
     }
     else {
@@ -1012,7 +1146,7 @@ function updateCellFormat(template, row, col, formatUpdates) {
         if (cellIndex >= 0) {
             const newCell = { ...newCells[cellIndex] };
             const newCellData = { ...newCell.c };
-            newCellData.f = newFormatIndex;
+            newCellData.f = newFormatIndex1Based;
             newCell.c = newCellData;
             newCells[cellIndex] = newCell;
             newRowData.c = newCells;
@@ -1021,12 +1155,12 @@ function updateCellFormat(template, row, col, formatUpdates) {
             // Ячейка не найдена, добавляем новую
             newRowData.c = [...newCells, {
                     i: col,
-                    c: { f: newFormatIndex }
+                    c: { f: newFormatIndex1Based }
                 }];
         }
     }
     newRow.row = newRowData;
-    newRowsItem[row] = newRow;
+    newRowsItem[rowArrayIndex] = newRow;
     return {
         ...template,
         rowsItem: newRowsItem,
