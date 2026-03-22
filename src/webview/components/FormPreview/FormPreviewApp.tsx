@@ -72,6 +72,40 @@ function getCommandCaptionFromItem(item: FormItem): string {
   return typeof fallback === 'string' ? fallback : formatValue(fallback);
 }
 
+/**
+ * Для кнопки с ссылкой вида Form.Command.ИмяКоманды возвращает текст процедуры из Action соответствующей команды формы.
+ * В типовых формах 1С нажатие часто обрабатывается через команду, без отдельного Event name="Click".
+ */
+function resolveActionProcedureFromButtonCommandRefs(
+  props: Record<string, any> | undefined,
+  commands: FormCommand[] | undefined
+): string {
+  if (!props || !commands?.length) return '';
+  // Совместимость: старый баг convertRawFormItem дублировал поля — CommandName оказывался во вложенном properties
+  let p: Record<string, any> = props;
+  const inner = p.properties;
+  if (
+    inner &&
+    typeof inner === 'object' &&
+    !Array.isArray(inner) &&
+    !extractScalarText(p.CommandName) &&
+    extractScalarText(inner.CommandName)
+  ) {
+    p = inner as Record<string, any>;
+  }
+  const cmdRef =
+    extractScalarText(p.CommandName) ||
+    extractScalarText(p.Command) ||
+    extractScalarText(p.CommandRef) ||
+    '';
+  const trimmed = cmdRef.trim();
+  const m = trimmed.match(/^Form\.Command\.(.+)$/i);
+  const shortName = m ? m[1].trim() : '';
+  if (!shortName) return '';
+  const cmd = commands.find((c) => c.name === shortName);
+  if (!cmd?.properties) return '';
+  return extractScalarText((cmd.properties as any).Action).trim();
+}
 
 /**
  * Иммутабельно обновляет элемент формы по пути вида "0.1.2".
@@ -1532,6 +1566,7 @@ export const FormPreviewApp: React.FC<FormPreviewAppProps> = ({ vscode }) => {
           <div className="edt-properties-panel" style={{ width: 320, minWidth: 260, flexShrink: 0 }}>
             <PropertiesPanel
               item={selectedItem}
+              commands={form.commands || []}
               title={getPropertiesPanelTitle(selectedItem)}
               onClose={() => setPropertiesPanelOpen(false)}
               onPropertyChange={(key, nextValue) => {
@@ -2453,12 +2488,14 @@ const EVENT_RUSSIAN_TO_XML_NAME: Record<string, string> = {
  */
 const PropertiesPanel: React.FC<{
   item: FormItem | null;
+  /** Команды формы — нужны, чтобы показать процедуру для кнопки, связанной через CommandName без Event Click. */
+  commands?: FormCommand[];
   title: string;
   onClose: () => void;
   onPropertyChange: (key: string, nextValue: any) => void;
   /** Открыть модуль формы и перейти к процедуре/функции (по имени обработчика). */
   onOpenModuleAtProcedure?: (procedureName: string) => void;
-}> = ({ item, title, onClose, onPropertyChange, onOpenModuleAtProcedure }) => {
+}> = ({ item, commands, title, onClose, onPropertyChange, onOpenModuleAtProcedure }) => {
   const [propertySearch, setPropertySearch] = useState('');
   /** Высота блока «Основные» в пикселях (перетаскиваемый разделитель). */
   const [mainSectionHeight, setMainSectionHeight] = useState(200);
@@ -2581,8 +2618,15 @@ const PropertiesPanel: React.FC<{
                 {eventNames.map((name) => {
                   const xmlName = EVENT_RUSSIAN_TO_XML_NAME[name] || name;
                   const fromProps = eventsFromProps.find((e) => e.name === xmlName);
-                  const handler = fromProps?.value ?? '';
+                  const explicitHandler = String(fromProps?.value ?? '').trim();
+                  const derivedFromFormCommand =
+                    item?.type === 'Button' && name === 'Нажатие'
+                      ? resolveActionProcedureFromButtonCommandRefs(item.properties, commands)
+                      : '';
+                  const handlerIsFromCommand = !explicitHandler && !!derivedFromFormCommand;
+                  const handler = explicitHandler || derivedFromFormCommand;
                   const applyEventHandler = (newValue: string) => {
+                    if (handlerIsFromCommand) return;
                     const trimmed = String(newValue).trim();
                     let next: Array<{ name: string; value: string }>;
                     if (!trimmed) {
@@ -2609,8 +2653,13 @@ const PropertiesPanel: React.FC<{
                           type="text"
                           className="edt-properties-panel__event-input"
                           value={handler}
+                          readOnly={handlerIsFromCommand}
                           placeholder="Имя процедуры…"
-                          title="Имя процедуры-обработчика (сохраняется в Form.xml)"
+                          title={
+                            handlerIsFromCommand
+                              ? 'Процедура задана действием команды формы (Action). Изменить можно на вкладке «Команды».'
+                              : 'Имя процедуры-обработчика (сохраняется в Form.xml как Event name="Click")'
+                          }
                           onChange={(e) => applyEventHandler(e.target.value)}
                         />
                         {onOpenModuleAtProcedure && templateIconUrl ? (
@@ -2852,7 +2901,37 @@ function convertRawChildItems(childItemsNode: any): FormItem[] {
   return items;
 }
 
+/**
+ * Узел уже в формате FormItem после xmldom-парсера. Его нельзя снова прогонять через omitChildItems(raw):
+ * иначе type/name/id попадут в properties, а CommandName окажется в properties.properties (панель «Нажатие» пустая).
+ * Сырой объект с дочерними элементами из DOM помечается ключом ChildItems (PascalCase), не childItems.
+ */
+function isAlreadyParsedFormItem(raw: any): raw is FormItem {
+  return (
+    !!raw &&
+    typeof raw === 'object' &&
+    typeof raw.type === 'string' &&
+    raw.properties != null &&
+    typeof raw.properties === 'object' &&
+    !Array.isArray(raw.properties) &&
+    raw.ChildItems === undefined
+  );
+}
+
 function convertRawFormItem(raw: any, typeHint: string): FormItem {
+  if (isAlreadyParsedFormItem(raw)) {
+    const next: FormItem = {
+      type: raw.type,
+      name: raw.name,
+      id: raw.id,
+      properties: { ...raw.properties },
+    };
+    if (Array.isArray(raw.childItems) && raw.childItems.length > 0) {
+      next.childItems = raw.childItems.map((ch) => convertRawFormItem(ch, ch.type || typeHint));
+    }
+    return next;
+  }
+
   const name = raw?.name ?? raw?.Name;
   const id = raw?.id ?? raw?.ID;
   const props = omitChildItems(raw);

@@ -2147,6 +2147,11 @@ body.edt-resizing-props-sections {
   font-size: 12px;
 }
 
+.edt-properties-panel__event-input[readonly] {
+  opacity: 0.9;
+  cursor: help;
+}
+
 .edt-properties-panel__event-open {
   flex-shrink: 0;
   display: inline-flex;
