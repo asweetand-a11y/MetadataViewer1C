@@ -2,7 +2,7 @@
 	"name": "cursor-1c-metadata-viewer",
 	"displayName": "1C Metadata Viewer",
 	"description": "Explore 1C:Enterprise 8 configuration in the usual way",
-	"version": "2.10.4",
+	"version": "2.10.5",
 	"publisher": "whiterabbit",
 	"license": "MIT",
 	"author": {
@@ -124,6 +124,10 @@
 			{
 				"command": "metadataViewer.reindexStructure",
 				"title": "%1c-metadata-viewer.reindexStructure.title%"
+			},
+			{
+				"command": "metadataViewer.updateConfigDumpFromCommit",
+				"title": "%1c-metadata-viewer.updateConfigDumpFromCommit.title%"
 			},
 			{
 				"command": "metadataViewer.refreshObjectStructure",
@@ -313,6 +317,11 @@
 				},
 				{
 					"command": "metadataViewer.reindexStructure",
+					"group": "metadata",
+					"when": "viewItem == main"
+				},
+				{
+					"command": "metadataViewer.updateConfigDumpFromCommit",
 					"group": "metadata",
 					"when": "viewItem == main"
 				},

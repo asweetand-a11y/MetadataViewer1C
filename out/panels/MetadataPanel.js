@@ -1149,10 +1149,11 @@ class MetadataPanel {
                 });
                 if (!structureResult.valid && structureResult.errors && structureResult.errors.length > 0) {
                     const errorMessage = structureResult.errors.slice(0, 3).join('; ');
-                    vscode.window.showErrorMessage(`Ошибка структуры XML: ${errorMessage}`, 'Показать детали').then(selection => {
+                    vscode.window.showErrorMessage(`Ошибка структуры XML. Файл: ${obj.sourcePath} — ${errorMessage}`, 'Показать детали').then(selection => {
                         if (selection === 'Показать детали') {
                             const outputChannel = vscode.window.createOutputChannel('Metadata Editor');
                             outputChannel.appendLine('=== Ошибка валидации структуры XML ===');
+                            outputChannel.appendLine(`Файл: ${obj.sourcePath}`);
                             structureResult.errors?.forEach(e => outputChannel.appendLine(e));
                             outputChannel.appendLine(`\nДлина XML: ${updatedXml.length} символов`);
                             outputChannel.appendLine('\n=== Начало XML (первые 2000 символов) ===');
@@ -1339,7 +1340,7 @@ class MetadataPanel {
             });
             if (!structureResult.valid && structureResult.errors?.length) {
                 const errorMessage = structureResult.errors.slice(0, 3).join('; ');
-                throw new Error(`Ошибка структуры XML формы: ${errorMessage}`);
+                throw new Error(`Ошибка структуры XML формы. Файл: ${formPath} — ${errorMessage}`);
             }
         }
         await fs.promises.writeFile(formPath, normalizedXml, 'utf8');

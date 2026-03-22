@@ -147,3 +147,65 @@ export function validateMetadataXmlFile(
     warnings,
   };
 }
+
+/**
+ * Валидация содержимого XML по тем же правилам, что при сохранении из редактора метаданных / формы:
+ * well-formed XML, для MetaDataObject — проверки XDTO, при включённой настройке — структура по JSON-схеме.
+ */
+export function validateCommittedXmlContent(
+  filePath: string,
+  extensionPath: string,
+  xmlContent: string,
+  structureValidationEnabled: boolean
+): string[] {
+  const errors: string[] = [];
+  const xmlRes = validateXML(xmlContent);
+  if (!xmlRes.valid) {
+    errors.push(xmlRes.error || 'Ошибка валидации XML');
+    return errors;
+  }
+
+  const rootTagMatch = xmlContent.match(/<([^\s/>!?][^\s/>]*)/);
+  const rootTag = rootTagMatch?.[1] || '';
+  const fp = filePath.replace(/\\/g, '/');
+
+  const isMetaDataObject =
+    rootTag === 'MetaDataObject' || rootTag.endsWith(':MetaDataObject');
+
+  if (isMetaDataObject) {
+    const xdto = checkXDtoCompatibility(xmlContent);
+    errors.push(...xdto.errors);
+  }
+
+  if (!structureValidationEnabled) {
+    return errors;
+  }
+
+  let xmlObjectType: string | undefined;
+  if (isMetaDataObject) {
+    xmlObjectType = fp.includes('/Catalogs/')
+      ? 'Catalog'
+      : fp.includes('/Documents/')
+        ? 'Document'
+        : fp.includes('/Reports/')
+          ? 'Report'
+          : undefined;
+  }
+
+  const structureResult = validateXmlStructure(xmlContent, {
+    extensionPath,
+    filePath,
+    xmlObjectType,
+    rootTag: isMetaDataObject
+      ? 'MetaDataObject'
+      : rootTag === 'Form' || rootTag.endsWith(':Form')
+        ? 'Form'
+        : undefined,
+  });
+
+  if (!structureResult.valid && structureResult.errors?.length) {
+    errors.push(...structureResult.errors);
+  }
+
+  return errors;
+}

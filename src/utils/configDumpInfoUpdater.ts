@@ -98,7 +98,7 @@ export async function updateConfigDumpInfoForPredefined(params: {
         }
         
         // Сохраняем обновленный XML
-        await saveConfigDumpInfo(configDumpInfoPath, doc);
+        await writeConfigDumpInfoFile(configDumpInfoPath, doc);
         
         return { updated: true, id };
     } else {
@@ -113,7 +113,7 @@ export async function updateConfigDumpInfoForPredefined(params: {
         metadataParent.appendChild(newMetadata);
         
         // Сохраняем обновленный XML
-        await saveConfigDumpInfo(configDumpInfoPath, doc);
+        await writeConfigDumpInfoFile(configDumpInfoPath, doc);
         
         return { updated: true, id: newId };
     }
@@ -126,20 +126,22 @@ function generatePredefinedId(): string {
     return randomUUID() + '.1c';
 }
 
-/**
- * Генерирует configVersion (32 hex символа)
- */
-function generateConfigVersion(): string {
+/** Генерирует configVersion (32 hex символа) */
+export function generateConfigVersionHex(): string {
     const bytes = randomBytes(16);
     return Array.from(bytes)
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
 }
 
+function generateConfigVersion(): string {
+    return generateConfigVersionHex();
+}
+
 /**
  * Сохраняет ConfigDumpInfo.xml с BOM
  */
-async function saveConfigDumpInfo(path: string, doc: Document): Promise<void> {
+export async function writeConfigDumpInfoFile(filePath: string, doc: Document): Promise<void> {
     const serializer = new XMLSerializer();
     const xmlString = serializer.serializeToString(doc);
     
@@ -149,8 +151,14 @@ async function saveConfigDumpInfo(path: string, doc: Document): Promise<void> {
     const finalBuffer = Buffer.concat([bomBuffer, contentBuffer]);
     
     // Сохраняем файл
-    const uri = vscode.Uri.file(path);
+    const uri = vscode.Uri.file(filePath);
     await vscode.workspace.fs.writeFile(uri, finalBuffer);
+}
+
+/** Сериализация документа дампа в строку (без BOM), для валидации перед записью */
+export function serializeConfigDumpDocument(doc: Document): string {
+    const serializer = new XMLSerializer();
+    return serializer.serializeToString(doc);
 }
 
 /**
@@ -222,8 +230,6 @@ export async function syncConfigDumpInfoWithFileSystem(
     configRoot: string,
     outputChannel?: vscode.OutputChannel
 ): Promise<{ addedCount: number; errors: string[] }> {
-    const { scanMetadataRoot } = await import('../metadata_utils/MetadataScanner');
-
     const configDumpInfoPath = path.join(configRoot, 'ConfigDumpInfo.xml');
     if (!fs.existsSync(configDumpInfoPath)) {
         return { addedCount: 0, errors: [`ConfigDumpInfo.xml не найден: ${configDumpInfoPath}`] };
@@ -232,9 +238,6 @@ export async function syncConfigDumpInfoWithFileSystem(
     const result = { addedCount: 0, errors: [] as string[] };
 
     try {
-        const scanResult = await scanMetadataRoot(configRoot);
-        const objectsInFs = scanResult.objects;
-
         const configDumpInfoUri = vscode.Uri.file(configDumpInfoPath);
         const configXml = await vscode.workspace.fs.readFile(configDumpInfoUri);
         let cleanXml = Buffer.from(configXml).toString('utf8');
@@ -246,11 +249,11 @@ export async function syncConfigDumpInfoWithFileSystem(
             locator: {},
             errorHandler: {
                 warning: () => {},
-                error: (e: any) => result.errors.push(`XML: ${e}`),
-                fatalError: (e: any) => {
+                error: (e: unknown) => result.errors.push(`XML: ${e}`),
+                fatalError: (e: unknown) => {
                     throw new Error(`XML parsing error: ${e}`);
-                }
-            }
+                },
+            },
         });
         const doc = parser.parseFromString(cleanXml, 'text/xml');
         const parserError = doc.getElementsByTagName('parsererror')[0];
@@ -259,85 +262,453 @@ export async function syncConfigDumpInfoWithFileSystem(
             return result;
         }
 
-        const rootElement = doc.documentElement;
-        if (!rootElement || rootElement.nodeName !== 'ConfigDumpInfo') {
-            result.errors.push('Не найден корневой элемент ConfigDumpInfo');
-            return result;
-        }
-
-        const configVersions = rootElement.getElementsByTagName('ConfigVersions')[0];
-        if (!configVersions) {
-            result.errors.push('Не найден элемент ConfigVersions');
-            return result;
-        }
-
-        // Собираем имена объектов, уже присутствующих в ConfigDumpInfo.
-        // В формате CF: ConfigVersions содержит один элемент Metadata name="Configuration",
-        // а реальные объекты — вложенные Metadata внутри него.
-        const existingNames = new Set<string>();
-        const directMetadata = configVersions.getElementsByTagName('Metadata');
-        for (let i = 0; i < directMetadata.length; i++) {
-            const m = directMetadata[i];
-            const name = m.getAttribute('name');
-            if (name) existingNames.add(name);
-            // Вложенные Metadata (объекты внутри Configuration)
-            const nested = m.getElementsByTagName('Metadata');
-            for (let j = 0; j < nested.length; j++) {
-                const n = nested[j].getAttribute('name');
-                if (n) existingNames.add(n);
-            }
-        }
-
-        // Контейнер для новых объектов: элемент Configuration (если есть) или ConfigVersions
-        let metadataContainer: Element | null = null;
-        for (let i = 0; i < directMetadata.length; i++) {
-            const m = directMetadata[i];
-            if (m.getAttribute('name') === 'Configuration') {
-                metadataContainer = m;
-                break;
-            }
-        }
-        const container = metadataContainer ?? configVersions;
-
-        for (const obj of objectsInFs) {
-            const metadataPrefix = TYPE_DIR_TO_METADATA_PREFIX[obj.objectTypeDir];
-            if (!metadataPrefix) continue;
-
-            const metadataName = `${metadataPrefix}.${obj.fsName}`;
-            if (existingNames.has(metadataName)) continue;
-
-            let objectId: string = randomUUID();
-            try {
-                const xmlContent = fs.readFileSync(obj.mainXmlPath, 'utf8');
-                const extracted = extractUuidFromObjectXml(xmlContent, metadataPrefix);
-                if (extracted) objectId = extracted;
-            } catch {
-                // Используем сгенерированный UUID
-            }
-
-            const configVersion = generateConfigVersion();
-            const newMetadata = doc.createElement('Metadata');
-            newMetadata.setAttribute('name', metadataName);
-            newMetadata.setAttribute('id', objectId);
-            newMetadata.setAttribute('configVersion', configVersion);
-            container.appendChild(newMetadata);
-            existingNames.add(metadataName);
-            result.addedCount++;
-
-            if (outputChannel) {
-                outputChannel.appendLine(
-                    `[syncConfigDumpInfo] Добавлена запись: ${metadataName} (id=${objectId})`
-                );
-            }
-        }
+        await applySyncAddsToDocument(configRoot, doc, result, outputChannel);
 
         if (result.addedCount > 0) {
-            await saveConfigDumpInfo(configDumpInfoPath, doc);
+            await writeConfigDumpInfoFile(configDumpInfoPath, doc);
         }
     } catch (e) {
         result.errors.push(e instanceof Error ? e.message : String(e));
     }
 
     return result;
+}
+
+/**
+ * Добавляет в документ записи Metadata для объектов ФС, отсутствующих в дампе (без записи на диск).
+ */
+export async function applySyncAddsToDocument(
+    configRoot: string,
+    doc: Document,
+    result: { addedCount: number; errors: string[] },
+    outputChannel?: vscode.OutputChannel
+): Promise<void> {
+    const { scanMetadataRoot } = await import('../metadata_utils/MetadataScanner');
+    const scanResult = await scanMetadataRoot(configRoot);
+    const objectsInFs = scanResult.objects;
+
+    const rootElement = doc.documentElement;
+    if (!rootElement || rootElement.nodeName !== 'ConfigDumpInfo') {
+        result.errors.push('Не найден корневой элемент ConfigDumpInfo');
+        return;
+    }
+
+    const configVersions = rootElement.getElementsByTagName('ConfigVersions')[0];
+    if (!configVersions) {
+        result.errors.push('Не найден элемент ConfigVersions');
+        return;
+    }
+
+    const existingNames = new Set<string>();
+    const directMetadata = configVersions.getElementsByTagName('Metadata');
+    for (let i = 0; i < directMetadata.length; i++) {
+        const m = directMetadata[i];
+        const name = m.getAttribute('name');
+        if (name) existingNames.add(name);
+        const nested = m.getElementsByTagName('Metadata');
+        for (let j = 0; j < nested.length; j++) {
+            const n = nested[j].getAttribute('name');
+            if (n) existingNames.add(n);
+        }
+    }
+
+    let metadataContainer: Element | null = null;
+    for (let i = 0; i < directMetadata.length; i++) {
+        const m = directMetadata[i];
+        if (m.getAttribute('name') === 'Configuration') {
+            metadataContainer = m;
+            break;
+        }
+    }
+    const container = metadataContainer ?? configVersions;
+
+    for (const obj of objectsInFs) {
+        const metadataPrefix = TYPE_DIR_TO_METADATA_PREFIX[obj.objectTypeDir];
+        if (!metadataPrefix) continue;
+
+        const metadataName = `${metadataPrefix}.${obj.fsName}`;
+        if (existingNames.has(metadataName)) continue;
+
+        let objectId: string = randomUUID();
+        try {
+            const xmlContent = fs.readFileSync(obj.mainXmlPath, 'utf8');
+            const extracted = extractUuidFromObjectXml(xmlContent, metadataPrefix);
+            if (extracted) objectId = extracted;
+        } catch {
+            // оставляем сгенерированный UUID
+        }
+
+        const configVersion = generateConfigVersion();
+        const newMetadata = doc.createElement('Metadata');
+        newMetadata.setAttribute('name', metadataName);
+        newMetadata.setAttribute('id', objectId);
+        newMetadata.setAttribute('configVersion', configVersion);
+        container.appendChild(newMetadata);
+        existingNames.add(metadataName);
+        result.addedCount++;
+
+        if (outputChannel) {
+            outputChannel.appendLine(`[syncConfigDumpInfo] Добавлена запись: ${metadataName} (id=${objectId})`);
+        }
+    }
+}
+
+function getMetadataInsertContainer(doc: Document): Element {
+    const rootElement = doc.documentElement!;
+    const configVersions = rootElement.getElementsByTagName('ConfigVersions')[0]!;
+    const directMetadata = configVersions.getElementsByTagName('Metadata');
+    for (let i = 0; i < directMetadata.length; i++) {
+        const m = directMetadata[i];
+        if (m.getAttribute('name') === 'Configuration') {
+            return m;
+        }
+    }
+    return configVersions;
+}
+
+function findMetadataElementsByName(doc: Document, metadataName: string): Element[] {
+    const all = doc.getElementsByTagName('Metadata');
+    const out: Element[] = [];
+    for (let i = 0; i < all.length; i++) {
+        const el = all[i];
+        if (el.getAttribute('name') === metadataName) {
+            out.push(el);
+        }
+    }
+    return out;
+}
+
+/**
+ * По пути к XML внутри выгрузки возвращает имена Metadata в ConfigDumpInfo.
+ */
+export function resolveMetadataNamesFromCommitPath(configRoot: string, absPath: string): string[] {
+    const root = path.normalize(configRoot);
+    const full = path.normalize(absPath);
+    if (!full.toLowerCase().endsWith('.xml')) {
+        return [];
+    }
+    let rel = path.relative(root, full);
+    if (rel.startsWith('..')) {
+        return [];
+    }
+    rel = rel.replace(/\\/g, '/');
+    if (rel === 'Configuration.xml') {
+        return ['Configuration'];
+    }
+    if (rel === 'ConfigDumpInfo.xml') {
+        return [];
+    }
+
+    const predef = rel.match(/^(.*)\/Ext\/Predefined\.xml$/i);
+    if (predef) {
+        const main = resolveTwoPartTypePathToMetadataName(predef[1]);
+        return main ? [`${main}.Predefined`] : [];
+    }
+
+    const formM = rel.match(/^(.+)\/Forms\/([^/]+)\/Ext\/Form\.xml$/i);
+    if (formM) {
+        const main = resolveTwoPartTypePathToMetadataName(formM[1]);
+        return main ? [`${main}.Form.${formM[2]}`] : [];
+    }
+
+    const tmplM = rel.match(/^(.+)\/Templates\/([^/]+)\/Ext\/Template\.xml$/i);
+    if (tmplM) {
+        const main = resolveTwoPartTypePathToMetadataName(tmplM[1]);
+        return main ? [`${main}.Template.${tmplM[2]}`] : [];
+    }
+
+    const tmplFlat = rel.match(/^(.+)\/Templates\/([^/]+\.xml)$/i);
+    if (tmplFlat && !rel.toLowerCase().includes('/ext/')) {
+        const main = resolveTwoPartTypePathToMetadataName(tmplFlat[1]);
+        if (main) {
+            const base = path.basename(tmplFlat[2], '.xml');
+            return [`${main}.Template.${base}`];
+        }
+    }
+
+    return resolveMainObjectXmlRelativePath(rel);
+}
+
+function resolveTwoPartTypePathToMetadataName(relPathNoXml: string): string | null {
+    const parts = relPathNoXml.split('/').filter(Boolean);
+    if (parts.length !== 2) {
+        return null;
+    }
+    const prefix = TYPE_DIR_TO_METADATA_PREFIX[parts[0]];
+    if (!prefix) {
+        return null;
+    }
+    return `${prefix}.${parts[1]}`;
+}
+
+function resolveMainObjectXmlRelativePath(rel: string): string[] {
+    const lower = rel.toLowerCase();
+    if (!lower.endsWith('.xml')) {
+        return [];
+    }
+    const without = rel.slice(0, -4);
+    const parts = without.split('/');
+    if (parts.length < 2) {
+        return [];
+    }
+    const typeDir = parts[0];
+    const prefix = TYPE_DIR_TO_METADATA_PREFIX[typeDir];
+    if (!prefix) {
+        return [];
+    }
+    if (parts.length === 2) {
+        return [`${prefix}.${parts[1]}`];
+    }
+    if (parts.length === 3 && parts[1] === parts[2]) {
+        return [`${prefix}.${parts[1]}`];
+    }
+    return [];
+}
+
+function bumpOrCreateMetadataEntry(
+    doc: Document,
+    metadataName: string,
+    hintSourcePath?: string
+): void {
+    const existing = findMetadataElementsByName(doc, metadataName);
+    const ver = generateConfigVersion();
+    if (existing.length > 0) {
+        for (const el of existing) {
+            el.setAttribute('configVersion', ver);
+        }
+        return;
+    }
+
+    let id: string = randomUUID();
+    if (hintSourcePath && fs.existsSync(hintSourcePath)) {
+        try {
+            const content = fs.readFileSync(hintSourcePath, 'utf8');
+            const u = extractUuidFromObjectXml(content, '');
+            if (u) {
+                id = u;
+            }
+        } catch {
+            /* ignore */
+        }
+    }
+
+    const container = getMetadataInsertContainer(doc);
+    const m = doc.createElement('Metadata');
+    m.setAttribute('name', metadataName);
+    m.setAttribute('id', id);
+    m.setAttribute('configVersion', ver);
+    container.appendChild(m);
+}
+
+function removeMetadataByName(doc: Document, metadataName: string): number {
+    if (metadataName === 'Configuration') {
+        return 0;
+    }
+    const els = findMetadataElementsByName(doc, metadataName);
+    let n = 0;
+    for (const el of els) {
+        const parent = el.parentNode;
+        if (parent) {
+            parent.removeChild(el);
+            n++;
+        }
+    }
+    return n;
+}
+
+export interface ApplyCommitPathsResult {
+    bumpedNames: string[];
+    removedNames: string[];
+    skippedPaths: string[];
+    warnings: string[];
+}
+
+/**
+ * Применяет список путей из Commit.txt к документу дампа (без записи на диск).
+ */
+export function applyCommitPathsToDocument(
+    configRoot: string,
+    commitXmlPaths: string[],
+    doc: Document,
+    outputChannel?: vscode.OutputChannel
+): ApplyCommitPathsResult {
+    const configDumpPath = path.normalize(path.join(configRoot, 'ConfigDumpInfo.xml'));
+    const bumped = new Set<string>();
+    const removed = new Set<string>();
+    const skipped: string[] = [];
+    const warnings: string[] = [];
+
+    const uniquePaths = [...new Set(commitXmlPaths.map((p) => path.normalize(p)))];
+
+    for (const absPath of uniquePaths) {
+        if (path.normalize(absPath) === configDumpPath) {
+            continue;
+        }
+
+        const names = resolveMetadataNamesFromCommitPath(configRoot, absPath);
+        if (names.length === 0) {
+            skipped.push(absPath);
+            const msg = `[applyCommitPaths] Не сопоставлено с Metadata: ${absPath}`;
+            warnings.push(msg);
+            if (outputChannel) {
+                outputChannel.appendLine(msg);
+            }
+            continue;
+        }
+
+        const exists = fs.existsSync(absPath);
+        if (exists) {
+            for (const nm of names) {
+                bumpOrCreateMetadataEntry(doc, nm, absPath);
+                bumped.add(nm);
+            }
+        } else {
+            for (const nm of names) {
+                const r = removeMetadataByName(doc, nm);
+                if (r > 0) {
+                    removed.add(nm);
+                }
+            }
+        }
+    }
+
+    return {
+        bumpedNames: [...bumped],
+        removedNames: [...removed],
+        skippedPaths: skipped,
+        warnings,
+    };
+}
+
+export interface RunUpdateConfigDumpFromCommitResult {
+    ok: boolean;
+    addedBySync: number;
+    applyResult: ApplyCommitPathsResult;
+    dumpValidationErrors: string[];
+    errors: string[];
+}
+
+/**
+ * Полный цикл: синхронизация новых объектов + правки по Commit.txt + валидация дампа + одна запись на диск.
+ */
+export async function runUpdateConfigDumpFromCommitTxt(options: {
+    configRoot: string;
+    commitXmlPaths: string[];
+    extensionPath: string;
+    structureValidationEnabled: boolean;
+    outputChannel?: vscode.OutputChannel;
+}): Promise<RunUpdateConfigDumpFromCommitResult> {
+    const { validateXML } = await import('../utils/xmlUtils');
+    const { validateXmlStructure } = await import('../validation/xmlStructureValidator');
+
+    const { configRoot, commitXmlPaths, extensionPath, structureValidationEnabled, outputChannel } = options;
+    const configDumpInfoPath = path.join(configRoot, 'ConfigDumpInfo.xml');
+    const errors: string[] = [];
+    const dumpValidationErrors: string[] = [];
+
+    if (!fs.existsSync(configDumpInfoPath)) {
+        return {
+            ok: false,
+            addedBySync: 0,
+            applyResult: { bumpedNames: [], removedNames: [], skippedPaths: [], warnings: [] },
+            dumpValidationErrors: [],
+            errors: [`ConfigDumpInfo.xml не найден: ${configDumpInfoPath}`],
+        };
+    }
+
+    const configDumpInfoUri = vscode.Uri.file(configDumpInfoPath);
+    const configXml = await vscode.workspace.fs.readFile(configDumpInfoUri);
+    let cleanXml = Buffer.from(configXml).toString('utf8');
+    if (cleanXml.charCodeAt(0) === 0xfeff) {
+        cleanXml = cleanXml.slice(1);
+    }
+
+    const parser = new DOMParser({
+        locator: {},
+        errorHandler: {
+            warning: () => {},
+            error: (e: unknown) => errors.push(`XML: ${e}`),
+            fatalError: (e: unknown) => {
+                throw new Error(`XML parsing error: ${e}`);
+            },
+        },
+    });
+    const doc = parser.parseFromString(cleanXml, 'text/xml');
+    const parserError = doc.getElementsByTagName('parsererror')[0];
+    if (parserError) {
+        return {
+            ok: false,
+            addedBySync: 0,
+            applyResult: { bumpedNames: [], removedNames: [], skippedPaths: [], warnings: [] },
+            dumpValidationErrors: [],
+            errors: [`XML parsing error: ${parserError.textContent || 'Unknown'}`],
+        };
+    }
+
+    const syncResult = { addedCount: 0, errors: [] as string[] };
+    await applySyncAddsToDocument(configRoot, doc, syncResult, outputChannel);
+    if (syncResult.errors.length > 0) {
+        return {
+            ok: false,
+            addedBySync: syncResult.addedCount,
+            applyResult: { bumpedNames: [], removedNames: [], skippedPaths: [], warnings: [] },
+            dumpValidationErrors: [],
+            errors: [...syncResult.errors],
+        };
+    }
+
+    const applyResult = applyCommitPathsToDocument(configRoot, commitXmlPaths, doc, outputChannel);
+
+    const serialized = serializeConfigDumpDocument(doc);
+    const wx = validateXML(serialized);
+    if (!wx.valid) {
+        dumpValidationErrors.push(wx.error || 'Ошибка валидации XML дампа');
+        return {
+            ok: false,
+            addedBySync: syncResult.addedCount,
+            applyResult,
+            dumpValidationErrors,
+            errors,
+        };
+    }
+
+    if (structureValidationEnabled) {
+        const sr = validateXmlStructure(serialized, {
+            extensionPath,
+            filePath: configDumpInfoPath,
+            rootTag: 'ConfigDumpInfo',
+        });
+        if (!sr.valid && sr.errors?.length) {
+            dumpValidationErrors.push(...sr.errors);
+            return {
+                ok: false,
+                addedBySync: syncResult.addedCount,
+                applyResult,
+                dumpValidationErrors,
+                errors,
+            };
+        }
+    }
+
+    try {
+        await writeConfigDumpInfoFile(configDumpInfoPath, doc);
+    } catch (e) {
+        errors.push(e instanceof Error ? e.message : String(e));
+        return {
+            ok: false,
+            addedBySync: syncResult.addedCount,
+            applyResult,
+            dumpValidationErrors,
+            errors,
+        };
+    }
+
+    return {
+        ok: true,
+        addedBySync: syncResult.addedCount,
+        applyResult,
+        dumpValidationErrors: [],
+        errors,
+    };
 }
 

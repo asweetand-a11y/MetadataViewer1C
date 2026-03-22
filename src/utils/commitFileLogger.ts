@@ -30,6 +30,44 @@ export class CommitFileLogger {
   }
 
   /**
+   * Публично: разрешённый путь к Commit.txt или null, если не настроено / нет workspace.
+   */
+  public getResolvedCommitFilePath(): string | null {
+    return this.getCommitFilePath();
+  }
+
+  /**
+   * Прочитать все пути из Commit.txt (нормализованные, без дубликатов, в порядке появления).
+   */
+  public getLoggedPaths(): string[] {
+    const commitFilePath = this.getCommitFilePath();
+    if (!commitFilePath || !fs.existsSync(commitFilePath)) {
+      return [];
+    }
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    try {
+      const content = fs.readFileSync(commitFilePath, 'utf-8');
+      const lines = content.split(/\r?\n/);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('REM')) {
+          continue;
+        }
+        const normalized = this.normalizePath(trimmed);
+        if (!seen.has(normalized)) {
+          seen.add(normalized);
+          ordered.push(normalized);
+        }
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      outputChannel.appendLine(`[CommitFileLogger] Ошибка чтения Commit.txt: ${msg}`);
+    }
+    return ordered;
+  }
+
+  /**
    * Получить путь к файлу Commit.txt из настроек
    */
   private getCommitFilePath(): string | null {

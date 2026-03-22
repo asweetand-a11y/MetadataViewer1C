@@ -1,9 +1,13 @@
 /**
  * Валидация структуры XML по JSON-схеме (предсгенерированной из XSD).
  * Использует fast-xml-parser для парсинга, проверяет допустимые дочерние элементы.
+ *
+ * Важно: парсер для этой проверки задаётся с attributeNamePrefix: "@_".
+ * Общий createXMLParser() в xmlUtils использует префикс "" — тогда атрибуты (version, formatted и т.д.)
+ * попадают в объект рядом с дочерними элементами и ошибочно считаются «лишними» дочерними тегами.
  */
 
-import { createXMLParser } from '../utils/xmlUtils';
+import { XMLParser } from 'fast-xml-parser';
 import { loadJsonSchema, type JsonSchemaDefinition } from './schemaLoader';
 import { getJsonSchemaNameForXml, type SchemaContext } from './schemaMapping';
 
@@ -14,6 +18,17 @@ export interface StructureValidationResult {
 
 const ATTR_PREFIX = '@';
 const TEXT_KEY = '#text';
+
+/** Парсер только для структурной валидации: атрибуты отделены от элементов. */
+function createStructureValidationParser(): XMLParser {
+    return new XMLParser({
+        ignoreAttributes: false,
+        attributeNamePrefix: '@_',
+        textNodeName: 'text',
+        allowBooleanAttributes: true,
+        preserveOrder: false,
+    });
+}
 
 /**
  * Извлекает локальное имя элемента (без namespace-префикса).
@@ -47,7 +62,7 @@ export function validateXmlStructure(
     }
 
     const errors: string[] = [];
-    const parser = createXMLParser();
+    const parser = createStructureValidationParser();
     let parsed: Record<string, unknown>;
 
     try {
@@ -64,6 +79,7 @@ export function validateXmlStructure(
         if (k.startsWith(ATTR_PREFIX) || k === TEXT_KEY) return false;
         if (k === '?xml' || k.startsWith('?')) return false;
         if (k === 'xmlns' || k.startsWith('xmlns:')) return false;
+        if (k === 'text') return false;
         return true;
     });
     const rootKey = rootKeys[0];
@@ -104,13 +120,17 @@ function validateElement(
     const childKeys = Object.keys(obj).filter(k => {
         if (k.startsWith(ATTR_PREFIX) || k === TEXT_KEY) return false;
         if (k === 'xmlns' || k.startsWith('xmlns:')) return false;
+        if (k === 'text') return false;
         return true;
     });
 
+    /** fast-xml-parser склеивает повторяющиеся одноимённые элементы в массив — считаем длину, не число ключей. */
     const childCount: Record<string, number> = {};
     for (const key of childKeys) {
         const localKey = toLocalName(key);
-        childCount[localKey] = (childCount[localKey] ?? 0) + 1;
+        const v = obj[key];
+        const inc = Array.isArray(v) ? v.length : 1;
+        childCount[localKey] = (childCount[localKey] ?? 0) + inc;
     }
 
     for (const childName of childKeys) {
@@ -137,7 +157,7 @@ function validateElement(
 
     for (const childName of def.children) {
         const min = def.childMin[childName] ?? 0;
-        const count = childKeys.reduce((sum, k) => sum + (toLocalName(k) === childName ? 1 : 0), 0);
+        const count = childCount[childName] ?? 0;
         if (min > 0 && count < min) {
             errors.push(`${path}${elementName}: обязательный элемент "${childName}" отсутствует (minOccurs=${min})`);
         }

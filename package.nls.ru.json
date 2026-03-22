@@ -22,6 +22,7 @@
 	"1c-metadata-viewer.openDcsEditor.title": "Открыть редактор СКД",
 	"1c-metadata-viewer.searchInTree.title": "Поиск",
 	"1c-metadata-viewer.reindexStructure.title": "Переиндексировать структуру",
+	"1c-metadata-viewer.updateConfigDumpFromCommit.title": "Обновить дамп конфигурации",
 	"1c-metadata-viewer.refreshObjectStructure.title": "Обновить структуру",
 	"1c-metadata-viewer.genFromComment.title": "BSL: Сгенерировать из // @gen",
 	"1c-metadata-viewer.genFromCommentPrompt.title": "BSL: Сгенерировать из // @gen",

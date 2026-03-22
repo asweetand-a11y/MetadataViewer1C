@@ -715,6 +715,8 @@
         "DataProcessor",
         "InformationRegister",
         "AccumulationRegister",
+        "AccountingRegister",
+        "ChartOfAccounts",
         "ChartOfCharacteristicTypes",
         "ChartOfCalculationTypes",
         "CalculationRegister",
@@ -773,6 +775,8 @@
         "DataProcessor": 0,
         "InformationRegister": 0,
         "AccumulationRegister": 0,
+        "AccountingRegister": 0,
+        "ChartOfAccounts": 0,
         "ChartOfCharacteristicTypes": 0,
         "ChartOfCalculationTypes": 0,
         "CalculationRegister": 0,
@@ -831,6 +835,8 @@
         "DataProcessor": -1,
         "InformationRegister": -1,
         "AccumulationRegister": -1,
+        "AccountingRegister": -1,
+        "ChartOfAccounts": -1,
         "ChartOfCharacteristicTypes": -1,
         "ChartOfCalculationTypes": -1,
         "CalculationRegister": -1,
@@ -4119,7 +4125,7 @@
         "functionality"
       ],
       "childMin": {
-        "functionality": 38
+        "functionality": 0
       },
       "childMax": {
         "functionality": -1

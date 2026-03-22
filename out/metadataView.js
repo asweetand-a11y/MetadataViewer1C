@@ -40,6 +40,8 @@ const extension_1 = require("./extension");
 const metadata_types_1 = require("./Metadata/metadata-types");
 const predefinedParser_1 = require("./xmlParsers/predefinedParser");
 const configDumpInfoUpdater_1 = require("./utils/configDumpInfoUpdater");
+const commitFileLogger_1 = require("./utils/commitFileLogger");
+const metadataXmlValidator_1 = require("./validation/metadataXmlValidator");
 class MetadataView {
     constructor(context) {
         this.panel = undefined;
@@ -57,6 +59,7 @@ class MetadataView {
             extension_1.outputChannel.appendLine('TreeView "metadataView" успешно создан');
             this.reindexStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
             context.subscriptions.push(this.reindexStatusBarItem);
+            this.extensionPathFs = context.extensionUri.fsPath;
             // Инвалидация кэша Content подсистем при изменении файлов
             if (this.rootPath) {
                 const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(this.rootPath, '**/Subsystems/**/*.{xml,mdo}'));
@@ -129,6 +132,9 @@ class MetadataView {
         vscode.commands.registerCommand('metadataViewer.searchInTree', () => this.searchInTree());
         vscode.commands.registerCommand('metadataViewer.reindexStructure', async () => {
             await this.reindexStructure();
+        });
+        vscode.commands.registerCommand('metadataViewer.updateConfigDumpFromCommit', async (item) => {
+            await this.updateConfigDumpFromCommit(item);
         });
         vscode.commands.registerCommand('metadataViewer.refreshObjectStructure', async (item) => {
             await this.refreshObjectStructure(item);
@@ -247,6 +253,132 @@ class MetadataView {
             setTimeout(() => sb.hide(), 2500);
             throw err;
         }
+    }
+    /**
+     * Обновление ConfigDumpInfo.xml по списку путей из Commit.txt для выбранной XML-конфигурации.
+     * С валидацией исходных XML и итогового дампа, прогресс в статус-баре.
+     */
+    async updateConfigDumpFromCommit(item) {
+        const normalizeFs = (s) => (0, path_1.normalize)(s).replace(/\\/g, '/').toLowerCase();
+        const sb = this.reindexStatusBarItem;
+        if (!item?.path) {
+            vscode.window.showWarningMessage('Выберите конфигурацию в дереве метаданных.');
+            return;
+        }
+        if (item.configType === 'edt') {
+            vscode.window.showInformationMessage('Обновление дампа по Commit.txt для EDT не поддерживается.');
+            return;
+        }
+        const configRoot = item.path;
+        const logger = commitFileLogger_1.CommitFileLogger.getInstance();
+        if (!logger.getResolvedCommitFilePath()) {
+            vscode.window.showWarningMessage('Не задан путь к Commit.txt (параметр metadataViewer.commitFilePath).');
+            return;
+        }
+        sb.show();
+        sb.text = '$(sync~spin) Обновление дампа: чтение Commit.txt…';
+        const allLogged = logger.getLoggedPaths();
+        const cfgNorm = normalizeFs(configRoot);
+        const xmlUnderConfig = allLogged.filter((p) => {
+            const pl = normalizeFs(p);
+            if (!pl.endsWith('.xml')) {
+                return false;
+            }
+            return pl.startsWith(`${cfgNorm}/`) || pl === cfgNorm;
+        });
+        if (xmlUnderConfig.length === 0) {
+            sb.text = '$(alert) Обновление дампа: нет путей';
+            extension_1.outputChannel.appendLine(`[updateConfigDumpFromCommit] Нет .xml из Commit.txt под ${configRoot}`);
+            vscode.window.showInformationMessage('В Commit.txt нет XML-файлов для выбранной конфигурации.');
+            setTimeout(() => sb.hide(), 2500);
+            return;
+        }
+        const structureValidationEnabled = vscode.workspace
+            .getConfiguration('metadataViewer')
+            .get('structureValidationEnabled', true);
+        const total = xmlUnderConfig.length;
+        const progressEvery = 5;
+        for (let i = 0; i < total; i++) {
+            const fp = xmlUnderConfig[i];
+            sb.text = `$(sync~spin) Обновление дампа: валидация ${i + 1}/${total}`;
+            if (i % progressEvery === 0) {
+                await new Promise((r) => setImmediate(r));
+            }
+            if (!fs.existsSync(fp)) {
+                continue;
+            }
+            let content;
+            try {
+                content = fs.readFileSync(fp, 'utf8');
+                if (content.charCodeAt(0) === 0xfeff) {
+                    content = content.slice(1);
+                }
+            }
+            catch (e) {
+                const msg = e instanceof Error ? e.message : String(e);
+                sb.text = '$(alert) Обновление дампа: ошибка';
+                vscode.window.showErrorMessage(`Не удалось прочитать ${fp}: ${msg}`);
+                extension_1.outputChannel.appendLine(`[updateConfigDumpFromCommit] ${msg}`);
+                setTimeout(() => sb.hide(), 2500);
+                return;
+            }
+            const vErr = (0, metadataXmlValidator_1.validateCommittedXmlContent)(fp, this.extensionPathFs, content, structureValidationEnabled);
+            if (vErr.length > 0) {
+                sb.text = '$(alert) Обновление дампа: ошибка валидации';
+                const lines = vErr.slice(0, 12).map((e) => `${fp} — ${e}`);
+                extension_1.outputChannel.appendLine('[updateConfigDumpFromCommit] Ошибка валидации XML');
+                lines.forEach((line) => extension_1.outputChannel.appendLine(`  ${line}`));
+                const joined = lines.join('; ');
+                const shortToast = joined.length > 200 ? `${joined.slice(0, 200)}…` : joined;
+                vscode.window
+                    .showErrorMessage(`Валидация XML. ${shortToast}`, 'Открыть лог')
+                    .then((sel) => {
+                    if (sel === 'Открыть лог') {
+                        extension_1.outputChannel.show(true);
+                    }
+                });
+                setTimeout(() => sb.hide(), 2500);
+                return;
+            }
+        }
+        sb.text = '$(sync~spin) Обновление дампа: синхронизация и запись…';
+        await new Promise((r) => setImmediate(r));
+        let runResult;
+        try {
+            runResult = await (0, configDumpInfoUpdater_1.runUpdateConfigDumpFromCommitTxt)({
+                configRoot,
+                commitXmlPaths: xmlUnderConfig,
+                extensionPath: this.extensionPathFs,
+                structureValidationEnabled,
+                outputChannel: extension_1.outputChannel,
+            });
+        }
+        catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            extension_1.outputChannel.appendLine(`[updateConfigDumpFromCommit] ${msg}`);
+            sb.text = '$(alert) Обновление дампа: ошибка';
+            vscode.window.showErrorMessage(msg);
+            setTimeout(() => sb.hide(), 2500);
+            return;
+        }
+        if (!runResult.ok) {
+            sb.text = '$(alert) Обновление дампа: ошибка';
+            const parts = [...runResult.errors, ...runResult.dumpValidationErrors];
+            const msg = parts.join('; ') || 'Не удалось обновить дамп';
+            extension_1.outputChannel.appendLine(`[updateConfigDumpFromCommit] ${msg}`);
+            vscode.window.showErrorMessage(msg.substring(0, 300));
+            setTimeout(() => sb.hide(), 2500);
+            return;
+        }
+        sb.text = '$(sync~spin) Обновление дампа: сброс кэша…';
+        await this.cache.invalidate(configRoot);
+        extension_1.outputChannel.appendLine(`[updateConfigDumpFromCommit] Готово. Добавлено записей (sync): ${runResult.addedBySync}; обновлены Metadata: ${runResult.applyResult.bumpedNames.length}; удалены записи: ${runResult.applyResult.removedNames.length}`);
+        if (runResult.applyResult.skippedPaths.length > 0) {
+            extension_1.outputChannel.appendLine(`[updateConfigDumpFromCommit] Пропущены пути (не сопоставлены с Metadata): ${runResult.applyResult.skippedPaths.length}`);
+        }
+        sb.text = '$(check) Дамп конфигурации обновлён';
+        vscode.window.showInformationMessage('ConfigDumpInfo.xml обновлён по Commit.txt.');
+        setTimeout(() => sb.hide(), 2500);
     }
     /**
      * Поиск по дереву метаданных.
