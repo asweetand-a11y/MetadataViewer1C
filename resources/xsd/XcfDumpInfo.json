@@ -1,0 +1,89 @@
+{
+  "roots": [
+    "ConfigDumpInfo",
+    "ConfigVersions",
+    "Metadata"
+  ],
+  "elements": {
+    "ConfigDumpInfo": {
+      "children": [
+        "ConfigVersions"
+      ],
+      "childMin": {
+        "ConfigVersions": 1
+      },
+      "childMax": {
+        "ConfigVersions": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "format",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "version",
+          "type": "xs:decimal",
+          "use": "required"
+        }
+      ]
+    },
+    "ConfigVersions": {
+      "children": [
+        "Metadata"
+      ],
+      "childMin": {
+        "Metadata": 0
+      },
+      "childMax": {
+        "Metadata": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Metadata": {
+      "children": [
+        "Metadata"
+      ],
+      "childMin": {
+        "Metadata": 0
+      },
+      "childMax": {
+        "Metadata": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "configVersion",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    }
+  },
+  "source": "http_v8.1c.ru_8.3_xcf_dumpinfo.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.3/xcf/dumpinfo",
+  "imports": [],
+  "globalElementsCount": 3,
+  "namedComplexTypes": [],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "XcfDumpInfo",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

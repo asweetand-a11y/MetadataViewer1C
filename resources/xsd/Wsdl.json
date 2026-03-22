@@ -1,0 +1,314 @@
+{
+  "roots": [
+    "binding",
+    "definitions",
+    "input",
+    "message",
+    "operation",
+    "output",
+    "part",
+    "port",
+    "portType",
+    "service",
+    "types"
+  ],
+  "elements": {
+    "binding": {
+      "children": [
+        "PolicyReference",
+        "binding",
+        "operation"
+      ],
+      "childMin": {
+        "PolicyReference": 0,
+        "binding": 1,
+        "operation": 3
+      },
+      "childMax": {
+        "PolicyReference": 1,
+        "binding": 1,
+        "operation": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "type",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "definitions": {
+      "children": [
+        "Policy",
+        "types",
+        "message",
+        "portType",
+        "binding",
+        "service"
+      ],
+      "childMin": {
+        "Policy": 1,
+        "types": 1,
+        "message": 6,
+        "portType": 1,
+        "binding": 2,
+        "service": 1
+      },
+      "childMax": {
+        "Policy": 1,
+        "types": 1,
+        "message": -1,
+        "portType": 1,
+        "binding": -1,
+        "service": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "targetNamespace",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "input": {
+      "children": [
+        "body"
+      ],
+      "childMin": {
+        "body": 0
+      },
+      "childMax": {
+        "body": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "message",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "optional"
+        }
+      ]
+    },
+    "message": {
+      "children": [
+        "part"
+      ],
+      "childMin": {
+        "part": 1
+      },
+      "childMax": {
+        "part": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "operation": {
+      "children": [
+        "operation",
+        "input",
+        "output"
+      ],
+      "childMin": {
+        "operation": 0,
+        "input": 1,
+        "output": 1
+      },
+      "childMax": {
+        "operation": 1,
+        "input": 1,
+        "output": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "output": {
+      "children": [
+        "body"
+      ],
+      "childMin": {
+        "body": 0
+      },
+      "childMax": {
+        "body": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "message",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "optional"
+        }
+      ]
+    },
+    "part": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "element",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "port": {
+      "children": [
+        "address"
+      ],
+      "childMin": {
+        "address": 1
+      },
+      "childMax": {
+        "address": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "binding",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "portType": {
+      "children": [
+        "operation"
+      ],
+      "childMin": {
+        "operation": 3
+      },
+      "childMax": {
+        "operation": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "service": {
+      "children": [
+        "port"
+      ],
+      "childMin": {
+        "port": 2
+      },
+      "childMax": {
+        "port": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "types": {
+      "children": [
+        "schema"
+      ],
+      "childMin": {
+        "schema": 1
+      },
+      "childMax": {
+        "schema": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    }
+  },
+  "source": "http_schemas.xmlsoap.org_wsdl.xsd",
+  "targetNamespace": "http://schemas.xmlsoap.org/wsdl/",
+  "imports": [
+    {
+      "namespace": "http://schemas.xmlsoap.org/ws/2004/09/policy",
+      "schemaLocation": "http_schemas.xmlsoap.org_ws_2004_09_policy.xsd"
+    },
+    {
+      "namespace": "http://schemas.xmlsoap.org/wsdl/soap/",
+      "schemaLocation": "http_schemas.xmlsoap.org_wsdl_soap.xsd"
+    },
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema",
+      "schemaLocation": "http_www.w3.org_2001_XMLSchema.xsd"
+    }
+  ],
+  "globalElementsCount": 11,
+  "namedComplexTypes": [],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "Wsdl",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

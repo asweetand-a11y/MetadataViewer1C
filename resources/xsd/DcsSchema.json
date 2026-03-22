@@ -1,0 +1,987 @@
+{
+  "roots": [
+    "DataCompositionSchema",
+    "appearance",
+    "attributeUseRestriction",
+    "autoFillFields",
+    "availableAsField",
+    "availableValue",
+    "calculatedField",
+    "condition",
+    "dataPath",
+    "dataSet",
+    "dataSetLink",
+    "dataSource",
+    "dataSourceType",
+    "denyIncompleteValues",
+    "destinationDataSet",
+    "destinationExpression",
+    "expression",
+    "field",
+    "fieldTemplate",
+    "functionalOptionsParameter",
+    "group",
+    "groupField",
+    "groupField1",
+    "groupField2",
+    "groupHeaderTemplate",
+    "groupName",
+    "groupName1",
+    "groupName2",
+    "groupTemplate",
+    "inHierarchyDataSet",
+    "inHierarchyDataSetParameter",
+    "inputParameters",
+    "item",
+    "linkConditionExpression",
+    "name",
+    "nestedSchema",
+    "objectName",
+    "order",
+    "orderExpression",
+    "parameter",
+    "parameterListAllowed",
+    "presentation",
+    "presentationExpression",
+    "query",
+    "required",
+    "role",
+    "schema",
+    "settings",
+    "settingsVariant",
+    "sourceDataSet",
+    "sourceExpression",
+    "startExpression",
+    "template",
+    "templateType",
+    "templateType1",
+    "templateType2",
+    "title",
+    "totalField",
+    "totalFieldsTemplate",
+    "use",
+    "useQueryGroupIfPossible",
+    "useRestriction",
+    "value",
+    "valueListAllowed",
+    "valueType"
+  ],
+  "elements": {
+    "DataCompositionSchema": {
+      "children": [
+        "dataSource",
+        "dataSet",
+        "parameter",
+        "settingsVariant",
+        "calculatedField",
+        "totalField",
+        "dataSetLink",
+        "template",
+        "groupHeaderTemplate",
+        "groupTemplate",
+        "totalFieldsTemplate",
+        "fieldTemplate",
+        "nestedSchema"
+      ],
+      "childMin": {
+        "dataSource": 0,
+        "dataSet": 0,
+        "parameter": 0,
+        "settingsVariant": 1,
+        "calculatedField": 0,
+        "totalField": 0,
+        "dataSetLink": 0,
+        "template": 0,
+        "groupHeaderTemplate": 0,
+        "groupTemplate": 0,
+        "totalFieldsTemplate": 0,
+        "fieldTemplate": 0,
+        "nestedSchema": 0
+      },
+      "childMax": {
+        "dataSource": 1,
+        "dataSet": -1,
+        "parameter": -1,
+        "settingsVariant": -1,
+        "calculatedField": -1,
+        "totalField": -1,
+        "dataSetLink": -1,
+        "template": -1,
+        "groupHeaderTemplate": -1,
+        "groupTemplate": -1,
+        "totalFieldsTemplate": -1,
+        "fieldTemplate": -1,
+        "nestedSchema": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "appearance": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": true,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "attributeUseRestriction": {
+      "children": [
+        "field",
+        "condition",
+        "group",
+        "order"
+      ],
+      "childMin": {
+        "field": 0,
+        "condition": 0,
+        "group": 0,
+        "order": 0
+      },
+      "childMax": {
+        "field": 1,
+        "condition": 1,
+        "group": 1,
+        "order": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "autoFillFields": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "availableAsField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "availableValue": {
+      "children": [
+        "value",
+        "presentation"
+      ],
+      "childMin": {
+        "value": 1,
+        "presentation": 0
+      },
+      "childMax": {
+        "value": 1,
+        "presentation": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "calculatedField": {
+      "children": [
+        "dataPath",
+        "expression",
+        "title",
+        "valueType",
+        "orderExpression",
+        "useRestriction",
+        "appearance",
+        "availableValue",
+        "presentationExpression"
+      ],
+      "childMin": {
+        "dataPath": 1,
+        "expression": 1,
+        "title": 0,
+        "valueType": 0,
+        "orderExpression": 0,
+        "useRestriction": 0,
+        "appearance": 0,
+        "availableValue": 0,
+        "presentationExpression": 0
+      },
+      "childMax": {
+        "dataPath": 1,
+        "expression": 1,
+        "title": 1,
+        "valueType": 1,
+        "orderExpression": 1,
+        "useRestriction": 1,
+        "appearance": 1,
+        "availableValue": -1,
+        "presentationExpression": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "condition": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "dataPath": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "dataSet": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "dataSetLink": {
+      "children": [
+        "sourceDataSet",
+        "destinationDataSet",
+        "sourceExpression",
+        "destinationExpression",
+        "startExpression",
+        "parameter",
+        "parameterListAllowed",
+        "linkConditionExpression",
+        "required"
+      ],
+      "childMin": {
+        "sourceDataSet": 1,
+        "destinationDataSet": 1,
+        "sourceExpression": 1,
+        "destinationExpression": 1,
+        "startExpression": 0,
+        "parameter": 0,
+        "parameterListAllowed": 0,
+        "linkConditionExpression": 0,
+        "required": 0
+      },
+      "childMax": {
+        "sourceDataSet": 1,
+        "destinationDataSet": 1,
+        "sourceExpression": 1,
+        "destinationExpression": 1,
+        "startExpression": 1,
+        "parameter": 1,
+        "parameterListAllowed": 1,
+        "linkConditionExpression": 1,
+        "required": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "dataSource": {
+      "children": [
+        "name",
+        "dataSourceType"
+      ],
+      "childMin": {
+        "name": 0,
+        "dataSourceType": 0
+      },
+      "childMax": {
+        "name": 1,
+        "dataSourceType": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": true,
+      "attributes": []
+    },
+    "dataSourceType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "denyIncompleteValues": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "destinationDataSet": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "destinationExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "expression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "field": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "fieldTemplate": {
+      "children": [
+        "field",
+        "template"
+      ],
+      "childMin": {
+        "field": 1,
+        "template": 1
+      },
+      "childMax": {
+        "field": 1,
+        "template": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "functionalOptionsParameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "group": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "groupField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "groupField1": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "groupField2": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "groupHeaderTemplate": {
+      "children": [
+        "groupName",
+        "templateType",
+        "template",
+        "groupField"
+      ],
+      "childMin": {
+        "groupName": 0,
+        "templateType": 1,
+        "template": 1,
+        "groupField": 0
+      },
+      "childMax": {
+        "groupName": 1,
+        "templateType": 1,
+        "template": 1,
+        "groupField": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "groupName": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "groupName1": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "groupName2": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "groupTemplate": {
+      "children": [
+        "groupName",
+        "templateType",
+        "template",
+        "groupField"
+      ],
+      "childMin": {
+        "groupName": 0,
+        "templateType": 1,
+        "template": 1,
+        "groupField": 0
+      },
+      "childMax": {
+        "groupName": 1,
+        "templateType": 1,
+        "template": 1,
+        "groupField": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "inHierarchyDataSet": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "inHierarchyDataSetParameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "inputParameters": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": true,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "item": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "linkConditionExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "name": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "nestedSchema": {
+      "children": [
+        "name",
+        "title",
+        "schema",
+        "settings"
+      ],
+      "childMin": {
+        "name": 1,
+        "title": 1,
+        "schema": 1,
+        "settings": 1
+      },
+      "childMax": {
+        "name": 1,
+        "title": 1,
+        "schema": 1,
+        "settings": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "objectName": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "order": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "orderExpression": {
+      "children": [
+        "expression",
+        "orderType",
+        "autoOrder"
+      ],
+      "childMin": {
+        "expression": 1,
+        "orderType": 1,
+        "autoOrder": 1
+      },
+      "childMax": {
+        "expression": 1,
+        "orderType": 1,
+        "autoOrder": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "parameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "parameterListAllowed": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "presentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "presentationExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "query": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "required": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "role": {
+      "children": [
+        "dimension",
+        "required",
+        "periodNumber",
+        "periodType",
+        "ignoreNullValues",
+        "balance",
+        "balanceGroupName",
+        "balanceType",
+        "parentDimension"
+      ],
+      "childMin": {
+        "dimension": 0,
+        "required": 0,
+        "periodNumber": 0,
+        "periodType": 0,
+        "ignoreNullValues": 0,
+        "balance": 0,
+        "balanceGroupName": 0,
+        "balanceType": 0,
+        "parentDimension": 0
+      },
+      "childMax": {
+        "dimension": 1,
+        "required": 1,
+        "periodNumber": 1,
+        "periodType": 1,
+        "ignoreNullValues": 1,
+        "balance": 1,
+        "balanceGroupName": 1,
+        "balanceType": 1,
+        "parentDimension": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "schema": {
+      "children": [
+        "dataSource",
+        "dataSet",
+        "calculatedField",
+        "totalField",
+        "parameter",
+        "settingsVariant"
+      ],
+      "childMin": {
+        "dataSource": 1,
+        "dataSet": 1,
+        "calculatedField": 2,
+        "totalField": 8,
+        "parameter": 0,
+        "settingsVariant": 1
+      },
+      "childMax": {
+        "dataSource": 1,
+        "dataSet": 1,
+        "calculatedField": -1,
+        "totalField": -1,
+        "parameter": -1,
+        "settingsVariant": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "settings": {
+      "children": [
+        "filter"
+      ],
+      "childMin": {
+        "filter": 1
+      },
+      "childMax": {
+        "filter": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "settingsVariant": {
+      "children": [
+        "name",
+        "presentation",
+        "settings"
+      ],
+      "childMin": {
+        "name": 1,
+        "presentation": 1,
+        "settings": 1
+      },
+      "childMax": {
+        "name": 1,
+        "presentation": 1,
+        "settings": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "sourceDataSet": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "sourceExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "startExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "template": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "templateType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "templateType1": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "templateType2": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "title": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "totalField": {
+      "children": [
+        "dataPath",
+        "expression",
+        "group"
+      ],
+      "childMin": {
+        "dataPath": 1,
+        "expression": 1,
+        "group": 0
+      },
+      "childMax": {
+        "dataPath": 1,
+        "expression": 1,
+        "group": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "totalFieldsTemplate": {
+      "children": [
+        "groupName1",
+        "templateType1",
+        "groupField2",
+        "templateType2",
+        "template",
+        "groupField1"
+      ],
+      "childMin": {
+        "groupName1": 0,
+        "templateType1": 1,
+        "groupField2": 1,
+        "templateType2": 1,
+        "template": 1,
+        "groupField1": 0
+      },
+      "childMax": {
+        "groupName1": 1,
+        "templateType1": 1,
+        "groupField2": 1,
+        "templateType2": 1,
+        "template": 1,
+        "groupField1": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "use": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "useQueryGroupIfPossible": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "useRestriction": {
+      "children": [
+        "field",
+        "condition",
+        "group",
+        "order"
+      ],
+      "childMin": {
+        "field": 0,
+        "condition": 0,
+        "group": 0,
+        "order": 0
+      },
+      "childMax": {
+        "field": 1,
+        "condition": 1,
+        "group": 1,
+        "order": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": true,
+      "attributes": []
+    },
+    "value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "valueListAllowed": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "valueType": {
+      "children": [
+        "Type",
+        "NumberQualifiers",
+        "DateQualifiers",
+        "StringQualifiers",
+        "TypeId",
+        "TypeSet"
+      ],
+      "childMin": {
+        "Type": 0,
+        "NumberQualifiers": 0,
+        "DateQualifiers": 0,
+        "StringQualifiers": 0,
+        "TypeId": 0,
+        "TypeSet": 0
+      },
+      "childMax": {
+        "Type": -1,
+        "NumberQualifiers": 1,
+        "DateQualifiers": 1,
+        "StringQualifiers": 1,
+        "TypeId": 1,
+        "TypeSet": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    }
+  },
+  "source": "http_v8.1c.ru_8.1_data-composition-system_schema.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.1/data-composition-system/schema",
+  "imports": [
+    {
+      "namespace": "http://v8.1c.ru/8.1/data-composition-system/area-template",
+      "schemaLocation": "http_v8.1c.ru_8.1_data-composition-system_area-template.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.1/data-composition-system/common",
+      "schemaLocation": "http_v8.1c.ru_8.1_data-composition-system_common.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.1/data-composition-system/settings",
+      "schemaLocation": "http_v8.1c.ru_8.1_data-composition-system_settings.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/core",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_core.xsd"
+    },
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 65,
+  "namedComplexTypes": [
+    "DataSetFieldField",
+    "DataSetFieldFolder",
+    "DataSetFieldNestedDataSet",
+    "DataSetObject",
+    "DataSetQuery",
+    "DataSetUnion"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "DcsSchema",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

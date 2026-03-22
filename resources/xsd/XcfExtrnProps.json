@@ -1,0 +1,555 @@
+{
+  "roots": [
+    "AutoRecord",
+    "Command",
+    "CommandGroup",
+    "CommandInterface",
+    "CommandsOrder",
+    "CommandsPlacement",
+    "CommandsVisibility",
+    "ExchangePlanContent",
+    "ExtPicture",
+    "Form",
+    "Group",
+    "GroupsOrder",
+    "Height",
+    "Help",
+    "HomePageWorkArea",
+    "Item",
+    "JobSchedule",
+    "LeftColumn",
+    "Metadata",
+    "Page",
+    "Picture",
+    "Placement",
+    "RightColumn",
+    "Schedule",
+    "Subsystem",
+    "SubsystemsOrder",
+    "Visibility",
+    "WorkingAreaTemplate"
+  ],
+  "elements": {
+    "AutoRecord": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Command": {
+      "children": [
+        "CommandGroup",
+        "Visibility",
+        "Placement"
+      ],
+      "childMin": {
+        "CommandGroup": 0,
+        "Visibility": 0,
+        "Placement": 0
+      },
+      "childMax": {
+        "CommandGroup": 1,
+        "Visibility": 1,
+        "Placement": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "CommandGroup": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "CommandInterface": {
+      "children": [
+        "CommandsVisibility",
+        "CommandsPlacement",
+        "CommandsOrder",
+        "GroupsOrder",
+        "SubsystemsOrder"
+      ],
+      "childMin": {
+        "CommandsVisibility": 0,
+        "CommandsPlacement": 0,
+        "CommandsOrder": 0,
+        "GroupsOrder": 0,
+        "SubsystemsOrder": 0
+      },
+      "childMax": {
+        "CommandsVisibility": 1,
+        "CommandsPlacement": 1,
+        "CommandsOrder": 1,
+        "GroupsOrder": 1,
+        "SubsystemsOrder": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "version",
+          "type": "xs:decimal",
+          "use": "required"
+        }
+      ]
+    },
+    "CommandsOrder": {
+      "children": [
+        "Command"
+      ],
+      "childMin": {
+        "Command": 1
+      },
+      "childMax": {
+        "Command": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "CommandsPlacement": {
+      "children": [
+        "Command"
+      ],
+      "childMin": {
+        "Command": 1
+      },
+      "childMax": {
+        "Command": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "CommandsVisibility": {
+      "children": [
+        "Command"
+      ],
+      "childMin": {
+        "Command": 1
+      },
+      "childMax": {
+        "Command": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ExchangePlanContent": {
+      "children": [
+        "Item"
+      ],
+      "childMin": {
+        "Item": 0
+      },
+      "childMax": {
+        "Item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "version",
+          "type": "xs:decimal",
+          "use": "required"
+        }
+      ]
+    },
+    "ExtPicture": {
+      "children": [
+        "Picture"
+      ],
+      "childMin": {
+        "Picture": 1
+      },
+      "childMax": {
+        "Picture": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "version",
+          "type": "xs:decimal",
+          "use": "required"
+        }
+      ]
+    },
+    "Form": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Group": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "GroupsOrder": {
+      "children": [
+        "Group"
+      ],
+      "childMin": {
+        "Group": 1
+      },
+      "childMax": {
+        "Group": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Height": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Help": {
+      "children": [
+        "Page"
+      ],
+      "childMin": {
+        "Page": 1
+      },
+      "childMax": {
+        "Page": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "version",
+          "type": "xs:decimal",
+          "use": "required"
+        }
+      ]
+    },
+    "HomePageWorkArea": {
+      "children": [
+        "WorkingAreaTemplate",
+        "LeftColumn",
+        "RightColumn"
+      ],
+      "childMin": {
+        "WorkingAreaTemplate": 1,
+        "LeftColumn": 1,
+        "RightColumn": 1
+      },
+      "childMax": {
+        "WorkingAreaTemplate": 1,
+        "LeftColumn": 1,
+        "RightColumn": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "version",
+          "type": "xs:decimal",
+          "use": "required"
+        }
+      ]
+    },
+    "Item": {
+      "children": [
+        "Metadata",
+        "AutoRecord",
+        "Form",
+        "Height",
+        "Visibility"
+      ],
+      "childMin": {
+        "Metadata": 0,
+        "AutoRecord": 0,
+        "Form": 0,
+        "Height": 0,
+        "Visibility": 0
+      },
+      "childMax": {
+        "Metadata": 1,
+        "AutoRecord": 1,
+        "Form": 1,
+        "Height": 1,
+        "Visibility": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "JobSchedule": {
+      "children": [
+        "Schedule"
+      ],
+      "childMin": {
+        "Schedule": 1
+      },
+      "childMax": {
+        "Schedule": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "version",
+          "type": "xs:decimal",
+          "use": "required"
+        }
+      ]
+    },
+    "LeftColumn": {
+      "children": [
+        "Item"
+      ],
+      "childMin": {
+        "Item": 8
+      },
+      "childMax": {
+        "Item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Metadata": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Page": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Picture": {
+      "children": [
+        "Abs",
+        "LoadTransparent",
+        "TransparentPixel"
+      ],
+      "childMin": {
+        "Abs": 1,
+        "LoadTransparent": 1,
+        "TransparentPixel": 0
+      },
+      "childMax": {
+        "Abs": 1,
+        "LoadTransparent": 1,
+        "TransparentPixel": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Placement": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "RightColumn": {
+      "children": [
+        "Item"
+      ],
+      "childMin": {
+        "Item": 9
+      },
+      "childMax": {
+        "Item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Schedule": {
+      "children": [
+        "WeekDays",
+        "Months",
+        "DetailedDailySchedules"
+      ],
+      "childMin": {
+        "WeekDays": 1,
+        "Months": 1,
+        "DetailedDailySchedules": 0
+      },
+      "childMax": {
+        "WeekDays": 1,
+        "Months": 1,
+        "DetailedDailySchedules": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "BeginDate",
+          "type": "xs:date",
+          "use": "required"
+        },
+        {
+          "name": "BeginTime",
+          "type": "xs:time",
+          "use": "required"
+        },
+        {
+          "name": "CompletionInterval",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "CompletionTime",
+          "type": "xs:time",
+          "use": "required"
+        },
+        {
+          "name": "DayInMonth",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "DaysRepeatPeriod",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "EndDate",
+          "type": "xs:date",
+          "use": "required"
+        },
+        {
+          "name": "EndTime",
+          "type": "xs:time",
+          "use": "required"
+        },
+        {
+          "name": "RepeatPause",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "RepeatPeriodInDay",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "WeekDayInMonth",
+          "type": "xs:boolean",
+          "use": "required"
+        },
+        {
+          "name": "WeeksPeriod",
+          "type": "xs:boolean",
+          "use": "required"
+        }
+      ]
+    },
+    "Subsystem": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "SubsystemsOrder": {
+      "children": [
+        "Subsystem"
+      ],
+      "childMin": {
+        "Subsystem": 1
+      },
+      "childMax": {
+        "Subsystem": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Visibility": {
+      "children": [
+        "Common",
+        "Value"
+      ],
+      "childMin": {
+        "Common": 1,
+        "Value": 0
+      },
+      "childMax": {
+        "Common": 1,
+        "Value": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "WorkingAreaTemplate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    }
+  },
+  "source": "http_v8.1c.ru_8.3_xcf_extrnprops.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.3/xcf/extrnprops",
+  "imports": [
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/enterprise",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_enterprise.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.3/xcf/readable",
+      "schemaLocation": "http_v8.1c.ru_8.3_xcf_readable.xsd"
+    }
+  ],
+  "globalElementsCount": 28,
+  "namedComplexTypes": [],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "XcfExtrnProps",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

@@ -1,0 +1,263 @@
+{
+  "roots": [
+    "AccountType",
+    "AccountingFlags",
+    "ActionPeriodIsBase",
+    "ChildItems",
+    "Code",
+    "Description",
+    "ExtDimensionType",
+    "ExtDimensionTypes",
+    "Flag",
+    "IsFolder",
+    "Item",
+    "Name",
+    "OffBalance",
+    "Order",
+    "PredefinedData",
+    "Turnover",
+    "Type"
+  ],
+  "elements": {
+    "AccountType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "AccountingFlags": {
+      "children": [
+        "Flag"
+      ],
+      "childMin": {
+        "Flag": 3
+      },
+      "childMax": {
+        "Flag": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ActionPeriodIsBase": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ChildItems": {
+      "children": [
+        "Item"
+      ],
+      "childMin": {
+        "Item": 1
+      },
+      "childMax": {
+        "Item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Code": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "Description": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ExtDimensionType": {
+      "children": [
+        "Turnover",
+        "AccountingFlags"
+      ],
+      "childMin": {
+        "Turnover": 1,
+        "AccountingFlags": 1
+      },
+      "childMax": {
+        "Turnover": 1,
+        "AccountingFlags": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "ExtDimensionTypes": {
+      "children": [
+        "ExtDimensionType"
+      ],
+      "childMin": {
+        "ExtDimensionType": 0
+      },
+      "childMax": {
+        "ExtDimensionType": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Flag": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "ref",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "IsFolder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Item": {
+      "children": [
+        "Name",
+        "Code",
+        "Description",
+        "IsFolder",
+        "ChildItems",
+        "Type"
+      ],
+      "childMin": {
+        "Name": 1,
+        "Code": 1,
+        "Description": 1,
+        "IsFolder": 1,
+        "ChildItems": 0,
+        "Type": 0
+      },
+      "childMax": {
+        "Name": 1,
+        "Code": 1,
+        "Description": 1,
+        "IsFolder": 1,
+        "ChildItems": 1,
+        "Type": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Name": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "OffBalance": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Order": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "PredefinedData": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "Turnover": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Type": {
+      "children": [
+        "Type",
+        "NumberQualifiers"
+      ],
+      "childMin": {
+        "Type": 1,
+        "NumberQualifiers": 0
+      },
+      "childMax": {
+        "Type": -1,
+        "NumberQualifiers": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    }
+  },
+  "source": "http_v8.1c.ru_8.3_xcf_predef.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.3/xcf/predef",
+  "imports": [
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/core",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_core.xsd"
+    },
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 17,
+  "namedComplexTypes": [
+    "CalculationTypePredefinedItems",
+    "CatalogPredefinedItems",
+    "ChartOfAccountsPredefinedItems",
+    "PlanOfCharacteristicKindPredefinedItems"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "XcfPredef",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

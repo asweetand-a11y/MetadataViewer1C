@@ -1,0 +1,119 @@
+{
+  "roots": [
+    "backColor",
+    "begin",
+    "end",
+    "item",
+    "style",
+    "text",
+    "tooltip"
+  ],
+  "elements": {
+    "backColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "begin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "end": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "item": {
+      "children": [
+        "begin",
+        "end",
+        "backColor",
+        "text",
+        "tooltip"
+      ],
+      "childMin": {
+        "begin": 1,
+        "end": 1,
+        "backColor": 1,
+        "text": 1,
+        "tooltip": 1
+      },
+      "childMax": {
+        "begin": 1,
+        "end": 1,
+        "backColor": 1,
+        "text": 1,
+        "tooltip": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "style": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "text": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "tooltip": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    }
+  },
+  "source": "http_v8.1c.ru_8.1_data_ui.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.1/data/ui",
+  "imports": [
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 7,
+  "namedComplexTypes": [
+    "AutoSeriesSeparation",
+    "Border",
+    "ChartLabelType",
+    "ChartLineType",
+    "ChartType",
+    "Color",
+    "ControlBorderType",
+    "Font",
+    "HorizontalAlign",
+    "Line",
+    "Picture",
+    "SizeChangeMode",
+    "SpreadsheetDocumentCellLineType",
+    "SpreadsheetDocumentDrawingLineType",
+    "VerticalAlign"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "DataUi",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

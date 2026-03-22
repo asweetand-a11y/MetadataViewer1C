@@ -1,0 +1,117 @@
+{
+  "roots": [
+    "backColor",
+    "bpUUID",
+    "drawGridMode",
+    "enableGrid",
+    "gridHorizontalStep",
+    "gridVerticalStep",
+    "key",
+    "printPropItem",
+    "useOutput",
+    "val"
+  ],
+  "elements": {
+    "backColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "bpUUID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "drawGridMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "enableGrid": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "gridHorizontalStep": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "gridVerticalStep": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "key": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "printPropItem": {
+      "children": [
+        "key",
+        "val"
+      ],
+      "childMin": {
+        "key": 1,
+        "val": 1
+      },
+      "childMax": {
+        "key": 1,
+        "val": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "useOutput": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "val": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    }
+  },
+  "source": "http_v8.1c.ru_8.2_data_graphscheme.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.2/data/graphscheme",
+  "imports": [],
+  "globalElementsCount": 10,
+  "namedComplexTypes": [
+    "ConnectorLineType",
+    "FlowchartContextType"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "DataGraphScheme",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

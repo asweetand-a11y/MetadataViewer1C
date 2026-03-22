@@ -1,0 +1,904 @@
+{
+  "roots": [
+    "Abs",
+    "Characteristic",
+    "CharacteristicTypes",
+    "CharacteristicValues",
+    "CheckState",
+    "ChoiceForm",
+    "ChoiceHistoryOnInput",
+    "ChoiceParameterLinks",
+    "ChoiceParameters",
+    "ClassId",
+    "Comment",
+    "Common",
+    "ConditionalSeparation",
+    "ContainedObject",
+    "CreateOnInput",
+    "DataHistory",
+    "DataPath",
+    "DataPathField",
+    "EditFormat",
+    "ExtendedEdit",
+    "Field",
+    "FillChecking",
+    "FillFromFillingValue",
+    "FillValue",
+    "Format",
+    "FullTextSearch",
+    "GeneratedType",
+    "Item",
+    "KeyField",
+    "Link",
+    "LinkByType",
+    "LinkItem",
+    "LoadTransparent",
+    "MarkNegatives",
+    "Mask",
+    "MaxValue",
+    "Metadata",
+    "MinValue",
+    "MultiLine",
+    "MultipleValuesKeyField",
+    "MultipleValuesOrderField",
+    "MultipleValuesUseField",
+    "Name",
+    "Object",
+    "ObjectField",
+    "ObjectId",
+    "PasswordMode",
+    "Presentation",
+    "QuickChoice",
+    "Ref",
+    "StandardAttribute",
+    "StandardAttributes",
+    "StandardTabularSection",
+    "Synonym",
+    "ThisNode",
+    "ToolTip",
+    "TransparentPixel",
+    "TypeField",
+    "TypeId",
+    "TypeReductionMode",
+    "TypesFilterField",
+    "TypesFilterValue",
+    "Use",
+    "Value",
+    "ValueChange",
+    "ValueField",
+    "ValueId"
+  ],
+  "elements": {
+    "Abs": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Characteristic": {
+      "children": [
+        "CharacteristicTypes",
+        "CharacteristicValues"
+      ],
+      "childMin": {
+        "CharacteristicTypes": 1,
+        "CharacteristicValues": 1
+      },
+      "childMax": {
+        "CharacteristicTypes": 1,
+        "CharacteristicValues": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "CharacteristicTypes": {
+      "children": [
+        "KeyField",
+        "TypesFilterField",
+        "TypesFilterValue",
+        "DataPathField",
+        "MultipleValuesUseField"
+      ],
+      "childMin": {
+        "KeyField": 1,
+        "TypesFilterField": 1,
+        "TypesFilterValue": 1,
+        "DataPathField": 1,
+        "MultipleValuesUseField": 1
+      },
+      "childMax": {
+        "KeyField": 1,
+        "TypesFilterField": 1,
+        "TypesFilterValue": 1,
+        "DataPathField": 1,
+        "MultipleValuesUseField": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "from",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "CharacteristicValues": {
+      "children": [
+        "ObjectField",
+        "TypeField",
+        "ValueField",
+        "MultipleValuesKeyField",
+        "MultipleValuesOrderField"
+      ],
+      "childMin": {
+        "ObjectField": 1,
+        "TypeField": 1,
+        "ValueField": 1,
+        "MultipleValuesKeyField": 1,
+        "MultipleValuesOrderField": 1
+      },
+      "childMax": {
+        "ObjectField": 1,
+        "TypeField": 1,
+        "ValueField": 1,
+        "MultipleValuesKeyField": 1,
+        "MultipleValuesOrderField": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "from",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "CheckState": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ChoiceForm": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ChoiceHistoryOnInput": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ChoiceParameterLinks": {
+      "children": [
+        "Link"
+      ],
+      "childMin": {
+        "Link": 0
+      },
+      "childMax": {
+        "Link": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ChoiceParameters": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": true,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ClassId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Comment": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Common": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ConditionalSeparation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ContainedObject": {
+      "children": [
+        "ClassId",
+        "ObjectId"
+      ],
+      "childMin": {
+        "ClassId": 1,
+        "ObjectId": 1
+      },
+      "childMax": {
+        "ClassId": 1,
+        "ObjectId": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "CreateOnInput": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "DataHistory": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "DataPath": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "DataPathField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "EditFormat": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ExtendedEdit": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Field": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "FillChecking": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "FillFromFillingValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "FillValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "Format": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "FullTextSearch": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "GeneratedType": {
+      "children": [
+        "TypeId",
+        "ValueId"
+      ],
+      "childMin": {
+        "TypeId": 1,
+        "ValueId": 1
+      },
+      "childMax": {
+        "TypeId": 1,
+        "ValueId": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "category",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Item": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "KeyField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Link": {
+      "children": [
+        "Name",
+        "DataPath",
+        "ValueChange"
+      ],
+      "childMin": {
+        "Name": 1,
+        "DataPath": 1,
+        "ValueChange": 1
+      },
+      "childMax": {
+        "Name": 1,
+        "DataPath": 1,
+        "ValueChange": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "LinkByType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "LinkItem": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "LoadTransparent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "MarkNegatives": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Mask": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "MaxValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Metadata": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "MinValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "MultiLine": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "MultipleValuesKeyField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "MultipleValuesOrderField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "MultipleValuesUseField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Name": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Object": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ObjectField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ObjectId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "PasswordMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Presentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "QuickChoice": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Ref": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "StandardAttribute": {
+      "children": [
+        "LinkByType",
+        "FillChecking",
+        "MultiLine",
+        "FillFromFillingValue",
+        "CreateOnInput",
+        "TypeReductionMode",
+        "MaxValue",
+        "ToolTip",
+        "ExtendedEdit",
+        "Format",
+        "ChoiceForm",
+        "QuickChoice",
+        "ChoiceHistoryOnInput",
+        "EditFormat",
+        "PasswordMode",
+        "DataHistory",
+        "MarkNegatives",
+        "MinValue",
+        "Synonym",
+        "Comment",
+        "FullTextSearch",
+        "ChoiceParameterLinks",
+        "FillValue",
+        "Mask",
+        "ChoiceParameters"
+      ],
+      "childMin": {
+        "LinkByType": 1,
+        "FillChecking": 1,
+        "MultiLine": 1,
+        "FillFromFillingValue": 1,
+        "CreateOnInput": 1,
+        "TypeReductionMode": 1,
+        "MaxValue": 1,
+        "ToolTip": 1,
+        "ExtendedEdit": 1,
+        "Format": 1,
+        "ChoiceForm": 1,
+        "QuickChoice": 1,
+        "ChoiceHistoryOnInput": 1,
+        "EditFormat": 1,
+        "PasswordMode": 1,
+        "DataHistory": 1,
+        "MarkNegatives": 1,
+        "MinValue": 1,
+        "Synonym": 1,
+        "Comment": 1,
+        "FullTextSearch": 1,
+        "ChoiceParameterLinks": 1,
+        "FillValue": 1,
+        "Mask": 1,
+        "ChoiceParameters": 1
+      },
+      "childMax": {
+        "LinkByType": 1,
+        "FillChecking": 1,
+        "MultiLine": 1,
+        "FillFromFillingValue": 1,
+        "CreateOnInput": 1,
+        "TypeReductionMode": 1,
+        "MaxValue": 1,
+        "ToolTip": 1,
+        "ExtendedEdit": 1,
+        "Format": 1,
+        "ChoiceForm": 1,
+        "QuickChoice": 1,
+        "ChoiceHistoryOnInput": 1,
+        "EditFormat": 1,
+        "PasswordMode": 1,
+        "DataHistory": 1,
+        "MarkNegatives": 1,
+        "MinValue": 1,
+        "Synonym": 1,
+        "Comment": 1,
+        "FullTextSearch": 1,
+        "ChoiceParameterLinks": 1,
+        "FillValue": 1,
+        "Mask": 1,
+        "ChoiceParameters": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "StandardAttributes": {
+      "children": [
+        "StandardAttribute"
+      ],
+      "childMin": {
+        "StandardAttribute": 3
+      },
+      "childMax": {
+        "StandardAttribute": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "StandardTabularSection": {
+      "children": [
+        "Synonym",
+        "Comment",
+        "ToolTip",
+        "FillChecking",
+        "StandardAttributes"
+      ],
+      "childMin": {
+        "Synonym": 1,
+        "Comment": 1,
+        "ToolTip": 1,
+        "FillChecking": 1,
+        "StandardAttributes": 1
+      },
+      "childMax": {
+        "Synonym": 1,
+        "Comment": 1,
+        "ToolTip": 1,
+        "FillChecking": 1,
+        "StandardAttributes": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Synonym": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ThisNode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ToolTip": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "TransparentPixel": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "x",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "y",
+          "type": "xs:integer",
+          "use": "required"
+        }
+      ]
+    },
+    "TypeField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TypeId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TypeReductionMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TypesFilterField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TypesFilterValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "Use": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "ValueChange": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ValueField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ValueId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    }
+  },
+  "source": "http_v8.1c.ru_8.3_xcf_readable.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.3/xcf/readable",
+  "imports": [
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/core",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_core.xsd"
+    },
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 67,
+  "namedComplexTypes": [
+    "DesignTimeRef",
+    "MDObjectRef",
+    "ValueList"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "XcfReadable",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

@@ -1,0 +1,127 @@
+{
+  "roots": [
+    "appearance",
+    "expression",
+    "field",
+    "fieldExpression",
+    "item",
+    "mainAction",
+    "name",
+    "tableCell",
+    "value"
+  ],
+  "elements": {
+    "appearance": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": true,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "expression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "field": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "fieldExpression": {
+      "children": [
+        "field",
+        "expression"
+      ],
+      "childMin": {
+        "field": 1,
+        "expression": 1
+      },
+      "childMax": {
+        "field": 1,
+        "expression": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "item": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "mainAction": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "name": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "tableCell": {
+      "children": [
+        "appearance",
+        "item"
+      ],
+      "childMin": {
+        "appearance": 0,
+        "item": 0
+      },
+      "childMax": {
+        "appearance": 1,
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    }
+  },
+  "source": "http_v8.1c.ru_8.1_data-composition-system_area-template.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.1/data-composition-system/area-template",
+  "imports": [
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 9,
+  "namedComplexTypes": [
+    "AreaTemplate",
+    "DetailsAreaTemplateParameter",
+    "ExpressionAreaTemplateParameter",
+    "Field",
+    "TableRow"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "DcsAreaTemplate",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

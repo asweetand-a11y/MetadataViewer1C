@@ -1,0 +1,7138 @@
+{
+  "roots": [
+    "Action",
+    "AdditionSource",
+    "AdditionalColumns",
+    "AllowGettingCurrentRowURL",
+    "AllowInputEmptyMultipleValues",
+    "AllowRootChoice",
+    "AssociatedTableElementId",
+    "Attribute",
+    "Attributes",
+    "AutoAddIncomplete",
+    "AutoCellHeight",
+    "AutoChoiceIncomplete",
+    "AutoCommandBar",
+    "AutoCorrectionOnTextInput",
+    "AutoFillAvailableFields",
+    "AutoFillCheck",
+    "AutoInsertNewRow",
+    "AutoMarkIncomplete",
+    "AutoMaxHeight",
+    "AutoMaxRowsCount",
+    "AutoMaxWidth",
+    "AutoRefresh",
+    "AutoRefreshPeriod",
+    "AutoSaveDataInSettings",
+    "AutoSaveUserSettings",
+    "AutoShowClearButtonMode",
+    "AutoShowOpenButtonMode",
+    "AutoShowState",
+    "AutoTime",
+    "AutoTitle",
+    "AutoURL",
+    "Autofill",
+    "AvailableTypes",
+    "BackColor",
+    "Behavior",
+    "BehaviorOnHorizontalCompression",
+    "Border",
+    "BorderColor",
+    "Button",
+    "ButtonGroup",
+    "CalculatedField",
+    "CalendarField",
+    "CalendarNavigation",
+    "CellHyperlink",
+    "ChangeRowOrder",
+    "ChangeRowSet",
+    "ChartField",
+    "Check",
+    "CheckBoxField",
+    "CheckBoxType",
+    "ChildItems",
+    "ChildItemsWidth",
+    "ChildrenAlign",
+    "ChoiceButton",
+    "ChoiceButtonPicture",
+    "ChoiceButtonRepresentation",
+    "ChoiceFoldersAndItems",
+    "ChoiceForm",
+    "ChoiceHistoryOnInput",
+    "ChoiceList",
+    "ChoiceListButton",
+    "ChoiceListHeight",
+    "ChoiceMode",
+    "ChoiceParameterLinks",
+    "ChoiceParameters",
+    "ChooseType",
+    "ClearButton",
+    "CollapseItemsByImportanceVariant",
+    "Collapsed",
+    "CollapsedRepresentationTitle",
+    "Column",
+    "ColumnGroup",
+    "Columns",
+    "ColumnsCount",
+    "Command",
+    "CommandBar",
+    "CommandBarLocation",
+    "CommandGroup",
+    "CommandInterface",
+    "CommandName",
+    "CommandSet",
+    "CommandSource",
+    "CommandUniqueness",
+    "Commands",
+    "ConditionalAppearance",
+    "ContextMenu",
+    "ControlRepresentation",
+    "ConversationsRepresentation",
+    "CreateButton",
+    "CurrentRowUse",
+    "CustomSettingsFolder",
+    "Customizable",
+    "DataPath",
+    "DefaultButton",
+    "DefaultItem",
+    "DefaultVisible",
+    "DetailsData",
+    "DimensionItemHyperlink",
+    "DrawingSelectionShowMode",
+    "DropListButton",
+    "DropListWidth",
+    "DynamicDataRead",
+    "Edit",
+    "EditFormat",
+    "EditMode",
+    "EditTextUpdate",
+    "EnableContentChange",
+    "EnableDrag",
+    "EnableStartDrag",
+    "Enabled",
+    "EnterKeyBehavior",
+    "EqualColumnsWidth",
+    "EqualItemsWidth",
+    "Event",
+    "Events",
+    "ExcludedCommand",
+    "ExtendedEdit",
+    "ExtendedEditMultipleValues",
+    "ExtendedTooltip",
+    "Field",
+    "FileDragMode",
+    "FillCheck",
+    "FixingInTable",
+    "Font",
+    "Footer",
+    "FooterBackColor",
+    "FooterDataPath",
+    "FooterFont",
+    "FooterHeight",
+    "FooterHorizontalAlign",
+    "FooterText",
+    "Form",
+    "Format",
+    "FormattedDocumentField",
+    "FunctionalOptions",
+    "GetInvisibleFieldPresentations",
+    "GraphicalSchemaField",
+    "Group",
+    "GroupHorizontalAlign",
+    "GroupList",
+    "GroupVerticalAlign",
+    "HTMLDocumentField",
+    "Header",
+    "HeaderDataPath",
+    "HeaderFormat",
+    "HeaderHeight",
+    "HeaderHorizontalAlign",
+    "HeaderPicture",
+    "Height",
+    "HeightControlVariant",
+    "HeightInMonths",
+    "HeightInTableRows",
+    "Hiperlink",
+    "HorizontalAlign",
+    "HorizontalLines",
+    "HorizontalLocation",
+    "HorizontalScrollBar",
+    "HorizontalSpacing",
+    "HorizontalStretch",
+    "Hyperlink",
+    "ImageScale",
+    "IncompleteChoiceMode",
+    "Index",
+    "InitialListView",
+    "InitialTreeView",
+    "InputField",
+    "InputHint",
+    "Item",
+    "ItemHeight",
+    "ItemTitleHeight",
+    "ItemWidth",
+    "KeyField",
+    "KeyParameter",
+    "KeyType",
+    "LabelDecoration",
+    "LabelField",
+    "LargeStep",
+    "ListChoiceMode",
+    "ListSettings",
+    "LocationInCommandBar",
+    "MainAttribute",
+    "MainTable",
+    "ManualQuery",
+    "MarkNegatives",
+    "MarkingAppearance",
+    "MarkingStep",
+    "Mask",
+    "MaxHeight",
+    "MaxRowsCount",
+    "MaxValue",
+    "MaxWidth",
+    "MinValue",
+    "MobileDeviceCommandBarContent",
+    "ModifiesSavedData",
+    "MultiLine",
+    "MultipleChoice",
+    "MultipleValueDataPath",
+    "MultipleValuePresentDataPath",
+    "NavigationPanel",
+    "NonselectedPictureText",
+    "OpenButton",
+    "Output",
+    "PDFDocumentField",
+    "Page",
+    "Pages",
+    "PagesRepresentation",
+    "Parameter",
+    "Parameters",
+    "PasswordMode",
+    "Period",
+    "PeriodField",
+    "Picture",
+    "PictureDecoration",
+    "PictureField",
+    "PictureLocation",
+    "PictureSize",
+    "PlannerField",
+    "PointerType",
+    "Popup",
+    "Presentation",
+    "ProgressBarField",
+    "Protection",
+    "QueryText",
+    "QuickChoice",
+    "RadioButtonField",
+    "RadioButtonType",
+    "ReadOnly",
+    "RefreshRequest",
+    "ReportFormType",
+    "ReportResult",
+    "ReportResultViewMode",
+    "RepostOnWrite",
+    "Representation",
+    "RepresentationInContextMenu",
+    "RestoreCurrentRow",
+    "RowFilter",
+    "RowInputMode",
+    "RowPictureDataPath",
+    "RowSelectionMode",
+    "RowsPicture",
+    "Save",
+    "SaveDataInSettings",
+    "SaveWindowSettings",
+    "SavedData",
+    "Scale",
+    "ScalingMode",
+    "ScrollOnCompress",
+    "SearchControlAddition",
+    "SearchControlLocation",
+    "SearchOnInput",
+    "SearchStringAddition",
+    "SearchStringLocation",
+    "SelectionMode",
+    "SelectionShowMode",
+    "Settings",
+    "SettingsNamedItemDetailedRepresentation",
+    "SettingsStorage",
+    "Shape",
+    "ShapeRepresentation",
+    "Shortcut",
+    "ShowCellNames",
+    "ShowCheckBoxesInDropList",
+    "ShowCloseButton",
+    "ShowCurrentDate",
+    "ShowGrid",
+    "ShowGroups",
+    "ShowHeaders",
+    "ShowInFooter",
+    "ShowInHeader",
+    "ShowLeftMargin",
+    "ShowMonthsPanel",
+    "ShowPercent",
+    "ShowRoot",
+    "ShowRowAndColumnNames",
+    "ShowTitle",
+    "SkipOnInput",
+    "SpecialTextInputMode",
+    "SpellCheckingOnTextInput",
+    "SpinButton",
+    "SpreadSheetDocumentField",
+    "Table",
+    "TextColor",
+    "TextDocumentField",
+    "TextEdit",
+    "ThreeState",
+    "ThroughAlign",
+    "TimeScaleItemHyperlink",
+    "Title",
+    "TitleBackColor",
+    "TitleDataPath",
+    "TitleFont",
+    "TitleHeight",
+    "TitleLocation",
+    "TitleTextColor",
+    "ToolTip",
+    "ToolTipRepresentation",
+    "TopLevelParent",
+    "TrackBarField",
+    "Type",
+    "TypeDomainEnabled",
+    "TypeLink",
+    "United",
+    "UpdateOnDataChange",
+    "Use",
+    "UseAlternationRowColor",
+    "UseAlways",
+    "UseForFoldersAndItems",
+    "UsePostingMode",
+    "UserSettingsGroup",
+    "UserVisible",
+    "UsualGroup",
+    "Value",
+    "ValuesPicture",
+    "VariantAppearance",
+    "VerticalAlign",
+    "VerticalLines",
+    "VerticalScroll",
+    "VerticalScrollBar",
+    "VerticalSpacing",
+    "VerticalStretch",
+    "View",
+    "ViewMode",
+    "ViewModeApplicationOnSetReportResult",
+    "ViewScalingMode",
+    "ViewStatusAddition",
+    "ViewStatusLocation",
+    "Visible",
+    "WarningOnEdit",
+    "WarningOnEditRepresentation",
+    "Width",
+    "WidthInMonths",
+    "WindowOpeningMode",
+    "Wrap",
+    "Zoomable"
+  ],
+  "elements": {
+    "Action": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "AdditionSource": {
+      "children": [
+        "Item",
+        "Type"
+      ],
+      "childMin": {
+        "Item": 1,
+        "Type": 1
+      },
+      "childMax": {
+        "Item": 1,
+        "Type": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "AdditionalColumns": {
+      "children": [
+        "Column"
+      ],
+      "childMin": {
+        "Column": 0
+      },
+      "childMax": {
+        "Column": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "table",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "AllowGettingCurrentRowURL": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AllowInputEmptyMultipleValues": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AllowRootChoice": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AssociatedTableElementId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "Attribute": {
+      "children": [
+        "Title",
+        "Type",
+        "MainAttribute",
+        "Settings",
+        "SavedData",
+        "UseAlways",
+        "Columns",
+        "FunctionalOptions",
+        "Save",
+        "Edit",
+        "FillCheck",
+        "View"
+      ],
+      "childMin": {
+        "Title": 0,
+        "Type": 0,
+        "MainAttribute": 0,
+        "Settings": 0,
+        "SavedData": 0,
+        "UseAlways": 0,
+        "Columns": 0,
+        "FunctionalOptions": 0,
+        "Save": 0,
+        "Edit": 0,
+        "FillCheck": 0,
+        "View": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "Type": 1,
+        "MainAttribute": 1,
+        "Settings": 1,
+        "SavedData": 1,
+        "UseAlways": 1,
+        "Columns": 1,
+        "FunctionalOptions": 1,
+        "Save": 1,
+        "Edit": 1,
+        "FillCheck": 1,
+        "View": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": true,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "optional"
+        }
+      ]
+    },
+    "Attributes": {
+      "children": [
+        "Attribute",
+        "ConditionalAppearance"
+      ],
+      "childMin": {
+        "Attribute": 0,
+        "ConditionalAppearance": 0
+      },
+      "childMax": {
+        "Attribute": -1,
+        "ConditionalAppearance": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "AutoAddIncomplete": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoCellHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoChoiceIncomplete": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoCommandBar": {
+      "children": [
+        "Autofill",
+        "ChildItems",
+        "HorizontalAlign"
+      ],
+      "childMin": {
+        "Autofill": 0,
+        "ChildItems": 0,
+        "HorizontalAlign": 0
+      },
+      "childMax": {
+        "Autofill": 1,
+        "ChildItems": 1,
+        "HorizontalAlign": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "AutoCorrectionOnTextInput": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "AutoFillAvailableFields": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoFillCheck": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoInsertNewRow": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoMarkIncomplete": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoMaxHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoMaxRowsCount": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoMaxWidth": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoRefresh": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoRefreshPeriod": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "AutoSaveDataInSettings": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "AutoSaveUserSettings": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoShowClearButtonMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "AutoShowOpenButtonMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "AutoShowState": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "AutoTime": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "AutoTitle": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AutoURL": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Autofill": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "AvailableTypes": {
+      "children": [
+        "Type",
+        "StringQualifiers",
+        "NumberQualifiers",
+        "DateQualifiers"
+      ],
+      "childMin": {
+        "Type": 1,
+        "StringQualifiers": 0,
+        "NumberQualifiers": 0,
+        "DateQualifiers": 0
+      },
+      "childMax": {
+        "Type": -1,
+        "StringQualifiers": 1,
+        "NumberQualifiers": 1,
+        "DateQualifiers": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "BackColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Behavior": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "BehaviorOnHorizontalCompression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Border": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "width",
+          "type": "xs:integer",
+          "use": "required"
+        }
+      ]
+    },
+    "BorderColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Button": {
+      "children": [
+        "Type",
+        "CommandName",
+        "ExtendedTooltip",
+        "DefaultButton",
+        "SkipOnInput",
+        "Title",
+        "LocationInCommandBar",
+        "Representation",
+        "Height",
+        "Picture",
+        "DataPath",
+        "UserVisible",
+        "Visible",
+        "Check",
+        "Enabled",
+        "GroupHorizontalAlign",
+        "DefaultItem",
+        "RepresentationInContextMenu",
+        "ToolTipRepresentation",
+        "Width",
+        "Font",
+        "GroupVerticalAlign",
+        "ShapeRepresentation",
+        "TextColor",
+        "Shape",
+        "BackColor",
+        "AutoMaxWidth",
+        "PictureLocation",
+        "BorderColor",
+        "AutoMaxHeight",
+        "MaxWidth",
+        "TitleHeight",
+        "HorizontalStretch",
+        "MaxHeight",
+        "VerticalStretch",
+        "Parameter"
+      ],
+      "childMin": {
+        "Type": 1,
+        "CommandName": 1,
+        "ExtendedTooltip": 1,
+        "DefaultButton": 0,
+        "SkipOnInput": 0,
+        "Title": 0,
+        "LocationInCommandBar": 0,
+        "Representation": 0,
+        "Height": 0,
+        "Picture": 0,
+        "DataPath": 0,
+        "UserVisible": 0,
+        "Visible": 0,
+        "Check": 0,
+        "Enabled": 0,
+        "GroupHorizontalAlign": 0,
+        "DefaultItem": 0,
+        "RepresentationInContextMenu": 0,
+        "ToolTipRepresentation": 0,
+        "Width": 0,
+        "Font": 0,
+        "GroupVerticalAlign": 0,
+        "ShapeRepresentation": 0,
+        "TextColor": 0,
+        "Shape": 0,
+        "BackColor": 0,
+        "AutoMaxWidth": 0,
+        "PictureLocation": 0,
+        "BorderColor": 0,
+        "AutoMaxHeight": 0,
+        "MaxWidth": 0,
+        "TitleHeight": 0,
+        "HorizontalStretch": 0,
+        "MaxHeight": 0,
+        "VerticalStretch": 0,
+        "Parameter": 0
+      },
+      "childMax": {
+        "Type": 1,
+        "CommandName": 1,
+        "ExtendedTooltip": 1,
+        "DefaultButton": 1,
+        "SkipOnInput": 1,
+        "Title": 1,
+        "LocationInCommandBar": 1,
+        "Representation": 1,
+        "Height": 1,
+        "Picture": 1,
+        "DataPath": 1,
+        "UserVisible": 1,
+        "Visible": 1,
+        "Check": 1,
+        "Enabled": 1,
+        "GroupHorizontalAlign": 1,
+        "DefaultItem": 1,
+        "RepresentationInContextMenu": 1,
+        "ToolTipRepresentation": 1,
+        "Width": 1,
+        "Font": 1,
+        "GroupVerticalAlign": 1,
+        "ShapeRepresentation": 1,
+        "TextColor": 1,
+        "Shape": 1,
+        "BackColor": 1,
+        "AutoMaxWidth": 1,
+        "PictureLocation": 1,
+        "BorderColor": 1,
+        "AutoMaxHeight": 1,
+        "MaxWidth": 1,
+        "TitleHeight": 1,
+        "HorizontalStretch": 1,
+        "MaxHeight": 1,
+        "VerticalStretch": 1,
+        "Parameter": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "ButtonGroup": {
+      "children": [
+        "Title",
+        "ExtendedTooltip",
+        "ChildItems",
+        "CommandSource",
+        "Representation",
+        "HorizontalStretch",
+        "ToolTip",
+        "Visible",
+        "ToolTipRepresentation",
+        "EnableContentChange",
+        "GroupHorizontalAlign",
+        "GroupVerticalAlign"
+      ],
+      "childMin": {
+        "Title": 0,
+        "ExtendedTooltip": 1,
+        "ChildItems": 0,
+        "CommandSource": 0,
+        "Representation": 0,
+        "HorizontalStretch": 0,
+        "ToolTip": 0,
+        "Visible": 0,
+        "ToolTipRepresentation": 0,
+        "EnableContentChange": 0,
+        "GroupHorizontalAlign": 0,
+        "GroupVerticalAlign": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "ExtendedTooltip": 1,
+        "ChildItems": 1,
+        "CommandSource": 1,
+        "Representation": 1,
+        "HorizontalStretch": 1,
+        "ToolTip": 1,
+        "Visible": 1,
+        "ToolTipRepresentation": 1,
+        "EnableContentChange": 1,
+        "GroupHorizontalAlign": 1,
+        "GroupVerticalAlign": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "CalculatedField": {
+      "children": [
+        "dataPath",
+        "expression",
+        "title",
+        "useRestriction",
+        "valueType"
+      ],
+      "childMin": {
+        "dataPath": 1,
+        "expression": 1,
+        "title": 1,
+        "useRestriction": 1,
+        "valueType": 0
+      },
+      "childMax": {
+        "dataPath": 1,
+        "expression": 1,
+        "title": 1,
+        "useRestriction": 1,
+        "valueType": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "CalendarField": {
+      "children": [
+        "DataPath",
+        "TitleLocation",
+        "Width",
+        "Height",
+        "AutoMaxHeight",
+        "MaxHeight",
+        "SelectionMode",
+        "EnableDrag",
+        "Border",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Events",
+        "Title",
+        "ShowCurrentDate",
+        "WidthInMonths",
+        "HeightInMonths",
+        "ToolTipRepresentation",
+        "ShowMonthsPanel",
+        "ToolTip",
+        "CalendarNavigation",
+        "AutoMaxWidth",
+        "HorizontalStretch",
+        "DefaultItem",
+        "VerticalStretch"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "Width": 0,
+        "Height": 0,
+        "AutoMaxHeight": 0,
+        "MaxHeight": 0,
+        "SelectionMode": 0,
+        "EnableDrag": 0,
+        "Border": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 1,
+        "Title": 0,
+        "ShowCurrentDate": 0,
+        "WidthInMonths": 0,
+        "HeightInMonths": 0,
+        "ToolTipRepresentation": 0,
+        "ShowMonthsPanel": 0,
+        "ToolTip": 0,
+        "CalendarNavigation": 0,
+        "AutoMaxWidth": 0,
+        "HorizontalStretch": 0,
+        "DefaultItem": 0,
+        "VerticalStretch": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "Width": 1,
+        "Height": 1,
+        "AutoMaxHeight": 1,
+        "MaxHeight": 1,
+        "SelectionMode": 1,
+        "EnableDrag": 1,
+        "Border": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 1,
+        "Title": 1,
+        "ShowCurrentDate": 1,
+        "WidthInMonths": 1,
+        "HeightInMonths": 1,
+        "ToolTipRepresentation": 1,
+        "ShowMonthsPanel": 1,
+        "ToolTip": 1,
+        "CalendarNavigation": 1,
+        "AutoMaxWidth": 1,
+        "HorizontalStretch": 1,
+        "DefaultItem": 1,
+        "VerticalStretch": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "CalendarNavigation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "CellHyperlink": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ChangeRowOrder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ChangeRowSet": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ChartField": {
+      "children": [
+        "DataPath",
+        "Title",
+        "ContextMenu",
+        "ExtendedTooltip"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "Title": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1
+      },
+      "childMax": {
+        "DataPath": 1,
+        "Title": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Check": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "CheckBoxField": {
+      "children": [
+        "DataPath",
+        "Title",
+        "TitleLocation",
+        "CheckBoxType",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Events",
+        "UserVisible",
+        "Visible",
+        "EditMode",
+        "EditFormat",
+        "ThreeState",
+        "ToolTipRepresentation",
+        "ToolTip",
+        "HorizontalAlign",
+        "ReadOnly",
+        "HeaderPicture",
+        "HeaderHorizontalAlign",
+        "FooterHorizontalAlign",
+        "ShowInHeader",
+        "TitleTextColor",
+        "GroupHorizontalAlign",
+        "TitleHeight",
+        "GroupVerticalAlign",
+        "SkipOnInput",
+        "FixingInTable",
+        "ShowInFooter",
+        "VerticalAlign",
+        "DefaultItem",
+        "Enabled",
+        "TitleFont",
+        "ItemHeight",
+        "EqualItemsWidth",
+        "CellHyperlink",
+        "WarningOnEditRepresentation",
+        "WarningOnEdit",
+        "ItemTitleHeight"
+      ],
+      "childMin": {
+        "DataPath": 0,
+        "Title": 0,
+        "TitleLocation": 0,
+        "CheckBoxType": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 0,
+        "UserVisible": 0,
+        "Visible": 0,
+        "EditMode": 0,
+        "EditFormat": 0,
+        "ThreeState": 0,
+        "ToolTipRepresentation": 0,
+        "ToolTip": 0,
+        "HorizontalAlign": 0,
+        "ReadOnly": 0,
+        "HeaderPicture": 0,
+        "HeaderHorizontalAlign": 0,
+        "FooterHorizontalAlign": 0,
+        "ShowInHeader": 0,
+        "TitleTextColor": 0,
+        "GroupHorizontalAlign": 0,
+        "TitleHeight": 0,
+        "GroupVerticalAlign": 0,
+        "SkipOnInput": 0,
+        "FixingInTable": 0,
+        "ShowInFooter": 0,
+        "VerticalAlign": 0,
+        "DefaultItem": 0,
+        "Enabled": 0,
+        "TitleFont": 0,
+        "ItemHeight": 0,
+        "EqualItemsWidth": 0,
+        "CellHyperlink": 0,
+        "WarningOnEditRepresentation": 0,
+        "WarningOnEdit": 0,
+        "ItemTitleHeight": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "Title": 1,
+        "TitleLocation": 1,
+        "CheckBoxType": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 1,
+        "UserVisible": 1,
+        "Visible": 1,
+        "EditMode": 1,
+        "EditFormat": 1,
+        "ThreeState": 1,
+        "ToolTipRepresentation": 1,
+        "ToolTip": 1,
+        "HorizontalAlign": 1,
+        "ReadOnly": 1,
+        "HeaderPicture": 1,
+        "HeaderHorizontalAlign": 1,
+        "FooterHorizontalAlign": 1,
+        "ShowInHeader": 1,
+        "TitleTextColor": 1,
+        "GroupHorizontalAlign": 1,
+        "TitleHeight": 1,
+        "GroupVerticalAlign": 1,
+        "SkipOnInput": 1,
+        "FixingInTable": 1,
+        "ShowInFooter": 1,
+        "VerticalAlign": 1,
+        "DefaultItem": 1,
+        "Enabled": 1,
+        "TitleFont": 1,
+        "ItemHeight": 1,
+        "EqualItemsWidth": 1,
+        "CellHyperlink": 1,
+        "WarningOnEditRepresentation": 1,
+        "WarningOnEdit": 1,
+        "ItemTitleHeight": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "CheckBoxType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ChildItems": {
+      "children": [
+        "InputField",
+        "UsualGroup",
+        "Table",
+        "LabelField",
+        "CheckBoxField",
+        "CommandBar",
+        "Button",
+        "ButtonGroup",
+        "Pages",
+        "Page",
+        "PictureDecoration",
+        "PictureField",
+        "ColumnGroup",
+        "LabelDecoration",
+        "SpreadSheetDocumentField",
+        "RadioButtonField",
+        "Popup",
+        "SearchStringAddition",
+        "SearchControlAddition",
+        "TextDocumentField",
+        "PlannerField",
+        "CalendarField",
+        "FormattedDocumentField",
+        "HTMLDocumentField",
+        "GraphicalSchemaField",
+        "TrackBarField",
+        "ProgressBarField",
+        "PDFDocumentField",
+        "ChartField"
+      ],
+      "childMin": {
+        "InputField": 0,
+        "UsualGroup": 0,
+        "Table": 0,
+        "LabelField": 0,
+        "CheckBoxField": 0,
+        "CommandBar": 0,
+        "Button": 0,
+        "ButtonGroup": 0,
+        "Pages": 0,
+        "Page": 0,
+        "PictureDecoration": 0,
+        "PictureField": 0,
+        "ColumnGroup": 0,
+        "LabelDecoration": 0,
+        "SpreadSheetDocumentField": 0,
+        "RadioButtonField": 0,
+        "Popup": 0,
+        "SearchStringAddition": 0,
+        "SearchControlAddition": 0,
+        "TextDocumentField": 0,
+        "PlannerField": 0,
+        "CalendarField": 0,
+        "FormattedDocumentField": 0,
+        "HTMLDocumentField": 0,
+        "GraphicalSchemaField": 0,
+        "TrackBarField": 0,
+        "ProgressBarField": 0,
+        "PDFDocumentField": 0,
+        "ChartField": 0
+      },
+      "childMax": {
+        "InputField": -1,
+        "UsualGroup": -1,
+        "Table": -1,
+        "LabelField": -1,
+        "CheckBoxField": -1,
+        "CommandBar": -1,
+        "Button": -1,
+        "ButtonGroup": -1,
+        "Pages": -1,
+        "Page": -1,
+        "PictureDecoration": -1,
+        "PictureField": -1,
+        "ColumnGroup": -1,
+        "LabelDecoration": -1,
+        "SpreadSheetDocumentField": -1,
+        "RadioButtonField": -1,
+        "Popup": -1,
+        "SearchStringAddition": 1,
+        "SearchControlAddition": 1,
+        "TextDocumentField": -1,
+        "PlannerField": 1,
+        "CalendarField": 1,
+        "FormattedDocumentField": -1,
+        "HTMLDocumentField": 1,
+        "GraphicalSchemaField": 1,
+        "TrackBarField": 1,
+        "ProgressBarField": 1,
+        "PDFDocumentField": 1,
+        "ChartField": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ChildItemsWidth": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ChildrenAlign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ChoiceButton": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ChoiceButtonPicture": {
+      "children": [
+        "Ref",
+        "LoadTransparent"
+      ],
+      "childMin": {
+        "Ref": 1,
+        "LoadTransparent": 1
+      },
+      "childMax": {
+        "Ref": 1,
+        "LoadTransparent": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ChoiceButtonRepresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ChoiceFoldersAndItems": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ChoiceForm": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ChoiceHistoryOnInput": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ChoiceList": {
+      "children": [
+        "Item"
+      ],
+      "childMin": {
+        "Item": 1
+      },
+      "childMax": {
+        "Item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ChoiceListButton": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ChoiceListHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "ChoiceMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ChoiceParameterLinks": {
+      "children": [
+        "Link"
+      ],
+      "childMin": {
+        "Link": 1
+      },
+      "childMax": {
+        "Link": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ChoiceParameters": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": true,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ChooseType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ClearButton": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "CollapseItemsByImportanceVariant": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Collapsed": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "CollapsedRepresentationTitle": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Column": {
+      "children": [
+        "Title",
+        "Type",
+        "FunctionalOptions",
+        "FillCheck",
+        "View",
+        "Edit"
+      ],
+      "childMin": {
+        "Title": 0,
+        "Type": 1,
+        "FunctionalOptions": 0,
+        "FillCheck": 0,
+        "View": 0,
+        "Edit": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "Type": 1,
+        "FunctionalOptions": 1,
+        "FillCheck": 1,
+        "View": 1,
+        "Edit": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "ColumnGroup": {
+      "children": [
+        "Title",
+        "Group",
+        "ExtendedTooltip",
+        "ChildItems",
+        "ShowInHeader",
+        "UserVisible",
+        "HorizontalStretch",
+        "FixingInTable",
+        "HeaderHorizontalAlign",
+        "Height",
+        "ToolTip",
+        "Visible",
+        "ReadOnly",
+        "ShowTitle",
+        "HeaderPicture",
+        "EnableContentChange",
+        "Width",
+        "ToolTipRepresentation",
+        "VerticalStretch"
+      ],
+      "childMin": {
+        "Title": 0,
+        "Group": 0,
+        "ExtendedTooltip": 1,
+        "ChildItems": 0,
+        "ShowInHeader": 0,
+        "UserVisible": 0,
+        "HorizontalStretch": 0,
+        "FixingInTable": 0,
+        "HeaderHorizontalAlign": 0,
+        "Height": 0,
+        "ToolTip": 0,
+        "Visible": 0,
+        "ReadOnly": 0,
+        "ShowTitle": 0,
+        "HeaderPicture": 0,
+        "EnableContentChange": 0,
+        "Width": 0,
+        "ToolTipRepresentation": 0,
+        "VerticalStretch": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "Group": 1,
+        "ExtendedTooltip": 1,
+        "ChildItems": 1,
+        "ShowInHeader": 1,
+        "UserVisible": 1,
+        "HorizontalStretch": 1,
+        "FixingInTable": 1,
+        "HeaderHorizontalAlign": 1,
+        "Height": 1,
+        "ToolTip": 1,
+        "Visible": 1,
+        "ReadOnly": 1,
+        "ShowTitle": 1,
+        "HeaderPicture": 1,
+        "EnableContentChange": 1,
+        "Width": 1,
+        "ToolTipRepresentation": 1,
+        "VerticalStretch": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Columns": {
+      "children": [
+        "Column",
+        "AdditionalColumns"
+      ],
+      "childMin": {
+        "Column": 0,
+        "AdditionalColumns": 0
+      },
+      "childMax": {
+        "Column": -1,
+        "AdditionalColumns": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ColumnsCount": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Command": {
+      "children": [
+        "Title",
+        "ToolTip",
+        "Action",
+        "CurrentRowUse",
+        "ModifiesSavedData",
+        "Picture",
+        "FunctionalOptions",
+        "Representation",
+        "AssociatedTableElementId",
+        "Shortcut",
+        "Use"
+      ],
+      "childMin": {
+        "Title": 0,
+        "ToolTip": 0,
+        "Action": 0,
+        "CurrentRowUse": 0,
+        "ModifiesSavedData": 0,
+        "Picture": 0,
+        "FunctionalOptions": 0,
+        "Representation": 0,
+        "AssociatedTableElementId": 0,
+        "Shortcut": 0,
+        "Use": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "ToolTip": 1,
+        "Action": 1,
+        "CurrentRowUse": 1,
+        "ModifiesSavedData": 1,
+        "Picture": 1,
+        "FunctionalOptions": 1,
+        "Representation": 1,
+        "AssociatedTableElementId": 1,
+        "Shortcut": 1,
+        "Use": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": true,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "optional"
+        }
+      ]
+    },
+    "CommandBar": {
+      "children": [
+        "Title",
+        "CommandSource",
+        "ExtendedTooltip",
+        "Item",
+        "ChildItems",
+        "HorizontalLocation",
+        "HorizontalStretch",
+        "Visible",
+        "ToolTip",
+        "Width",
+        "GroupHorizontalAlign",
+        "EnableContentChange",
+        "VerticalStretch",
+        "Height",
+        "GroupVerticalAlign",
+        "Enabled",
+        "ToolTipRepresentation"
+      ],
+      "childMin": {
+        "Title": 0,
+        "CommandSource": 0,
+        "ExtendedTooltip": 0,
+        "Item": 0,
+        "ChildItems": 0,
+        "HorizontalLocation": 0,
+        "HorizontalStretch": 0,
+        "Visible": 0,
+        "ToolTip": 0,
+        "Width": 0,
+        "GroupHorizontalAlign": 0,
+        "EnableContentChange": 0,
+        "VerticalStretch": 0,
+        "Height": 0,
+        "GroupVerticalAlign": 0,
+        "Enabled": 0,
+        "ToolTipRepresentation": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "CommandSource": 1,
+        "ExtendedTooltip": 1,
+        "Item": -1,
+        "ChildItems": 1,
+        "HorizontalLocation": 1,
+        "HorizontalStretch": 1,
+        "Visible": 1,
+        "ToolTip": 1,
+        "Width": 1,
+        "GroupHorizontalAlign": 1,
+        "EnableContentChange": 1,
+        "VerticalStretch": 1,
+        "Height": 1,
+        "GroupVerticalAlign": 1,
+        "Enabled": 1,
+        "ToolTipRepresentation": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "optional"
+        }
+      ]
+    },
+    "CommandBarLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "CommandGroup": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "CommandInterface": {
+      "children": [
+        "NavigationPanel",
+        "CommandBar"
+      ],
+      "childMin": {
+        "NavigationPanel": 0,
+        "CommandBar": 0
+      },
+      "childMax": {
+        "NavigationPanel": 1,
+        "CommandBar": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "CommandName": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "CommandSet": {
+      "children": [
+        "ExcludedCommand"
+      ],
+      "childMin": {
+        "ExcludedCommand": 1
+      },
+      "childMax": {
+        "ExcludedCommand": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "CommandSource": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "CommandUniqueness": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Commands": {
+      "children": [
+        "Command"
+      ],
+      "childMin": {
+        "Command": 1
+      },
+      "childMax": {
+        "Command": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ConditionalAppearance": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ContextMenu": {
+      "children": [
+        "ChildItems",
+        "Autofill"
+      ],
+      "childMin": {
+        "ChildItems": 0,
+        "Autofill": 0
+      },
+      "childMax": {
+        "ChildItems": 1,
+        "Autofill": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "ControlRepresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ConversationsRepresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "CreateButton": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "CurrentRowUse": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "CustomSettingsFolder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Customizable": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "DataPath": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "DefaultButton": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "DefaultItem": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "DefaultVisible": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "DetailsData": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "DimensionItemHyperlink": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "DrawingSelectionShowMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "DropListButton": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "DropListWidth": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "DynamicDataRead": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Edit": {
+      "children": [
+        "Common",
+        "Value"
+      ],
+      "childMin": {
+        "Common": 0,
+        "Value": 0
+      },
+      "childMax": {
+        "Common": 1,
+        "Value": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": true,
+      "attributes": []
+    },
+    "EditFormat": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "EditMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "EditTextUpdate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "EnableContentChange": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "EnableDrag": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "EnableStartDrag": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Enabled": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "EnterKeyBehavior": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "EqualColumnsWidth": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "EqualItemsWidth": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Event": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Events": {
+      "children": [
+        "Event"
+      ],
+      "childMin": {
+        "Event": 1
+      },
+      "childMax": {
+        "Event": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ExcludedCommand": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ExtendedEdit": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ExtendedEditMultipleValues": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ExtendedTooltip": {
+      "children": [
+        "Title",
+        "TextColor",
+        "HorizontalAlign",
+        "Height",
+        "AutoMaxWidth",
+        "MaxWidth",
+        "Events",
+        "Width",
+        "HorizontalStretch",
+        "AutoMaxHeight",
+        "VerticalAlign",
+        "Hyperlink",
+        "MaxHeight",
+        "VerticalStretch",
+        "GroupHorizontalAlign",
+        "Font",
+        "Visible",
+        "Enabled",
+        "TitleHeight",
+        "GroupVerticalAlign"
+      ],
+      "childMin": {
+        "Title": 0,
+        "TextColor": 0,
+        "HorizontalAlign": 0,
+        "Height": 0,
+        "AutoMaxWidth": 0,
+        "MaxWidth": 0,
+        "Events": 0,
+        "Width": 0,
+        "HorizontalStretch": 0,
+        "AutoMaxHeight": 0,
+        "VerticalAlign": 0,
+        "Hyperlink": 0,
+        "MaxHeight": 0,
+        "VerticalStretch": 0,
+        "GroupHorizontalAlign": 0,
+        "Font": 0,
+        "Visible": 0,
+        "Enabled": 0,
+        "TitleHeight": 0,
+        "GroupVerticalAlign": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "TextColor": 1,
+        "HorizontalAlign": 1,
+        "Height": 1,
+        "AutoMaxWidth": 1,
+        "MaxWidth": 1,
+        "Events": 1,
+        "Width": 1,
+        "HorizontalStretch": 1,
+        "AutoMaxHeight": 1,
+        "VerticalAlign": 1,
+        "Hyperlink": 1,
+        "MaxHeight": 1,
+        "VerticalStretch": 1,
+        "GroupHorizontalAlign": 1,
+        "Font": 1,
+        "Visible": 1,
+        "Enabled": 1,
+        "TitleHeight": 1,
+        "GroupVerticalAlign": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Field": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "FileDragMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "FillCheck": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "FixingInTable": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Font": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "bold",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "faceName",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "height",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "italic",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "kind",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "ref",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "scale",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "strikeout",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "underline",
+          "type": "xs:boolean",
+          "use": "optional"
+        }
+      ]
+    },
+    "Footer": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "FooterBackColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "FooterDataPath": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "FooterFont": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "kind",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "ref",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "FooterHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "FooterHorizontalAlign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "FooterText": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Form": {
+      "children": [
+        "Title",
+        "AutoTitle",
+        "CommandBarLocation",
+        "VerticalScroll",
+        "CommandSet",
+        "AutoCommandBar",
+        "Events",
+        "ChildItems",
+        "Attributes",
+        "Commands",
+        "Parameters",
+        "CommandInterface",
+        "MobileDeviceCommandBarContent",
+        "WindowOpeningMode",
+        "UseForFoldersAndItems",
+        "Height",
+        "ConversationsRepresentation",
+        "Customizable",
+        "VerticalAlign",
+        "GroupList",
+        "AutoSaveDataInSettings",
+        "Width",
+        "ReportFormType",
+        "AutoShowState",
+        "ReportResultViewMode",
+        "ViewModeApplicationOnSetReportResult",
+        "VerticalSpacing",
+        "ShowCloseButton",
+        "Group",
+        "AutoFillCheck",
+        "SaveWindowSettings",
+        "AutoURL",
+        "ShowTitle",
+        "ScalingMode",
+        "SaveDataInSettings",
+        "EnterKeyBehavior",
+        "Enabled",
+        "ChildItemsWidth",
+        "CustomSettingsFolder",
+        "HorizontalAlign",
+        "ReportResult",
+        "DetailsData",
+        "VariantAppearance",
+        "Scale",
+        "AutoTime",
+        "UsePostingMode",
+        "RepostOnWrite",
+        "CollapseItemsByImportanceVariant",
+        "SettingsStorage"
+      ],
+      "childMin": {
+        "Title": 0,
+        "AutoTitle": 0,
+        "CommandBarLocation": 0,
+        "VerticalScroll": 0,
+        "CommandSet": 0,
+        "AutoCommandBar": 1,
+        "Events": 0,
+        "ChildItems": 0,
+        "Attributes": 1,
+        "Commands": 0,
+        "Parameters": 0,
+        "CommandInterface": 0,
+        "MobileDeviceCommandBarContent": 0,
+        "WindowOpeningMode": 0,
+        "UseForFoldersAndItems": 0,
+        "Height": 0,
+        "ConversationsRepresentation": 0,
+        "Customizable": 0,
+        "VerticalAlign": 0,
+        "GroupList": 0,
+        "AutoSaveDataInSettings": 0,
+        "Width": 0,
+        "ReportFormType": 0,
+        "AutoShowState": 0,
+        "ReportResultViewMode": 0,
+        "ViewModeApplicationOnSetReportResult": 0,
+        "VerticalSpacing": 0,
+        "ShowCloseButton": 0,
+        "Group": 0,
+        "AutoFillCheck": 0,
+        "SaveWindowSettings": 0,
+        "AutoURL": 0,
+        "ShowTitle": 0,
+        "ScalingMode": 0,
+        "SaveDataInSettings": 0,
+        "EnterKeyBehavior": 0,
+        "Enabled": 0,
+        "ChildItemsWidth": 0,
+        "CustomSettingsFolder": 0,
+        "HorizontalAlign": 0,
+        "ReportResult": 0,
+        "DetailsData": 0,
+        "VariantAppearance": 0,
+        "Scale": 0,
+        "AutoTime": 0,
+        "UsePostingMode": 0,
+        "RepostOnWrite": 0,
+        "CollapseItemsByImportanceVariant": 0,
+        "SettingsStorage": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "AutoTitle": 1,
+        "CommandBarLocation": 1,
+        "VerticalScroll": 1,
+        "CommandSet": 1,
+        "AutoCommandBar": 1,
+        "Events": 1,
+        "ChildItems": 1,
+        "Attributes": 1,
+        "Commands": 1,
+        "Parameters": 1,
+        "CommandInterface": 1,
+        "MobileDeviceCommandBarContent": 1,
+        "WindowOpeningMode": 1,
+        "UseForFoldersAndItems": 1,
+        "Height": 1,
+        "ConversationsRepresentation": 1,
+        "Customizable": 1,
+        "VerticalAlign": 1,
+        "GroupList": 1,
+        "AutoSaveDataInSettings": 1,
+        "Width": 1,
+        "ReportFormType": 1,
+        "AutoShowState": 1,
+        "ReportResultViewMode": 1,
+        "ViewModeApplicationOnSetReportResult": 1,
+        "VerticalSpacing": 1,
+        "ShowCloseButton": 1,
+        "Group": 1,
+        "AutoFillCheck": 1,
+        "SaveWindowSettings": 1,
+        "AutoURL": 1,
+        "ShowTitle": 1,
+        "ScalingMode": 1,
+        "SaveDataInSettings": 1,
+        "EnterKeyBehavior": 1,
+        "Enabled": 1,
+        "ChildItemsWidth": 1,
+        "CustomSettingsFolder": 1,
+        "HorizontalAlign": 1,
+        "ReportResult": 1,
+        "DetailsData": 1,
+        "VariantAppearance": 1,
+        "Scale": 1,
+        "AutoTime": 1,
+        "UsePostingMode": 1,
+        "RepostOnWrite": 1,
+        "CollapseItemsByImportanceVariant": 1,
+        "SettingsStorage": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "version",
+          "type": "xs:decimal",
+          "use": "required"
+        }
+      ]
+    },
+    "Format": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "FormattedDocumentField": {
+      "children": [
+        "DataPath",
+        "TitleLocation",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "ReadOnly",
+        "Height",
+        "AutoMaxHeight",
+        "CommandSet",
+        "Width",
+        "Events",
+        "SkipOnInput",
+        "Title",
+        "BorderColor",
+        "DefaultItem",
+        "ToolTip",
+        "ToolTipRepresentation",
+        "AutoMaxWidth"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "TitleLocation": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "ReadOnly": 0,
+        "Height": 0,
+        "AutoMaxHeight": 0,
+        "CommandSet": 0,
+        "Width": 0,
+        "Events": 0,
+        "SkipOnInput": 0,
+        "Title": 0,
+        "BorderColor": 0,
+        "DefaultItem": 0,
+        "ToolTip": 0,
+        "ToolTipRepresentation": 0,
+        "AutoMaxWidth": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "ReadOnly": 1,
+        "Height": 1,
+        "AutoMaxHeight": 1,
+        "CommandSet": 1,
+        "Width": 1,
+        "Events": 1,
+        "SkipOnInput": 1,
+        "Title": 1,
+        "BorderColor": 1,
+        "DefaultItem": 1,
+        "ToolTip": 1,
+        "ToolTipRepresentation": 1,
+        "AutoMaxWidth": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "FunctionalOptions": {
+      "children": [
+        "Item"
+      ],
+      "childMin": {
+        "Item": 1
+      },
+      "childMax": {
+        "Item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "GetInvisibleFieldPresentations": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "GraphicalSchemaField": {
+      "children": [
+        "DataPath",
+        "TitleLocation",
+        "CommandSet",
+        "Width",
+        "AutoMaxWidth",
+        "Height",
+        "Edit",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Events",
+        "ReadOnly",
+        "Title"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "CommandSet": 0,
+        "Width": 0,
+        "AutoMaxWidth": 0,
+        "Height": 0,
+        "Edit": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 0,
+        "ReadOnly": 0,
+        "Title": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "CommandSet": 1,
+        "Width": 1,
+        "AutoMaxWidth": 1,
+        "Height": 1,
+        "Edit": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 1,
+        "ReadOnly": 1,
+        "Title": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Group": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "GroupHorizontalAlign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "GroupList": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "GroupVerticalAlign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "HTMLDocumentField": {
+      "children": [
+        "DataPath",
+        "TitleLocation",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Events",
+        "Height",
+        "Title",
+        "TitleTextColor",
+        "TitleFont",
+        "AutoMaxWidth",
+        "AutoMaxHeight",
+        "Width",
+        "BorderColor",
+        "ReadOnly",
+        "SkipOnInput",
+        "Output",
+        "ToolTipRepresentation",
+        "WarningOnEditRepresentation",
+        "MaxWidth",
+        "HorizontalStretch",
+        "VerticalStretch",
+        "MaxHeight",
+        "Enabled"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 0,
+        "Height": 0,
+        "Title": 0,
+        "TitleTextColor": 0,
+        "TitleFont": 0,
+        "AutoMaxWidth": 0,
+        "AutoMaxHeight": 0,
+        "Width": 0,
+        "BorderColor": 0,
+        "ReadOnly": 0,
+        "SkipOnInput": 0,
+        "Output": 0,
+        "ToolTipRepresentation": 0,
+        "WarningOnEditRepresentation": 0,
+        "MaxWidth": 0,
+        "HorizontalStretch": 0,
+        "VerticalStretch": 0,
+        "MaxHeight": 0,
+        "Enabled": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 1,
+        "Height": 1,
+        "Title": 1,
+        "TitleTextColor": 1,
+        "TitleFont": 1,
+        "AutoMaxWidth": 1,
+        "AutoMaxHeight": 1,
+        "Width": 1,
+        "BorderColor": 1,
+        "ReadOnly": 1,
+        "SkipOnInput": 1,
+        "Output": 1,
+        "ToolTipRepresentation": 1,
+        "WarningOnEditRepresentation": 1,
+        "MaxWidth": 1,
+        "HorizontalStretch": 1,
+        "VerticalStretch": 1,
+        "MaxHeight": 1,
+        "Enabled": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Header": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "HeaderDataPath": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "HeaderFormat": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "HeaderHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "HeaderHorizontalAlign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "HeaderPicture": {
+      "children": [
+        "Ref",
+        "LoadTransparent",
+        "TransparentPixel",
+        "Abs"
+      ],
+      "childMin": {
+        "Ref": 0,
+        "LoadTransparent": 1,
+        "TransparentPixel": 0,
+        "Abs": 0
+      },
+      "childMax": {
+        "Ref": 1,
+        "LoadTransparent": 1,
+        "TransparentPixel": 1,
+        "Abs": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Height": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "HeightControlVariant": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "HeightInMonths": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "HeightInTableRows": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Hiperlink": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "HorizontalAlign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "HorizontalLines": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "HorizontalLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "HorizontalScrollBar": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "HorizontalSpacing": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "HorizontalStretch": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Hyperlink": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ImageScale": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "IncompleteChoiceMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Index": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "InitialListView": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "InitialTreeView": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "InputField": {
+      "children": [
+        "DataPath",
+        "EditMode",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "ReadOnly",
+        "Title",
+        "ToolTip",
+        "FooterHorizontalAlign",
+        "DropListButton",
+        "ChoiceButton",
+        "ChoiceButtonRepresentation",
+        "HorizontalStretch",
+        "Width",
+        "Wrap",
+        "EditFormat",
+        "Events",
+        "TitleLocation",
+        "AutoMaxWidth",
+        "MultiLine",
+        "ExtendedEdit",
+        "BorderColor",
+        "DefaultItem",
+        "Height",
+        "UserVisible",
+        "OpenButton",
+        "AutoMarkIncomplete",
+        "ClearButton",
+        "Visible",
+        "ListChoiceMode",
+        "QuickChoice",
+        "ChoiceParameterLinks",
+        "ChoiceParameters",
+        "AutoMaxHeight",
+        "MaxHeight",
+        "VerticalStretch",
+        "ExtendedEditMultipleValues",
+        "MaxWidth",
+        "ToolTipRepresentation",
+        "ChoiceList",
+        "ChooseType",
+        "InputHint",
+        "Mask",
+        "Font",
+        "GroupHorizontalAlign",
+        "ChoiceHistoryOnInput",
+        "SpinButton",
+        "TextEdit",
+        "Shortcut",
+        "Format",
+        "CellHyperlink",
+        "TextColor",
+        "TypeDomainEnabled",
+        "AvailableTypes",
+        "MinValue",
+        "MaxValue",
+        "HorizontalAlign",
+        "ChoiceListButton",
+        "CreateButton",
+        "AutoCellHeight",
+        "ShowInHeader",
+        "DropListWidth",
+        "SkipOnInput",
+        "TitleHeight",
+        "BackColor",
+        "WarningOnEditRepresentation",
+        "TitleTextColor",
+        "WarningOnEdit",
+        "FixingInTable",
+        "ShowInFooter",
+        "GroupVerticalAlign",
+        "AutoChoiceIncomplete",
+        "ChoiceButtonPicture",
+        "HeaderHorizontalAlign",
+        "EditTextUpdate",
+        "IncompleteChoiceMode",
+        "HeightControlVariant",
+        "FooterDataPath",
+        "FooterText",
+        "Enabled",
+        "ChoiceFoldersAndItems",
+        "TypeLink",
+        "ChoiceListHeight",
+        "PasswordMode",
+        "ChoiceForm",
+        "VerticalAlign",
+        "HeaderPicture",
+        "AutoCorrectionOnTextInput",
+        "FooterFont",
+        "SpecialTextInputMode",
+        "TitleFont",
+        "MarkNegatives",
+        "TitleBackColor",
+        "FooterBackColor",
+        "AutoShowOpenButtonMode",
+        "SpellCheckingOnTextInput"
+      ],
+      "childMin": {
+        "DataPath": 0,
+        "EditMode": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "ReadOnly": 0,
+        "Title": 0,
+        "ToolTip": 0,
+        "FooterHorizontalAlign": 0,
+        "DropListButton": 0,
+        "ChoiceButton": 0,
+        "ChoiceButtonRepresentation": 0,
+        "HorizontalStretch": 0,
+        "Width": 0,
+        "Wrap": 0,
+        "EditFormat": 0,
+        "Events": 0,
+        "TitleLocation": 0,
+        "AutoMaxWidth": 0,
+        "MultiLine": 0,
+        "ExtendedEdit": 0,
+        "BorderColor": 0,
+        "DefaultItem": 0,
+        "Height": 0,
+        "UserVisible": 0,
+        "OpenButton": 0,
+        "AutoMarkIncomplete": 0,
+        "ClearButton": 0,
+        "Visible": 0,
+        "ListChoiceMode": 0,
+        "QuickChoice": 0,
+        "ChoiceParameterLinks": 0,
+        "ChoiceParameters": 0,
+        "AutoMaxHeight": 0,
+        "MaxHeight": 0,
+        "VerticalStretch": 0,
+        "ExtendedEditMultipleValues": 0,
+        "MaxWidth": 0,
+        "ToolTipRepresentation": 0,
+        "ChoiceList": 0,
+        "ChooseType": 0,
+        "InputHint": 0,
+        "Mask": 0,
+        "Font": 0,
+        "GroupHorizontalAlign": 0,
+        "ChoiceHistoryOnInput": 0,
+        "SpinButton": 0,
+        "TextEdit": 0,
+        "Shortcut": 0,
+        "Format": 0,
+        "CellHyperlink": 0,
+        "TextColor": 0,
+        "TypeDomainEnabled": 0,
+        "AvailableTypes": 0,
+        "MinValue": 0,
+        "MaxValue": 0,
+        "HorizontalAlign": 0,
+        "ChoiceListButton": 0,
+        "CreateButton": 0,
+        "AutoCellHeight": 0,
+        "ShowInHeader": 0,
+        "DropListWidth": 0,
+        "SkipOnInput": 0,
+        "TitleHeight": 0,
+        "BackColor": 0,
+        "WarningOnEditRepresentation": 0,
+        "TitleTextColor": 0,
+        "WarningOnEdit": 0,
+        "FixingInTable": 0,
+        "ShowInFooter": 0,
+        "GroupVerticalAlign": 0,
+        "AutoChoiceIncomplete": 0,
+        "ChoiceButtonPicture": 0,
+        "HeaderHorizontalAlign": 0,
+        "EditTextUpdate": 0,
+        "IncompleteChoiceMode": 0,
+        "HeightControlVariant": 0,
+        "FooterDataPath": 0,
+        "FooterText": 0,
+        "Enabled": 0,
+        "ChoiceFoldersAndItems": 0,
+        "TypeLink": 0,
+        "ChoiceListHeight": 0,
+        "PasswordMode": 0,
+        "ChoiceForm": 0,
+        "VerticalAlign": 0,
+        "HeaderPicture": 0,
+        "AutoCorrectionOnTextInput": 0,
+        "FooterFont": 0,
+        "SpecialTextInputMode": 0,
+        "TitleFont": 0,
+        "MarkNegatives": 0,
+        "TitleBackColor": 0,
+        "FooterBackColor": 0,
+        "AutoShowOpenButtonMode": 0,
+        "SpellCheckingOnTextInput": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "EditMode": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "ReadOnly": 1,
+        "Title": 1,
+        "ToolTip": 1,
+        "FooterHorizontalAlign": 1,
+        "DropListButton": 1,
+        "ChoiceButton": 1,
+        "ChoiceButtonRepresentation": 1,
+        "HorizontalStretch": 1,
+        "Width": 1,
+        "Wrap": 1,
+        "EditFormat": 1,
+        "Events": 1,
+        "TitleLocation": 1,
+        "AutoMaxWidth": 1,
+        "MultiLine": 1,
+        "ExtendedEdit": 1,
+        "BorderColor": 1,
+        "DefaultItem": 1,
+        "Height": 1,
+        "UserVisible": 1,
+        "OpenButton": 1,
+        "AutoMarkIncomplete": 1,
+        "ClearButton": 1,
+        "Visible": 1,
+        "ListChoiceMode": 1,
+        "QuickChoice": 1,
+        "ChoiceParameterLinks": 1,
+        "ChoiceParameters": 1,
+        "AutoMaxHeight": 1,
+        "MaxHeight": 1,
+        "VerticalStretch": 1,
+        "ExtendedEditMultipleValues": 1,
+        "MaxWidth": 1,
+        "ToolTipRepresentation": 1,
+        "ChoiceList": 1,
+        "ChooseType": 1,
+        "InputHint": 1,
+        "Mask": 1,
+        "Font": 1,
+        "GroupHorizontalAlign": 1,
+        "ChoiceHistoryOnInput": 1,
+        "SpinButton": 1,
+        "TextEdit": 1,
+        "Shortcut": 1,
+        "Format": 1,
+        "CellHyperlink": 1,
+        "TextColor": 1,
+        "TypeDomainEnabled": 1,
+        "AvailableTypes": 1,
+        "MinValue": 1,
+        "MaxValue": 1,
+        "HorizontalAlign": 1,
+        "ChoiceListButton": 1,
+        "CreateButton": 1,
+        "AutoCellHeight": 1,
+        "ShowInHeader": 1,
+        "DropListWidth": 1,
+        "SkipOnInput": 1,
+        "TitleHeight": 1,
+        "BackColor": 1,
+        "WarningOnEditRepresentation": 1,
+        "TitleTextColor": 1,
+        "WarningOnEdit": 1,
+        "FixingInTable": 1,
+        "ShowInFooter": 1,
+        "GroupVerticalAlign": 1,
+        "AutoChoiceIncomplete": 1,
+        "ChoiceButtonPicture": 1,
+        "HeaderHorizontalAlign": 1,
+        "EditTextUpdate": 1,
+        "IncompleteChoiceMode": 1,
+        "HeightControlVariant": 1,
+        "FooterDataPath": 1,
+        "FooterText": 1,
+        "Enabled": 1,
+        "ChoiceFoldersAndItems": 1,
+        "TypeLink": 1,
+        "ChoiceListHeight": 1,
+        "PasswordMode": 1,
+        "ChoiceForm": 1,
+        "VerticalAlign": 1,
+        "HeaderPicture": 1,
+        "AutoCorrectionOnTextInput": 1,
+        "FooterFont": 1,
+        "SpecialTextInputMode": 1,
+        "TitleFont": 1,
+        "MarkNegatives": 1,
+        "TitleBackColor": 1,
+        "FooterBackColor": 1,
+        "AutoShowOpenButtonMode": 1,
+        "SpellCheckingOnTextInput": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "InputHint": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Item": {
+      "children": [
+        "Command",
+        "Type",
+        "DefaultVisible",
+        "Visible",
+        "CommandGroup",
+        "Attribute",
+        "Index"
+      ],
+      "childMin": {
+        "Command": 0,
+        "Type": 0,
+        "DefaultVisible": 0,
+        "Visible": 0,
+        "CommandGroup": 0,
+        "Attribute": 0,
+        "Index": 0
+      },
+      "childMax": {
+        "Command": 1,
+        "Type": 1,
+        "DefaultVisible": 1,
+        "Visible": 1,
+        "CommandGroup": 1,
+        "Attribute": 1,
+        "Index": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": true,
+      "attributes": []
+    },
+    "ItemHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ItemTitleHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "ItemWidth": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "KeyField": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "KeyParameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "KeyType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "LabelDecoration": {
+      "children": [
+        "AutoMaxWidth",
+        "Title",
+        "Hyperlink",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Events",
+        "HorizontalStretch",
+        "Visible",
+        "TextColor",
+        "ToolTip",
+        "GroupVerticalAlign",
+        "VerticalAlign",
+        "AutoMaxHeight",
+        "MaxHeight",
+        "ToolTipRepresentation",
+        "Width",
+        "Height",
+        "VerticalStretch",
+        "MaxWidth",
+        "Font",
+        "SkipOnInput",
+        "BackColor",
+        "Border",
+        "HorizontalAlign",
+        "GroupHorizontalAlign",
+        "Enabled",
+        "TitleHeight",
+        "UserVisible",
+        "BorderColor"
+      ],
+      "childMin": {
+        "AutoMaxWidth": 0,
+        "Title": 0,
+        "Hyperlink": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 0,
+        "HorizontalStretch": 0,
+        "Visible": 0,
+        "TextColor": 0,
+        "ToolTip": 0,
+        "GroupVerticalAlign": 0,
+        "VerticalAlign": 0,
+        "AutoMaxHeight": 0,
+        "MaxHeight": 0,
+        "ToolTipRepresentation": 0,
+        "Width": 0,
+        "Height": 0,
+        "VerticalStretch": 0,
+        "MaxWidth": 0,
+        "Font": 0,
+        "SkipOnInput": 0,
+        "BackColor": 0,
+        "Border": 0,
+        "HorizontalAlign": 0,
+        "GroupHorizontalAlign": 0,
+        "Enabled": 0,
+        "TitleHeight": 0,
+        "UserVisible": 0,
+        "BorderColor": 0
+      },
+      "childMax": {
+        "AutoMaxWidth": 1,
+        "Title": 1,
+        "Hyperlink": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 1,
+        "HorizontalStretch": 1,
+        "Visible": 1,
+        "TextColor": 1,
+        "ToolTip": 1,
+        "GroupVerticalAlign": 1,
+        "VerticalAlign": 1,
+        "AutoMaxHeight": 1,
+        "MaxHeight": 1,
+        "ToolTipRepresentation": 1,
+        "Width": 1,
+        "Height": 1,
+        "VerticalStretch": 1,
+        "MaxWidth": 1,
+        "Font": 1,
+        "SkipOnInput": 1,
+        "BackColor": 1,
+        "Border": 1,
+        "HorizontalAlign": 1,
+        "GroupHorizontalAlign": 1,
+        "Enabled": 1,
+        "TitleHeight": 1,
+        "UserVisible": 1,
+        "BorderColor": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "LabelField": {
+      "children": [
+        "DataPath",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "DefaultItem",
+        "Format",
+        "Title",
+        "Width",
+        "Hiperlink",
+        "Events",
+        "TitleLocation",
+        "AutoMaxWidth",
+        "AutoMaxHeight",
+        "VerticalStretch",
+        "HorizontalStretch",
+        "ShowInHeader",
+        "UserVisible",
+        "AutoCellHeight",
+        "Height",
+        "ReadOnly",
+        "EditMode",
+        "Visible",
+        "SkipOnInput",
+        "ToolTip",
+        "TextColor",
+        "HorizontalAlign",
+        "CellHyperlink",
+        "HeaderHorizontalAlign",
+        "ToolTipRepresentation",
+        "Font",
+        "Enabled",
+        "VerticalAlign",
+        "TitleHeight",
+        "TitleTextColor",
+        "TitleFont",
+        "MaxWidth",
+        "ShowInFooter",
+        "FixingInTable",
+        "GroupVerticalAlign",
+        "GroupHorizontalAlign",
+        "BackColor",
+        "MaxHeight",
+        "FooterDataPath",
+        "FooterHorizontalAlign",
+        "FooterText",
+        "Border",
+        "HeaderPicture",
+        "PasswordMode"
+      ],
+      "childMin": {
+        "DataPath": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "DefaultItem": 0,
+        "Format": 0,
+        "Title": 0,
+        "Width": 0,
+        "Hiperlink": 0,
+        "Events": 0,
+        "TitleLocation": 0,
+        "AutoMaxWidth": 0,
+        "AutoMaxHeight": 0,
+        "VerticalStretch": 0,
+        "HorizontalStretch": 0,
+        "ShowInHeader": 0,
+        "UserVisible": 0,
+        "AutoCellHeight": 0,
+        "Height": 0,
+        "ReadOnly": 0,
+        "EditMode": 0,
+        "Visible": 0,
+        "SkipOnInput": 0,
+        "ToolTip": 0,
+        "TextColor": 0,
+        "HorizontalAlign": 0,
+        "CellHyperlink": 0,
+        "HeaderHorizontalAlign": 0,
+        "ToolTipRepresentation": 0,
+        "Font": 0,
+        "Enabled": 0,
+        "VerticalAlign": 0,
+        "TitleHeight": 0,
+        "TitleTextColor": 0,
+        "TitleFont": 0,
+        "MaxWidth": 0,
+        "ShowInFooter": 0,
+        "FixingInTable": 0,
+        "GroupVerticalAlign": 0,
+        "GroupHorizontalAlign": 0,
+        "BackColor": 0,
+        "MaxHeight": 0,
+        "FooterDataPath": 0,
+        "FooterHorizontalAlign": 0,
+        "FooterText": 0,
+        "Border": 0,
+        "HeaderPicture": 0,
+        "PasswordMode": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "DefaultItem": 1,
+        "Format": 1,
+        "Title": 1,
+        "Width": 1,
+        "Hiperlink": 1,
+        "Events": 1,
+        "TitleLocation": 1,
+        "AutoMaxWidth": 1,
+        "AutoMaxHeight": 1,
+        "VerticalStretch": 1,
+        "HorizontalStretch": 1,
+        "ShowInHeader": 1,
+        "UserVisible": 1,
+        "AutoCellHeight": 1,
+        "Height": 1,
+        "ReadOnly": 1,
+        "EditMode": 1,
+        "Visible": 1,
+        "SkipOnInput": 1,
+        "ToolTip": 1,
+        "TextColor": 1,
+        "HorizontalAlign": 1,
+        "CellHyperlink": 1,
+        "HeaderHorizontalAlign": 1,
+        "ToolTipRepresentation": 1,
+        "Font": 1,
+        "Enabled": 1,
+        "VerticalAlign": 1,
+        "TitleHeight": 1,
+        "TitleTextColor": 1,
+        "TitleFont": 1,
+        "MaxWidth": 1,
+        "ShowInFooter": 1,
+        "FixingInTable": 1,
+        "GroupVerticalAlign": 1,
+        "GroupHorizontalAlign": 1,
+        "BackColor": 1,
+        "MaxHeight": 1,
+        "FooterDataPath": 1,
+        "FooterHorizontalAlign": 1,
+        "FooterText": 1,
+        "Border": 1,
+        "HeaderPicture": 1,
+        "PasswordMode": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "LargeStep": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "ListChoiceMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ListSettings": {
+      "children": [
+        "filter",
+        "order",
+        "conditionalAppearance",
+        "itemsViewMode",
+        "itemsUserSettingID",
+        "item",
+        "dataParameters"
+      ],
+      "childMin": {
+        "filter": 0,
+        "order": 0,
+        "conditionalAppearance": 0,
+        "itemsViewMode": 0,
+        "itemsUserSettingID": 0,
+        "item": 0,
+        "dataParameters": 0
+      },
+      "childMax": {
+        "filter": 1,
+        "order": 1,
+        "conditionalAppearance": 1,
+        "itemsViewMode": 1,
+        "itemsUserSettingID": 1,
+        "item": 1,
+        "dataParameters": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "LocationInCommandBar": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "MainAttribute": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "MainTable": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ManualQuery": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "MarkNegatives": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "MarkingAppearance": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "MarkingStep": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Mask": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "MaxHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "MaxRowsCount": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "MaxValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "MaxWidth": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "MinValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "MobileDeviceCommandBarContent": {
+      "children": [
+        "Item"
+      ],
+      "childMin": {
+        "Item": 1
+      },
+      "childMax": {
+        "Item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ModifiesSavedData": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "MultiLine": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "MultipleChoice": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "MultipleValueDataPath": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "MultipleValuePresentDataPath": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "NavigationPanel": {
+      "children": [
+        "Item"
+      ],
+      "childMin": {
+        "Item": 1
+      },
+      "childMax": {
+        "Item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "NonselectedPictureText": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "OpenButton": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Output": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "PDFDocumentField": {
+      "children": [
+        "DataPath",
+        "ReadOnly",
+        "TitleLocation",
+        "ViewStatusLocation",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "ViewStatusAddition"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "ReadOnly": 0,
+        "TitleLocation": 1,
+        "ViewStatusLocation": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "ViewStatusAddition": 1
+      },
+      "childMax": {
+        "DataPath": 1,
+        "ReadOnly": 1,
+        "TitleLocation": 1,
+        "ViewStatusLocation": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "ViewStatusAddition": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Page": {
+      "children": [
+        "Title",
+        "ExtendedTooltip",
+        "ChildItems",
+        "Group",
+        "ToolTip",
+        "ShowTitle",
+        "EnableContentChange",
+        "Picture",
+        "TitleDataPath",
+        "Height",
+        "ToolTipRepresentation",
+        "HorizontalStretch",
+        "ScrollOnCompress",
+        "VerticalStretch",
+        "Visible",
+        "VerticalAlign",
+        "HorizontalAlign",
+        "VerticalSpacing",
+        "HorizontalSpacing",
+        "ReadOnly",
+        "ChildItemsWidth",
+        "BackColor",
+        "TitleTextColor",
+        "TitleFont",
+        "Enabled",
+        "Width",
+        "UserVisible",
+        "Shortcut",
+        "GroupVerticalAlign"
+      ],
+      "childMin": {
+        "Title": 0,
+        "ExtendedTooltip": 1,
+        "ChildItems": 0,
+        "Group": 0,
+        "ToolTip": 0,
+        "ShowTitle": 0,
+        "EnableContentChange": 0,
+        "Picture": 0,
+        "TitleDataPath": 0,
+        "Height": 0,
+        "ToolTipRepresentation": 0,
+        "HorizontalStretch": 0,
+        "ScrollOnCompress": 0,
+        "VerticalStretch": 0,
+        "Visible": 0,
+        "VerticalAlign": 0,
+        "HorizontalAlign": 0,
+        "VerticalSpacing": 0,
+        "HorizontalSpacing": 0,
+        "ReadOnly": 0,
+        "ChildItemsWidth": 0,
+        "BackColor": 0,
+        "TitleTextColor": 0,
+        "TitleFont": 0,
+        "Enabled": 0,
+        "Width": 0,
+        "UserVisible": 0,
+        "Shortcut": 0,
+        "GroupVerticalAlign": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "ExtendedTooltip": 1,
+        "ChildItems": 1,
+        "Group": 1,
+        "ToolTip": 1,
+        "ShowTitle": 1,
+        "EnableContentChange": 1,
+        "Picture": 1,
+        "TitleDataPath": 1,
+        "Height": 1,
+        "ToolTipRepresentation": 1,
+        "HorizontalStretch": 1,
+        "ScrollOnCompress": 1,
+        "VerticalStretch": 1,
+        "Visible": 1,
+        "VerticalAlign": 1,
+        "HorizontalAlign": 1,
+        "VerticalSpacing": 1,
+        "HorizontalSpacing": 1,
+        "ReadOnly": 1,
+        "ChildItemsWidth": 1,
+        "BackColor": 1,
+        "TitleTextColor": 1,
+        "TitleFont": 1,
+        "Enabled": 1,
+        "Width": 1,
+        "UserVisible": 1,
+        "Shortcut": 1,
+        "GroupVerticalAlign": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Pages": {
+      "children": [
+        "Title",
+        "PagesRepresentation",
+        "ExtendedTooltip",
+        "ChildItems",
+        "Events",
+        "ToolTip",
+        "EnableContentChange",
+        "HorizontalStretch",
+        "VerticalStretch",
+        "UserVisible",
+        "ToolTipRepresentation",
+        "Height",
+        "ReadOnly",
+        "Width",
+        "GroupVerticalAlign",
+        "Visible",
+        "CurrentRowUse",
+        "GroupHorizontalAlign",
+        "TitleFont",
+        "Enabled",
+        "TitleTextColor"
+      ],
+      "childMin": {
+        "Title": 0,
+        "PagesRepresentation": 0,
+        "ExtendedTooltip": 1,
+        "ChildItems": 0,
+        "Events": 0,
+        "ToolTip": 0,
+        "EnableContentChange": 0,
+        "HorizontalStretch": 0,
+        "VerticalStretch": 0,
+        "UserVisible": 0,
+        "ToolTipRepresentation": 0,
+        "Height": 0,
+        "ReadOnly": 0,
+        "Width": 0,
+        "GroupVerticalAlign": 0,
+        "Visible": 0,
+        "CurrentRowUse": 0,
+        "GroupHorizontalAlign": 0,
+        "TitleFont": 0,
+        "Enabled": 0,
+        "TitleTextColor": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "PagesRepresentation": 1,
+        "ExtendedTooltip": 1,
+        "ChildItems": 1,
+        "Events": 1,
+        "ToolTip": 1,
+        "EnableContentChange": 1,
+        "HorizontalStretch": 1,
+        "VerticalStretch": 1,
+        "UserVisible": 1,
+        "ToolTipRepresentation": 1,
+        "Height": 1,
+        "ReadOnly": 1,
+        "Width": 1,
+        "GroupVerticalAlign": 1,
+        "Visible": 1,
+        "CurrentRowUse": 1,
+        "GroupHorizontalAlign": 1,
+        "TitleFont": 1,
+        "Enabled": 1,
+        "TitleTextColor": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "PagesRepresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Parameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "Parameters": {
+      "children": [
+        "Parameter"
+      ],
+      "childMin": {
+        "Parameter": 1
+      },
+      "childMax": {
+        "Parameter": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "PasswordMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Period": {
+      "children": [
+        "variant",
+        "startDate",
+        "endDate"
+      ],
+      "childMin": {
+        "variant": 1,
+        "startDate": 1,
+        "endDate": 1
+      },
+      "childMax": {
+        "variant": 1,
+        "startDate": 1,
+        "endDate": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "PeriodField": {
+      "children": [
+        "DataPath",
+        "TitleLocation",
+        "ContextMenu",
+        "ExtendedTooltip"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1
+      },
+      "childMax": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:boolean",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Picture": {
+      "children": [
+        "Ref",
+        "LoadTransparent",
+        "Abs",
+        "TransparentPixel"
+      ],
+      "childMin": {
+        "Ref": 0,
+        "LoadTransparent": 1,
+        "Abs": 0,
+        "TransparentPixel": 0
+      },
+      "childMax": {
+        "Ref": 1,
+        "LoadTransparent": 1,
+        "Abs": 1,
+        "TransparentPixel": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "PictureDecoration": {
+      "children": [
+        "Width",
+        "AutoMaxWidth",
+        "Height",
+        "Picture",
+        "FileDragMode",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "SkipOnInput",
+        "Title",
+        "GroupVerticalAlign",
+        "Hyperlink",
+        "Events",
+        "Visible",
+        "ToolTip",
+        "VerticalStretch",
+        "ToolTipRepresentation",
+        "HorizontalStretch",
+        "PictureSize",
+        "GroupHorizontalAlign",
+        "MaxWidth",
+        "ImageScale",
+        "AutoMaxHeight",
+        "NonselectedPictureText",
+        "Zoomable",
+        "BorderColor",
+        "Border",
+        "MaxHeight",
+        "TextColor",
+        "Font",
+        "Shortcut"
+      ],
+      "childMin": {
+        "Width": 0,
+        "AutoMaxWidth": 0,
+        "Height": 0,
+        "Picture": 0,
+        "FileDragMode": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "SkipOnInput": 0,
+        "Title": 0,
+        "GroupVerticalAlign": 0,
+        "Hyperlink": 0,
+        "Events": 0,
+        "Visible": 0,
+        "ToolTip": 0,
+        "VerticalStretch": 0,
+        "ToolTipRepresentation": 0,
+        "HorizontalStretch": 0,
+        "PictureSize": 0,
+        "GroupHorizontalAlign": 0,
+        "MaxWidth": 0,
+        "ImageScale": 0,
+        "AutoMaxHeight": 0,
+        "NonselectedPictureText": 0,
+        "Zoomable": 0,
+        "BorderColor": 0,
+        "Border": 0,
+        "MaxHeight": 0,
+        "TextColor": 0,
+        "Font": 0,
+        "Shortcut": 0
+      },
+      "childMax": {
+        "Width": 1,
+        "AutoMaxWidth": 1,
+        "Height": 1,
+        "Picture": 1,
+        "FileDragMode": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "SkipOnInput": 1,
+        "Title": 1,
+        "GroupVerticalAlign": 1,
+        "Hyperlink": 1,
+        "Events": 1,
+        "Visible": 1,
+        "ToolTip": 1,
+        "VerticalStretch": 1,
+        "ToolTipRepresentation": 1,
+        "HorizontalStretch": 1,
+        "PictureSize": 1,
+        "GroupHorizontalAlign": 1,
+        "MaxWidth": 1,
+        "ImageScale": 1,
+        "AutoMaxHeight": 1,
+        "NonselectedPictureText": 1,
+        "Zoomable": 1,
+        "BorderColor": 1,
+        "Border": 1,
+        "MaxHeight": 1,
+        "TextColor": 1,
+        "Font": 1,
+        "Shortcut": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "PictureField": {
+      "children": [
+        "DataPath",
+        "Title",
+        "TitleLocation",
+        "HeaderPicture",
+        "Width",
+        "ValuesPicture",
+        "FileDragMode",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "ToolTip",
+        "HorizontalStretch",
+        "Visible",
+        "VerticalStretch",
+        "Border",
+        "Height",
+        "PictureSize",
+        "NonselectedPictureText",
+        "EditMode",
+        "UserVisible",
+        "ReadOnly",
+        "AutoMaxWidth",
+        "MaxWidth",
+        "HorizontalAlign",
+        "ShowInHeader",
+        "ShowInFooter",
+        "AutoMaxHeight",
+        "Hyperlink",
+        "TextColor",
+        "Font",
+        "Events",
+        "FooterHorizontalAlign",
+        "CellHyperlink",
+        "Zoomable",
+        "FixingInTable",
+        "GroupVerticalAlign",
+        "BorderColor",
+        "MaxHeight",
+        "SkipOnInput",
+        "ToolTipRepresentation",
+        "EnableDrag",
+        "GroupHorizontalAlign",
+        "FooterText",
+        "HeaderHorizontalAlign",
+        "Enabled",
+        "AutoCellHeight",
+        "WarningOnEditRepresentation",
+        "TitleHeight",
+        "Shortcut"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "Title": 0,
+        "TitleLocation": 0,
+        "HeaderPicture": 0,
+        "Width": 0,
+        "ValuesPicture": 0,
+        "FileDragMode": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "ToolTip": 0,
+        "HorizontalStretch": 0,
+        "Visible": 0,
+        "VerticalStretch": 0,
+        "Border": 0,
+        "Height": 0,
+        "PictureSize": 0,
+        "NonselectedPictureText": 0,
+        "EditMode": 0,
+        "UserVisible": 0,
+        "ReadOnly": 0,
+        "AutoMaxWidth": 0,
+        "MaxWidth": 0,
+        "HorizontalAlign": 0,
+        "ShowInHeader": 0,
+        "ShowInFooter": 0,
+        "AutoMaxHeight": 0,
+        "Hyperlink": 0,
+        "TextColor": 0,
+        "Font": 0,
+        "Events": 0,
+        "FooterHorizontalAlign": 0,
+        "CellHyperlink": 0,
+        "Zoomable": 0,
+        "FixingInTable": 0,
+        "GroupVerticalAlign": 0,
+        "BorderColor": 0,
+        "MaxHeight": 0,
+        "SkipOnInput": 0,
+        "ToolTipRepresentation": 0,
+        "EnableDrag": 0,
+        "GroupHorizontalAlign": 0,
+        "FooterText": 0,
+        "HeaderHorizontalAlign": 0,
+        "Enabled": 0,
+        "AutoCellHeight": 0,
+        "WarningOnEditRepresentation": 0,
+        "TitleHeight": 0,
+        "Shortcut": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "Title": 1,
+        "TitleLocation": 1,
+        "HeaderPicture": 1,
+        "Width": 1,
+        "ValuesPicture": 1,
+        "FileDragMode": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "ToolTip": 1,
+        "HorizontalStretch": 1,
+        "Visible": 1,
+        "VerticalStretch": 1,
+        "Border": 1,
+        "Height": 1,
+        "PictureSize": 1,
+        "NonselectedPictureText": 1,
+        "EditMode": 1,
+        "UserVisible": 1,
+        "ReadOnly": 1,
+        "AutoMaxWidth": 1,
+        "MaxWidth": 1,
+        "HorizontalAlign": 1,
+        "ShowInHeader": 1,
+        "ShowInFooter": 1,
+        "AutoMaxHeight": 1,
+        "Hyperlink": 1,
+        "TextColor": 1,
+        "Font": 1,
+        "Events": 1,
+        "FooterHorizontalAlign": 1,
+        "CellHyperlink": 1,
+        "Zoomable": 1,
+        "FixingInTable": 1,
+        "GroupVerticalAlign": 1,
+        "BorderColor": 1,
+        "MaxHeight": 1,
+        "SkipOnInput": 1,
+        "ToolTipRepresentation": 1,
+        "EnableDrag": 1,
+        "GroupHorizontalAlign": 1,
+        "FooterText": 1,
+        "HeaderHorizontalAlign": 1,
+        "Enabled": 1,
+        "AutoCellHeight": 1,
+        "WarningOnEditRepresentation": 1,
+        "TitleHeight": 1,
+        "Shortcut": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "PictureLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "PictureSize": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "PlannerField": {
+      "children": [
+        "DataPath",
+        "SkipOnInput",
+        "TitleLocation",
+        "Width",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Events",
+        "Height",
+        "EnableStartDrag",
+        "CommandSet",
+        "TimeScaleItemHyperlink",
+        "DimensionItemHyperlink"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "SkipOnInput": 0,
+        "TitleLocation": 1,
+        "Width": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 1,
+        "Height": 0,
+        "EnableStartDrag": 0,
+        "CommandSet": 0,
+        "TimeScaleItemHyperlink": 0,
+        "DimensionItemHyperlink": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "SkipOnInput": 1,
+        "TitleLocation": 1,
+        "Width": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 1,
+        "Height": 1,
+        "EnableStartDrag": 1,
+        "CommandSet": 1,
+        "TimeScaleItemHyperlink": 1,
+        "DimensionItemHyperlink": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "PointerType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Popup": {
+      "children": [
+        "Title",
+        "ToolTip",
+        "ToolTipRepresentation",
+        "ExtendedTooltip",
+        "ChildItems",
+        "Picture",
+        "Representation",
+        "Visible",
+        "EnableContentChange",
+        "CommandSource",
+        "HorizontalStretch",
+        "VerticalStretch",
+        "ReadOnly",
+        "Width",
+        "BackColor",
+        "TitleFont"
+      ],
+      "childMin": {
+        "Title": 0,
+        "ToolTip": 0,
+        "ToolTipRepresentation": 0,
+        "ExtendedTooltip": 1,
+        "ChildItems": 0,
+        "Picture": 0,
+        "Representation": 0,
+        "Visible": 0,
+        "EnableContentChange": 0,
+        "CommandSource": 0,
+        "HorizontalStretch": 0,
+        "VerticalStretch": 0,
+        "ReadOnly": 0,
+        "Width": 0,
+        "BackColor": 0,
+        "TitleFont": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "ToolTip": 1,
+        "ToolTipRepresentation": 1,
+        "ExtendedTooltip": 1,
+        "ChildItems": 1,
+        "Picture": 1,
+        "Representation": 1,
+        "Visible": 1,
+        "EnableContentChange": 1,
+        "CommandSource": 1,
+        "HorizontalStretch": 1,
+        "VerticalStretch": 1,
+        "ReadOnly": 1,
+        "Width": 1,
+        "BackColor": 1,
+        "TitleFont": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Presentation": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ProgressBarField": {
+      "children": [
+        "DataPath",
+        "Title",
+        "TitleLocation",
+        "ShowPercent",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Width",
+        "ToolTipRepresentation",
+        "AutoMaxWidth",
+        "BorderColor",
+        "Visible",
+        "ToolTip",
+        "MaxValue"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "Title": 0,
+        "TitleLocation": 0,
+        "ShowPercent": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Width": 0,
+        "ToolTipRepresentation": 0,
+        "AutoMaxWidth": 0,
+        "BorderColor": 0,
+        "Visible": 0,
+        "ToolTip": 0,
+        "MaxValue": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "Title": 1,
+        "TitleLocation": 1,
+        "ShowPercent": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Width": 1,
+        "ToolTipRepresentation": 1,
+        "AutoMaxWidth": 1,
+        "BorderColor": 1,
+        "Visible": 1,
+        "ToolTip": 1,
+        "MaxValue": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Protection": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "QueryText": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "QuickChoice": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "RadioButtonField": {
+      "children": [
+        "DataPath",
+        "TitleLocation",
+        "RadioButtonType",
+        "ChoiceList",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Events",
+        "Title",
+        "ToolTipRepresentation",
+        "UserVisible",
+        "EditMode",
+        "ColumnsCount",
+        "DefaultItem",
+        "ToolTip",
+        "ReadOnly",
+        "ItemHeight",
+        "EqualColumnsWidth",
+        "ItemWidth",
+        "VerticalAlign",
+        "Visible",
+        "TitleHeight",
+        "Shortcut",
+        "FooterHorizontalAlign",
+        "GroupVerticalAlign",
+        "SkipOnInput",
+        "ItemTitleHeight",
+        "Font",
+        "TextColor",
+        "TitleFont",
+        "WarningOnEditRepresentation",
+        "GroupHorizontalAlign",
+        "WarningOnEdit",
+        "TitleTextColor"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "TitleLocation": 0,
+        "RadioButtonType": 1,
+        "ChoiceList": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 0,
+        "Title": 0,
+        "ToolTipRepresentation": 0,
+        "UserVisible": 0,
+        "EditMode": 0,
+        "ColumnsCount": 0,
+        "DefaultItem": 0,
+        "ToolTip": 0,
+        "ReadOnly": 0,
+        "ItemHeight": 0,
+        "EqualColumnsWidth": 0,
+        "ItemWidth": 0,
+        "VerticalAlign": 0,
+        "Visible": 0,
+        "TitleHeight": 0,
+        "Shortcut": 0,
+        "FooterHorizontalAlign": 0,
+        "GroupVerticalAlign": 0,
+        "SkipOnInput": 0,
+        "ItemTitleHeight": 0,
+        "Font": 0,
+        "TextColor": 0,
+        "TitleFont": 0,
+        "WarningOnEditRepresentation": 0,
+        "GroupHorizontalAlign": 0,
+        "WarningOnEdit": 0,
+        "TitleTextColor": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "RadioButtonType": 1,
+        "ChoiceList": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 1,
+        "Title": 1,
+        "ToolTipRepresentation": 1,
+        "UserVisible": 1,
+        "EditMode": 1,
+        "ColumnsCount": 1,
+        "DefaultItem": 1,
+        "ToolTip": 1,
+        "ReadOnly": 1,
+        "ItemHeight": 1,
+        "EqualColumnsWidth": 1,
+        "ItemWidth": 1,
+        "VerticalAlign": 1,
+        "Visible": 1,
+        "TitleHeight": 1,
+        "Shortcut": 1,
+        "FooterHorizontalAlign": 1,
+        "GroupVerticalAlign": 1,
+        "SkipOnInput": 1,
+        "ItemTitleHeight": 1,
+        "Font": 1,
+        "TextColor": 1,
+        "TitleFont": 1,
+        "WarningOnEditRepresentation": 1,
+        "GroupHorizontalAlign": 1,
+        "WarningOnEdit": 1,
+        "TitleTextColor": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "RadioButtonType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ReadOnly": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "RefreshRequest": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ReportFormType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ReportResult": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ReportResultViewMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "RepostOnWrite": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Representation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "RepresentationInContextMenu": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "RestoreCurrentRow": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "RowFilter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "RowInputMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "RowPictureDataPath": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "RowSelectionMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "RowsPicture": {
+      "children": [
+        "Ref",
+        "LoadTransparent",
+        "Abs",
+        "TransparentPixel"
+      ],
+      "childMin": {
+        "Ref": 0,
+        "LoadTransparent": 1,
+        "Abs": 0,
+        "TransparentPixel": 0
+      },
+      "childMax": {
+        "Ref": 1,
+        "LoadTransparent": 1,
+        "Abs": 1,
+        "TransparentPixel": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Save": {
+      "children": [
+        "Field"
+      ],
+      "childMin": {
+        "Field": 1
+      },
+      "childMax": {
+        "Field": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "SaveDataInSettings": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "SaveWindowSettings": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "SavedData": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Scale": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "ScalingMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ScrollOnCompress": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "SearchControlAddition": {
+      "children": [
+        "AdditionSource",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Title",
+        "Enabled",
+        "ChildItems",
+        "Visible"
+      ],
+      "childMin": {
+        "AdditionSource": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Title": 0,
+        "Enabled": 0,
+        "ChildItems": 0,
+        "Visible": 0
+      },
+      "childMax": {
+        "AdditionSource": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Title": 1,
+        "Enabled": 1,
+        "ChildItems": 1,
+        "Visible": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "SearchControlLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "SearchOnInput": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "SearchStringAddition": {
+      "children": [
+        "AdditionSource",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Title",
+        "Enabled",
+        "GroupHorizontalAlign",
+        "AutoMaxWidth",
+        "Width",
+        "HorizontalStretch",
+        "Visible",
+        "MaxWidth"
+      ],
+      "childMin": {
+        "AdditionSource": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Title": 0,
+        "Enabled": 0,
+        "GroupHorizontalAlign": 0,
+        "AutoMaxWidth": 0,
+        "Width": 0,
+        "HorizontalStretch": 0,
+        "Visible": 0,
+        "MaxWidth": 0
+      },
+      "childMax": {
+        "AdditionSource": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Title": 1,
+        "Enabled": 1,
+        "GroupHorizontalAlign": 1,
+        "AutoMaxWidth": 1,
+        "Width": 1,
+        "HorizontalStretch": 1,
+        "Visible": 1,
+        "MaxWidth": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "SearchStringLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "SelectionMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "SelectionShowMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Settings": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "SettingsNamedItemDetailedRepresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "SettingsStorage": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Shape": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ShapeRepresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Shortcut": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ShowCellNames": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowCheckBoxesInDropList": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowCloseButton": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowCurrentDate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowGrid": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowGroups": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowHeaders": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowInFooter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowInHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowLeftMargin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowMonthsPanel": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowPercent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowRoot": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowRowAndColumnNames": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ShowTitle": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "SkipOnInput": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "SpecialTextInputMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "SpellCheckingOnTextInput": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "SpinButton": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "SpreadSheetDocumentField": {
+      "children": [
+        "DataPath",
+        "TitleLocation",
+        "VerticalScrollBar",
+        "HorizontalScrollBar",
+        "Output",
+        "ViewScalingMode",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Events",
+        "ReadOnly",
+        "Protection",
+        "SelectionShowMode",
+        "PointerType",
+        "ShowGroups",
+        "EnableStartDrag",
+        "EnableDrag",
+        "DefaultItem",
+        "Title",
+        "Width",
+        "Height",
+        "ShowRowAndColumnNames",
+        "BorderColor",
+        "Visible",
+        "ShowGrid",
+        "ShowHeaders",
+        "ShowCellNames",
+        "CommandSet",
+        "Edit",
+        "SkipOnInput",
+        "AutoMaxHeight",
+        "AutoMaxWidth",
+        "GroupHorizontalAlign",
+        "GroupVerticalAlign",
+        "MaxWidth",
+        "MaxHeight",
+        "HorizontalStretch",
+        "VerticalStretch",
+        "DrawingSelectionShowMode",
+        "FooterHorizontalAlign"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "TitleLocation": 0,
+        "VerticalScrollBar": 0,
+        "HorizontalScrollBar": 0,
+        "Output": 0,
+        "ViewScalingMode": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 0,
+        "ReadOnly": 0,
+        "Protection": 0,
+        "SelectionShowMode": 0,
+        "PointerType": 0,
+        "ShowGroups": 0,
+        "EnableStartDrag": 0,
+        "EnableDrag": 0,
+        "DefaultItem": 0,
+        "Title": 0,
+        "Width": 0,
+        "Height": 0,
+        "ShowRowAndColumnNames": 0,
+        "BorderColor": 0,
+        "Visible": 0,
+        "ShowGrid": 0,
+        "ShowHeaders": 0,
+        "ShowCellNames": 0,
+        "CommandSet": 0,
+        "Edit": 0,
+        "SkipOnInput": 0,
+        "AutoMaxHeight": 0,
+        "AutoMaxWidth": 0,
+        "GroupHorizontalAlign": 0,
+        "GroupVerticalAlign": 0,
+        "MaxWidth": 0,
+        "MaxHeight": 0,
+        "HorizontalStretch": 0,
+        "VerticalStretch": 0,
+        "DrawingSelectionShowMode": 0,
+        "FooterHorizontalAlign": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "VerticalScrollBar": 1,
+        "HorizontalScrollBar": 1,
+        "Output": 1,
+        "ViewScalingMode": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Events": 1,
+        "ReadOnly": 1,
+        "Protection": 1,
+        "SelectionShowMode": 1,
+        "PointerType": 1,
+        "ShowGroups": 1,
+        "EnableStartDrag": 1,
+        "EnableDrag": 1,
+        "DefaultItem": 1,
+        "Title": 1,
+        "Width": 1,
+        "Height": 1,
+        "ShowRowAndColumnNames": 1,
+        "BorderColor": 1,
+        "Visible": 1,
+        "ShowGrid": 1,
+        "ShowHeaders": 1,
+        "ShowCellNames": 1,
+        "CommandSet": 1,
+        "Edit": 1,
+        "SkipOnInput": 1,
+        "AutoMaxHeight": 1,
+        "AutoMaxWidth": 1,
+        "GroupHorizontalAlign": 1,
+        "GroupVerticalAlign": 1,
+        "MaxWidth": 1,
+        "MaxHeight": 1,
+        "HorizontalStretch": 1,
+        "VerticalStretch": 1,
+        "DrawingSelectionShowMode": 1,
+        "FooterHorizontalAlign": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Table": {
+      "children": [
+        "Representation",
+        "CommandBarLocation",
+        "DefaultItem",
+        "UseAlternationRowColor",
+        "InitialTreeView",
+        "EnableStartDrag",
+        "FileDragMode",
+        "DataPath",
+        "RowPictureDataPath",
+        "Title",
+        "AutoRefresh",
+        "AutoRefreshPeriod",
+        "Period",
+        "ChoiceFoldersAndItems",
+        "RestoreCurrentRow",
+        "TopLevelParent",
+        "ShowRoot",
+        "AllowRootChoice",
+        "UpdateOnDataChange",
+        "UserSettingsGroup",
+        "AllowGettingCurrentRowURL",
+        "ContextMenu",
+        "AutoCommandBar",
+        "ExtendedTooltip",
+        "SearchStringAddition",
+        "ViewStatusAddition",
+        "SearchControlAddition",
+        "Events",
+        "ChildItems",
+        "SkipOnInput",
+        "RowsPicture",
+        "ReadOnly",
+        "HeightControlVariant",
+        "AutoMaxRowsCount",
+        "MaxRowsCount",
+        "AutoInsertNewRow",
+        "EnableDrag",
+        "RowFilter",
+        "Header",
+        "HorizontalLines",
+        "VerticalLines",
+        "CommandSet",
+        "UserVisible",
+        "ChangeRowSet",
+        "ChangeRowOrder",
+        "InitialListView",
+        "SearchStringLocation",
+        "ViewStatusLocation",
+        "SearchControlLocation",
+        "ChoiceMode",
+        "HeightInTableRows",
+        "Width",
+        "Height",
+        "SelectionMode",
+        "TitleLocation",
+        "RowSelectionMode",
+        "CurrentRowUse",
+        "Visible",
+        "HeaderHeight",
+        "BorderColor",
+        "TitleHeight",
+        "ToolTipRepresentation",
+        "ToolTip",
+        "MultipleChoice",
+        "AutoAddIncomplete",
+        "Autofill",
+        "ViewMode",
+        "SettingsNamedItemDetailedRepresentation",
+        "AutoMaxWidth",
+        "MaxWidth",
+        "HorizontalStretch",
+        "VerticalStretch",
+        "MaxHeight",
+        "AutoMaxHeight",
+        "Enabled",
+        "VerticalScrollBar",
+        "BackColor",
+        "AutoMarkIncomplete",
+        "SearchOnInput",
+        "HorizontalScrollBar",
+        "Footer",
+        "TitleTextColor",
+        "TitleFont",
+        "TextColor",
+        "Font",
+        "FooterHeight",
+        "RowInputMode",
+        "Output",
+        "RefreshRequest",
+        "GroupVerticalAlign",
+        "GroupHorizontalAlign",
+        "BehaviorOnHorizontalCompression"
+      ],
+      "childMin": {
+        "Representation": 0,
+        "CommandBarLocation": 0,
+        "DefaultItem": 0,
+        "UseAlternationRowColor": 0,
+        "InitialTreeView": 0,
+        "EnableStartDrag": 0,
+        "FileDragMode": 0,
+        "DataPath": 0,
+        "RowPictureDataPath": 0,
+        "Title": 0,
+        "AutoRefresh": 0,
+        "AutoRefreshPeriod": 0,
+        "Period": 0,
+        "ChoiceFoldersAndItems": 0,
+        "RestoreCurrentRow": 0,
+        "TopLevelParent": 0,
+        "ShowRoot": 0,
+        "AllowRootChoice": 0,
+        "UpdateOnDataChange": 0,
+        "UserSettingsGroup": 0,
+        "AllowGettingCurrentRowURL": 0,
+        "ContextMenu": 1,
+        "AutoCommandBar": 1,
+        "ExtendedTooltip": 1,
+        "SearchStringAddition": 1,
+        "ViewStatusAddition": 1,
+        "SearchControlAddition": 1,
+        "Events": 0,
+        "ChildItems": 0,
+        "SkipOnInput": 0,
+        "RowsPicture": 0,
+        "ReadOnly": 0,
+        "HeightControlVariant": 0,
+        "AutoMaxRowsCount": 0,
+        "MaxRowsCount": 0,
+        "AutoInsertNewRow": 0,
+        "EnableDrag": 0,
+        "RowFilter": 0,
+        "Header": 0,
+        "HorizontalLines": 0,
+        "VerticalLines": 0,
+        "CommandSet": 0,
+        "UserVisible": 0,
+        "ChangeRowSet": 0,
+        "ChangeRowOrder": 0,
+        "InitialListView": 0,
+        "SearchStringLocation": 0,
+        "ViewStatusLocation": 0,
+        "SearchControlLocation": 0,
+        "ChoiceMode": 0,
+        "HeightInTableRows": 0,
+        "Width": 0,
+        "Height": 0,
+        "SelectionMode": 0,
+        "TitleLocation": 0,
+        "RowSelectionMode": 0,
+        "CurrentRowUse": 0,
+        "Visible": 0,
+        "HeaderHeight": 0,
+        "BorderColor": 0,
+        "TitleHeight": 0,
+        "ToolTipRepresentation": 0,
+        "ToolTip": 0,
+        "MultipleChoice": 0,
+        "AutoAddIncomplete": 0,
+        "Autofill": 0,
+        "ViewMode": 0,
+        "SettingsNamedItemDetailedRepresentation": 0,
+        "AutoMaxWidth": 0,
+        "MaxWidth": 0,
+        "HorizontalStretch": 0,
+        "VerticalStretch": 0,
+        "MaxHeight": 0,
+        "AutoMaxHeight": 0,
+        "Enabled": 0,
+        "VerticalScrollBar": 0,
+        "BackColor": 0,
+        "AutoMarkIncomplete": 0,
+        "SearchOnInput": 0,
+        "HorizontalScrollBar": 0,
+        "Footer": 0,
+        "TitleTextColor": 0,
+        "TitleFont": 0,
+        "TextColor": 0,
+        "Font": 0,
+        "FooterHeight": 0,
+        "RowInputMode": 0,
+        "Output": 0,
+        "RefreshRequest": 0,
+        "GroupVerticalAlign": 0,
+        "GroupHorizontalAlign": 0,
+        "BehaviorOnHorizontalCompression": 0
+      },
+      "childMax": {
+        "Representation": 1,
+        "CommandBarLocation": 1,
+        "DefaultItem": 1,
+        "UseAlternationRowColor": 1,
+        "InitialTreeView": 1,
+        "EnableStartDrag": 1,
+        "FileDragMode": 1,
+        "DataPath": 1,
+        "RowPictureDataPath": 1,
+        "Title": 1,
+        "AutoRefresh": 1,
+        "AutoRefreshPeriod": 1,
+        "Period": 1,
+        "ChoiceFoldersAndItems": 1,
+        "RestoreCurrentRow": 1,
+        "TopLevelParent": 1,
+        "ShowRoot": 1,
+        "AllowRootChoice": 1,
+        "UpdateOnDataChange": 1,
+        "UserSettingsGroup": 1,
+        "AllowGettingCurrentRowURL": 1,
+        "ContextMenu": 1,
+        "AutoCommandBar": 1,
+        "ExtendedTooltip": 1,
+        "SearchStringAddition": 1,
+        "ViewStatusAddition": 1,
+        "SearchControlAddition": 1,
+        "Events": 1,
+        "ChildItems": 1,
+        "SkipOnInput": 1,
+        "RowsPicture": 1,
+        "ReadOnly": 1,
+        "HeightControlVariant": 1,
+        "AutoMaxRowsCount": 1,
+        "MaxRowsCount": 1,
+        "AutoInsertNewRow": 1,
+        "EnableDrag": 1,
+        "RowFilter": 1,
+        "Header": 1,
+        "HorizontalLines": 1,
+        "VerticalLines": 1,
+        "CommandSet": 1,
+        "UserVisible": 1,
+        "ChangeRowSet": 1,
+        "ChangeRowOrder": 1,
+        "InitialListView": 1,
+        "SearchStringLocation": 1,
+        "ViewStatusLocation": 1,
+        "SearchControlLocation": 1,
+        "ChoiceMode": 1,
+        "HeightInTableRows": 1,
+        "Width": 1,
+        "Height": 1,
+        "SelectionMode": 1,
+        "TitleLocation": 1,
+        "RowSelectionMode": 1,
+        "CurrentRowUse": 1,
+        "Visible": 1,
+        "HeaderHeight": 1,
+        "BorderColor": 1,
+        "TitleHeight": 1,
+        "ToolTipRepresentation": 1,
+        "ToolTip": 1,
+        "MultipleChoice": 1,
+        "AutoAddIncomplete": 1,
+        "Autofill": 1,
+        "ViewMode": 1,
+        "SettingsNamedItemDetailedRepresentation": 1,
+        "AutoMaxWidth": 1,
+        "MaxWidth": 1,
+        "HorizontalStretch": 1,
+        "VerticalStretch": 1,
+        "MaxHeight": 1,
+        "AutoMaxHeight": 1,
+        "Enabled": 1,
+        "VerticalScrollBar": 1,
+        "BackColor": 1,
+        "AutoMarkIncomplete": 1,
+        "SearchOnInput": 1,
+        "HorizontalScrollBar": 1,
+        "Footer": 1,
+        "TitleTextColor": 1,
+        "TitleFont": 1,
+        "TextColor": 1,
+        "Font": 1,
+        "FooterHeight": 1,
+        "RowInputMode": 1,
+        "Output": 1,
+        "RefreshRequest": 1,
+        "GroupVerticalAlign": 1,
+        "GroupHorizontalAlign": 1,
+        "BehaviorOnHorizontalCompression": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "TextColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TextDocumentField": {
+      "children": [
+        "DataPath",
+        "TitleLocation",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Height",
+        "ReadOnly",
+        "EditMode",
+        "DefaultItem",
+        "AutoMaxHeight",
+        "Title",
+        "Width",
+        "Events",
+        "AutoMaxWidth",
+        "MaxWidth"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "TitleLocation": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Height": 0,
+        "ReadOnly": 0,
+        "EditMode": 0,
+        "DefaultItem": 0,
+        "AutoMaxHeight": 0,
+        "Title": 0,
+        "Width": 0,
+        "Events": 0,
+        "AutoMaxWidth": 0,
+        "MaxWidth": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Height": 1,
+        "ReadOnly": 1,
+        "EditMode": 1,
+        "DefaultItem": 1,
+        "AutoMaxHeight": 1,
+        "Title": 1,
+        "Width": 1,
+        "Events": 1,
+        "AutoMaxWidth": 1,
+        "MaxWidth": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "TextEdit": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ThreeState": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "ThroughAlign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TimeScaleItemHyperlink": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Title": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "formatted",
+          "type": "xs:boolean",
+          "use": "optional"
+        }
+      ]
+    },
+    "TitleBackColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TitleDataPath": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TitleFont": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "bold",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "faceName",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "height",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "italic",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "kind",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "ref",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "scale",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "strikeout",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "underline",
+          "type": "xs:boolean",
+          "use": "optional"
+        }
+      ]
+    },
+    "TitleHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "TitleLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TitleTextColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ToolTip": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ToolTipRepresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TopLevelParent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "TrackBarField": {
+      "children": [
+        "DataPath",
+        "TitleLocation",
+        "Width",
+        "Height",
+        "MaxValue",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "Title",
+        "HorizontalStretch",
+        "Events"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "Width": 1,
+        "Height": 0,
+        "MaxValue": 0,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Title": 0,
+        "HorizontalStretch": 0,
+        "Events": 0
+      },
+      "childMax": {
+        "DataPath": 1,
+        "TitleLocation": 1,
+        "Width": 1,
+        "Height": 1,
+        "MaxValue": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "Title": 1,
+        "HorizontalStretch": 1,
+        "Events": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Type": {
+      "children": [
+        "Type",
+        "StringQualifiers",
+        "DateQualifiers",
+        "NumberQualifiers",
+        "TypeSet"
+      ],
+      "childMin": {
+        "Type": 0,
+        "StringQualifiers": 0,
+        "DateQualifiers": 0,
+        "NumberQualifiers": 0,
+        "TypeSet": 0
+      },
+      "childMax": {
+        "Type": -1,
+        "StringQualifiers": 1,
+        "DateQualifiers": 1,
+        "NumberQualifiers": 1,
+        "TypeSet": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": true,
+      "attributes": []
+    },
+    "TypeDomainEnabled": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "TypeLink": {
+      "children": [
+        "DataPath",
+        "LinkItem"
+      ],
+      "childMin": {
+        "DataPath": 1,
+        "LinkItem": 1
+      },
+      "childMax": {
+        "DataPath": 1,
+        "LinkItem": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "United": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "UpdateOnDataChange": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Use": {
+      "children": [
+        "Common",
+        "Value"
+      ],
+      "childMin": {
+        "Common": 1,
+        "Value": 1
+      },
+      "childMax": {
+        "Common": 1,
+        "Value": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "UseAlternationRowColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "UseAlways": {
+      "children": [
+        "Field"
+      ],
+      "childMin": {
+        "Field": 1
+      },
+      "childMax": {
+        "Field": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "UseForFoldersAndItems": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "UsePostingMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "UserSettingsGroup": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "UserVisible": {
+      "children": [
+        "Common",
+        "Value"
+      ],
+      "childMin": {
+        "Common": 1,
+        "Value": 0
+      },
+      "childMax": {
+        "Common": 1,
+        "Value": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "UsualGroup": {
+      "children": [
+        "Title",
+        "Group",
+        "Behavior",
+        "Representation",
+        "ShowTitle",
+        "ExtendedTooltip",
+        "ChildItems",
+        "VerticalStretch",
+        "HorizontalStretch",
+        "United",
+        "BackColor",
+        "Visible",
+        "Collapsed",
+        "VerticalAlign",
+        "ThroughAlign",
+        "ToolTip",
+        "CollapsedRepresentationTitle",
+        "ControlRepresentation",
+        "EnableContentChange",
+        "ToolTipRepresentation",
+        "ShowLeftMargin",
+        "GroupHorizontalAlign",
+        "Width",
+        "Height",
+        "UserVisible",
+        "ReadOnly",
+        "ChildItemsWidth",
+        "HorizontalAlign",
+        "VerticalSpacing",
+        "TitleDataPath",
+        "TitleTextColor",
+        "HorizontalSpacing",
+        "GroupVerticalAlign",
+        "TitleFont",
+        "ChildrenAlign",
+        "Enabled",
+        "Shortcut",
+        "Format",
+        "CurrentRowUse"
+      ],
+      "childMin": {
+        "Title": 0,
+        "Group": 0,
+        "Behavior": 0,
+        "Representation": 0,
+        "ShowTitle": 0,
+        "ExtendedTooltip": 1,
+        "ChildItems": 0,
+        "VerticalStretch": 0,
+        "HorizontalStretch": 0,
+        "United": 0,
+        "BackColor": 0,
+        "Visible": 0,
+        "Collapsed": 0,
+        "VerticalAlign": 0,
+        "ThroughAlign": 0,
+        "ToolTip": 0,
+        "CollapsedRepresentationTitle": 0,
+        "ControlRepresentation": 0,
+        "EnableContentChange": 0,
+        "ToolTipRepresentation": 0,
+        "ShowLeftMargin": 0,
+        "GroupHorizontalAlign": 0,
+        "Width": 0,
+        "Height": 0,
+        "UserVisible": 0,
+        "ReadOnly": 0,
+        "ChildItemsWidth": 0,
+        "HorizontalAlign": 0,
+        "VerticalSpacing": 0,
+        "TitleDataPath": 0,
+        "TitleTextColor": 0,
+        "HorizontalSpacing": 0,
+        "GroupVerticalAlign": 0,
+        "TitleFont": 0,
+        "ChildrenAlign": 0,
+        "Enabled": 0,
+        "Shortcut": 0,
+        "Format": 0,
+        "CurrentRowUse": 0
+      },
+      "childMax": {
+        "Title": 1,
+        "Group": 1,
+        "Behavior": 1,
+        "Representation": 1,
+        "ShowTitle": 1,
+        "ExtendedTooltip": 1,
+        "ChildItems": 1,
+        "VerticalStretch": 1,
+        "HorizontalStretch": 1,
+        "United": 1,
+        "BackColor": 1,
+        "Visible": 1,
+        "Collapsed": 1,
+        "VerticalAlign": 1,
+        "ThroughAlign": 1,
+        "ToolTip": 1,
+        "CollapsedRepresentationTitle": 1,
+        "ControlRepresentation": 1,
+        "EnableContentChange": 1,
+        "ToolTipRepresentation": 1,
+        "ShowLeftMargin": 1,
+        "GroupHorizontalAlign": 1,
+        "Width": 1,
+        "Height": 1,
+        "UserVisible": 1,
+        "ReadOnly": 1,
+        "ChildItemsWidth": 1,
+        "HorizontalAlign": 1,
+        "VerticalSpacing": 1,
+        "TitleDataPath": 1,
+        "TitleTextColor": 1,
+        "HorizontalSpacing": 1,
+        "GroupVerticalAlign": 1,
+        "TitleFont": 1,
+        "ChildrenAlign": 1,
+        "Enabled": 1,
+        "Shortcut": 1,
+        "Format": 1,
+        "CurrentRowUse": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "DisplayImportance",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "ValuesPicture": {
+      "children": [
+        "Ref",
+        "LoadTransparent",
+        "Abs",
+        "TransparentPixel"
+      ],
+      "childMin": {
+        "Ref": 0,
+        "LoadTransparent": 1,
+        "Abs": 0,
+        "TransparentPixel": 0
+      },
+      "childMax": {
+        "Ref": 1,
+        "LoadTransparent": 1,
+        "Abs": 1,
+        "TransparentPixel": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "VariantAppearance": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "VerticalAlign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "VerticalLines": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "VerticalScroll": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "VerticalScrollBar": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "VerticalSpacing": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "VerticalStretch": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "View": {
+      "children": [
+        "Common",
+        "Value"
+      ],
+      "childMin": {
+        "Common": 1,
+        "Value": 0
+      },
+      "childMax": {
+        "Common": 1,
+        "Value": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ViewMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ViewModeApplicationOnSetReportResult": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ViewScalingMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ViewStatusAddition": {
+      "children": [
+        "AdditionSource",
+        "ContextMenu",
+        "ExtendedTooltip",
+        "HorizontalLocation",
+        "Enabled",
+        "ToolTipRepresentation",
+        "Visible"
+      ],
+      "childMin": {
+        "AdditionSource": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "HorizontalLocation": 0,
+        "Enabled": 0,
+        "ToolTipRepresentation": 0,
+        "Visible": 0
+      },
+      "childMax": {
+        "AdditionSource": 1,
+        "ContextMenu": 1,
+        "ExtendedTooltip": 1,
+        "HorizontalLocation": 1,
+        "Enabled": 1,
+        "ToolTipRepresentation": 1,
+        "Visible": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "ViewStatusLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Visible": {
+      "children": [
+        "Common"
+      ],
+      "childMin": {
+        "Common": 0
+      },
+      "childMax": {
+        "Common": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": true,
+      "attributes": []
+    },
+    "WarningOnEdit": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "WarningOnEditRepresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Width": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "WidthInMonths": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "WindowOpeningMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Wrap": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Zoomable": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    }
+  },
+  "source": "http_v8.1c.ru_8.3_xcf_logform.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.3/xcf/logform",
+  "imports": [
+    {
+      "namespace": "http://v8.1c.ru/8.1/data-composition-system/schema",
+      "schemaLocation": "http_v8.1c.ru_8.1_data-composition-system_schema.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.1/data-composition-system/settings",
+      "schemaLocation": "http_v8.1c.ru_8.1_data-composition-system_settings.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/core",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_core.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/ui",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_ui.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.2/data/chart",
+      "schemaLocation": "http_v8.1c.ru_8.2_data_chart.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.2/data/graphscheme",
+      "schemaLocation": "http_v8.1c.ru_8.2_data_graphscheme.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.2/data/spreadsheet",
+      "schemaLocation": "http_v8.1c.ru_8.2_data_spreadsheet.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.3/data/planner",
+      "schemaLocation": "http_v8.1c.ru_8.3_data_planner.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.3/xcf/readable",
+      "schemaLocation": "http_v8.1c.ru_8.3_xcf_readable.xsd"
+    },
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 334,
+  "namedComplexTypes": [
+    "DynamicList",
+    "FormChoiceListDesTimeValue"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "XcfLogForm",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

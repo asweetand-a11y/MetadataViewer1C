@@ -15,11 +15,11 @@ export interface SchemaContext {
 /** Имена JSON-схем в resources/xsd/ */
 const SCHEMA_FILES = {
     metadata: 'MDClasses.json',
-    form: 'xcf_logform.json',
-    dcs: 'data-composition-system_schema.json',
-    predefined: 'xcf_predef.json',
-    dumpinfo: 'xcf_dumpinfo.json',
-    spreadsheet: 'spreadsheet_schema.json',
+    form: 'XcfLogForm.json',
+    dcs: 'DcsSchema.json',
+    predefined: 'XcfPredef.json',
+    dumpinfo: 'XcfDumpInfo.json',
+    spreadsheet: 'DataSpreadsheet.json',
 } as const;
 
 /**

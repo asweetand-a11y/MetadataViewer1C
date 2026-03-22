@@ -1,0 +1,88 @@
+{
+  "roots": [
+    "address",
+    "binding",
+    "body",
+    "operation"
+  ],
+  "elements": {
+    "address": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "location",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "binding": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "style",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "transport",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "body": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "use",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "operation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "soapAction",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "style",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    }
+  },
+  "source": "http_schemas.xmlsoap.org_wsdl_soap.xsd",
+  "targetNamespace": "http://schemas.xmlsoap.org/wsdl/soap/",
+  "imports": [],
+  "globalElementsCount": 4,
+  "namedComplexTypes": [],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "WsdlSoap",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

@@ -1,0 +1,114 @@
+{
+  "roots": [
+    "choiceParameter",
+    "field",
+    "item",
+    "linkItem",
+    "mode",
+    "parameter",
+    "use",
+    "value"
+  ],
+  "elements": {
+    "choiceParameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "field": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "item": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "linkItem": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "mode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "parameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "use": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    }
+  },
+  "source": "http_v8.1c.ru_8.1_data-composition-system_core.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.1/data-composition-system/core",
+  "imports": [
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/core",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_core.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/ui",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_ui.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.2/data/chart",
+      "schemaLocation": "http_v8.1c.ru_8.2_data_chart.xsd"
+    },
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 8,
+  "namedComplexTypes": [
+    "ChoiceParameterLinks",
+    "ChoiceParameters",
+    "DataCompositionFieldsTitleType",
+    "DataCompositionPeriodAdditionType",
+    "DataCompositionTextPlacementType",
+    "DataCompositionTotalPlacement",
+    "DesignTimeValue",
+    "Field",
+    "Parameter",
+    "TypeLink"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "DcsCore",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

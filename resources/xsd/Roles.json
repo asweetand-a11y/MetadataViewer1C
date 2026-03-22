@@ -1,0 +1,172 @@
+{
+  "roots": [
+    "Rights",
+    "condition",
+    "field",
+    "independentRightsOfChildObjects",
+    "name",
+    "object",
+    "restrictionByCondition",
+    "restrictionTemplate",
+    "right",
+    "setForAttributesByDefault",
+    "setForNewObjects",
+    "value"
+  ],
+  "elements": {
+    "Rights": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "condition": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "field": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "independentRightsOfChildObjects": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "name": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "object": {
+      "children": [
+        "name",
+        "right"
+      ],
+      "childMin": {
+        "name": 1,
+        "right": 1
+      },
+      "childMax": {
+        "name": 1,
+        "right": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "restrictionByCondition": {
+      "children": [
+        "condition",
+        "field"
+      ],
+      "childMin": {
+        "condition": 1,
+        "field": 0
+      },
+      "childMax": {
+        "condition": 1,
+        "field": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "restrictionTemplate": {
+      "children": [
+        "name",
+        "condition"
+      ],
+      "childMin": {
+        "name": 1,
+        "condition": 1
+      },
+      "childMax": {
+        "name": 1,
+        "condition": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "right": {
+      "children": [
+        "name",
+        "value",
+        "restrictionByCondition"
+      ],
+      "childMin": {
+        "name": 1,
+        "value": 1,
+        "restrictionByCondition": 0
+      },
+      "childMax": {
+        "name": 1,
+        "value": 1,
+        "restrictionByCondition": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "setForAttributesByDefault": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "setForNewObjects": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    }
+  },
+  "source": "http_v8.1c.ru_8.2_roles.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.2/roles",
+  "imports": [
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 12,
+  "namedComplexTypes": [
+    "Rights"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "Roles",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

@@ -1,0 +1,497 @@
+{
+  "roots": [
+    "alignElementsOfTimeScale",
+    "autoMinColumnWidth",
+    "autoMinRowHeight",
+    "backColor",
+    "begin",
+    "beginOfRepresentationPeriod",
+    "border",
+    "borderColor",
+    "deleted",
+    "dimensionValues",
+    "displayCurrentDate",
+    "displayTimeScaleWrapHeaders",
+    "displayWrapHeaders",
+    "editMode",
+    "end",
+    "endOfRepresentationPeriod",
+    "fixDimensionsHeader",
+    "fixTimeScaleHeader",
+    "font",
+    "id",
+    "item",
+    "itemsBehaviorWhenSpaceInsufficient",
+    "itemsTimeRepresentation",
+    "lineColor",
+    "minColumnWidth",
+    "minRowHeight",
+    "newItemsTextType",
+    "period",
+    "periodicVariantRepetition",
+    "periodicVariantUnit",
+    "replacementDate",
+    "text",
+    "textColor",
+    "textFormatted",
+    "timeScale",
+    "timeScaleWrapBeginIndent",
+    "timeScaleWrapEndIndent",
+    "timeScaleWrapHeadersFormat",
+    "tooltip",
+    "value"
+  ],
+  "elements": {
+    "alignElementsOfTimeScale": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "autoMinColumnWidth": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "autoMinRowHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "backColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "begin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:dateTime"
+    },
+    "beginOfRepresentationPeriod": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:dateTime"
+    },
+    "border": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "width",
+          "type": "xs:boolean",
+          "use": "required"
+        }
+      ]
+    },
+    "borderColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "deleted": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "dimensionValues": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "displayCurrentDate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "displayTimeScaleWrapHeaders": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "displayWrapHeaders": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "editMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "end": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:dateTime"
+    },
+    "endOfRepresentationPeriod": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:dateTime"
+    },
+    "fixDimensionsHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "fixTimeScaleHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "font": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "kind",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "id": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "item": {
+      "children": [
+        "value",
+        "text",
+        "tooltip",
+        "begin",
+        "end",
+        "borderColor",
+        "backColor",
+        "textColor",
+        "font",
+        "dimensionValues",
+        "replacementDate",
+        "deleted",
+        "id",
+        "textFormatted",
+        "border",
+        "editMode"
+      ],
+      "childMin": {
+        "value": 1,
+        "text": 1,
+        "tooltip": 1,
+        "begin": 1,
+        "end": 1,
+        "borderColor": 1,
+        "backColor": 1,
+        "textColor": 1,
+        "font": 1,
+        "dimensionValues": 1,
+        "replacementDate": 1,
+        "deleted": 1,
+        "id": 1,
+        "textFormatted": 1,
+        "border": 1,
+        "editMode": 1
+      },
+      "childMax": {
+        "value": 1,
+        "text": 1,
+        "tooltip": 1,
+        "begin": 1,
+        "end": 1,
+        "borderColor": 1,
+        "backColor": 1,
+        "textColor": 1,
+        "font": 1,
+        "dimensionValues": 1,
+        "replacementDate": 1,
+        "deleted": 1,
+        "id": 1,
+        "textFormatted": 1,
+        "border": 1,
+        "editMode": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "itemsBehaviorWhenSpaceInsufficient": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "itemsTimeRepresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "lineColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "minColumnWidth": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "minRowHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "newItemsTextType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "period": {
+      "children": [
+        "begin",
+        "end"
+      ],
+      "childMin": {
+        "begin": 1,
+        "end": 1
+      },
+      "childMax": {
+        "begin": 1,
+        "end": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "periodicVariantRepetition": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "periodicVariantUnit": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "replacementDate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:dateTime"
+    },
+    "text": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "textColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "textFormatted": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "timeScale": {
+      "children": [
+        "placement",
+        "level",
+        "transparent",
+        "backColor",
+        "textColor",
+        "currentLevel"
+      ],
+      "childMin": {
+        "placement": 1,
+        "level": 1,
+        "transparent": 1,
+        "backColor": 1,
+        "textColor": 1,
+        "currentLevel": 1
+      },
+      "childMax": {
+        "placement": 1,
+        "level": 1,
+        "transparent": 1,
+        "backColor": 1,
+        "textColor": 1,
+        "currentLevel": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "timeScaleWrapBeginIndent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "timeScaleWrapEndIndent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "timeScaleWrapHeadersFormat": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": true,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "tooltip": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    }
+  },
+  "source": "http_v8.1c.ru_8.3_data_planner.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.3/data/planner",
+  "imports": [
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/ui",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_ui.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.2/data/chart",
+      "schemaLocation": "http_v8.1c.ru_8.2_data_chart.xsd"
+    },
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 40,
+  "namedComplexTypes": [
+    "Planner"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "DataPlanner",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

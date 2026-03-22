@@ -1,0 +1,905 @@
+{
+  "roots": [
+    "additionalProperties",
+    "appearance",
+    "application",
+    "cases",
+    "column",
+    "comparisonType",
+    "conditionalAppearance",
+    "dataParameters",
+    "dataPath",
+    "detailExpression",
+    "detailExpressionPresentation",
+    "field",
+    "filter",
+    "groupItems",
+    "groupState",
+    "groupType",
+    "id",
+    "item",
+    "itemsUserSettingID",
+    "itemsUserSettingPresentation",
+    "itemsViewMode",
+    "left",
+    "lwsPresentationValue",
+    "lwsTitle",
+    "name",
+    "objectID",
+    "order",
+    "orderType",
+    "outputParameters",
+    "periodAdditionBegin",
+    "periodAdditionEnd",
+    "periodAdditionType",
+    "placement",
+    "point",
+    "presentation",
+    "presentationValue",
+    "right",
+    "row",
+    "rowsUserSettingID",
+    "selection",
+    "series",
+    "seriesUserSettingID",
+    "seriesUserSettingPresentation",
+    "settings",
+    "title",
+    "totalExpression",
+    "totalExpressionPresentation",
+    "use",
+    "useInFieldsHeader",
+    "useInFilter",
+    "useInGroup",
+    "useInHeader",
+    "useInHierarchicalGroup",
+    "useInOverall",
+    "useInOverallHeader",
+    "useInOverallResourceFieldsHeader",
+    "useInParameters",
+    "useInResourceFieldsHeader",
+    "userFields",
+    "userSettingID",
+    "userSettingPresentation",
+    "value",
+    "viewMode"
+  ],
+  "elements": {
+    "additionalProperties": {
+      "children": [
+        "Property"
+      ],
+      "childMin": {
+        "Property": 1
+      },
+      "childMax": {
+        "Property": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "appearance": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "application": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "cases": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "column": {
+      "children": [
+        "name",
+        "groupItems",
+        "order",
+        "selection",
+        "outputParameters",
+        "filter",
+        "item",
+        "conditionalAppearance",
+        "userSettingID",
+        "userSettingPresentation",
+        "use",
+        "viewMode"
+      ],
+      "childMin": {
+        "name": 0,
+        "groupItems": 0,
+        "order": 1,
+        "selection": 1,
+        "outputParameters": 0,
+        "filter": 0,
+        "item": 0,
+        "conditionalAppearance": 0,
+        "userSettingID": 0,
+        "userSettingPresentation": 0,
+        "use": 0,
+        "viewMode": 0
+      },
+      "childMax": {
+        "name": 1,
+        "groupItems": 1,
+        "order": 1,
+        "selection": 1,
+        "outputParameters": 1,
+        "filter": 1,
+        "item": 1,
+        "conditionalAppearance": 1,
+        "userSettingID": 1,
+        "userSettingPresentation": 1,
+        "use": 1,
+        "viewMode": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "comparisonType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "conditionalAppearance": {
+      "children": [
+        "viewMode",
+        "userSettingID",
+        "item"
+      ],
+      "childMin": {
+        "viewMode": 0,
+        "userSettingID": 0,
+        "item": 0
+      },
+      "childMax": {
+        "viewMode": 1,
+        "userSettingID": 1,
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "dataParameters": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "dataPath": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "detailExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "detailExpressionPresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "field": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "filter": {
+      "children": [
+        "item",
+        "viewMode",
+        "userSettingID"
+      ],
+      "childMin": {
+        "item": 0,
+        "viewMode": 0,
+        "userSettingID": 0
+      },
+      "childMax": {
+        "item": -1,
+        "viewMode": 1,
+        "userSettingID": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "groupItems": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "groupState": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "groupType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "id": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "item": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "itemsUserSettingID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "itemsUserSettingPresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "itemsViewMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "left": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "lwsPresentationValue": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "lwsTitle": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "name": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "objectID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "order": {
+      "children": [
+        "item",
+        "viewMode",
+        "userSettingID"
+      ],
+      "childMin": {
+        "item": 0,
+        "viewMode": 0,
+        "userSettingID": 0
+      },
+      "childMax": {
+        "item": -1,
+        "viewMode": 1,
+        "userSettingID": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "orderType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "outputParameters": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "periodAdditionBegin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "periodAdditionEnd": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "periodAdditionType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "placement": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "point": {
+      "children": [
+        "groupItems",
+        "order",
+        "selection",
+        "conditionalAppearance",
+        "outputParameters",
+        "filter",
+        "use"
+      ],
+      "childMin": {
+        "groupItems": 0,
+        "order": 1,
+        "selection": 1,
+        "conditionalAppearance": 0,
+        "outputParameters": 0,
+        "filter": 0,
+        "use": 0
+      },
+      "childMax": {
+        "groupItems": 1,
+        "order": 1,
+        "selection": 1,
+        "conditionalAppearance": 1,
+        "outputParameters": 1,
+        "filter": 1,
+        "use": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "presentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "presentationValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "right": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "row": {
+      "children": [
+        "groupItems",
+        "order",
+        "selection",
+        "item",
+        "name",
+        "filter",
+        "conditionalAppearance",
+        "outputParameters",
+        "userSettingID",
+        "userSettingPresentation",
+        "viewMode",
+        "use"
+      ],
+      "childMin": {
+        "groupItems": 0,
+        "order": 1,
+        "selection": 0,
+        "item": 0,
+        "name": 0,
+        "filter": 0,
+        "conditionalAppearance": 0,
+        "outputParameters": 0,
+        "userSettingID": 0,
+        "userSettingPresentation": 0,
+        "viewMode": 0,
+        "use": 0
+      },
+      "childMax": {
+        "groupItems": 1,
+        "order": 1,
+        "selection": 1,
+        "item": -1,
+        "name": 1,
+        "filter": 1,
+        "conditionalAppearance": 1,
+        "outputParameters": 1,
+        "userSettingID": 1,
+        "userSettingPresentation": 1,
+        "viewMode": 1,
+        "use": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "rowsUserSettingID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "selection": {
+      "children": [
+        "item",
+        "viewMode",
+        "userSettingID"
+      ],
+      "childMin": {
+        "item": 0,
+        "viewMode": 0,
+        "userSettingID": 0
+      },
+      "childMax": {
+        "item": -1,
+        "viewMode": 1,
+        "userSettingID": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "series": {
+      "children": [
+        "groupItems",
+        "order",
+        "selection",
+        "userSettingID",
+        "userSettingPresentation",
+        "filter",
+        "conditionalAppearance"
+      ],
+      "childMin": {
+        "groupItems": 1,
+        "order": 1,
+        "selection": 1,
+        "userSettingID": 0,
+        "userSettingPresentation": 0,
+        "filter": 0,
+        "conditionalAppearance": 0
+      },
+      "childMax": {
+        "groupItems": 1,
+        "order": 1,
+        "selection": 1,
+        "userSettingID": 1,
+        "userSettingPresentation": 1,
+        "filter": 1,
+        "conditionalAppearance": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "seriesUserSettingID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "seriesUserSettingPresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "settings": {
+      "children": [
+        "selection",
+        "filter",
+        "dataParameters",
+        "order",
+        "outputParameters",
+        "item",
+        "conditionalAppearance",
+        "userFields",
+        "itemsViewMode",
+        "itemsUserSettingID",
+        "additionalProperties"
+      ],
+      "childMin": {
+        "selection": 0,
+        "filter": 0,
+        "dataParameters": 0,
+        "order": 0,
+        "outputParameters": 0,
+        "item": 0,
+        "conditionalAppearance": 0,
+        "userFields": 0,
+        "itemsViewMode": 0,
+        "itemsUserSettingID": 0,
+        "additionalProperties": 0
+      },
+      "childMax": {
+        "selection": 1,
+        "filter": 1,
+        "dataParameters": 1,
+        "order": 1,
+        "outputParameters": 1,
+        "item": -1,
+        "conditionalAppearance": 1,
+        "userFields": 1,
+        "itemsViewMode": 1,
+        "itemsUserSettingID": 1,
+        "additionalProperties": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "title": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "totalExpression": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "totalExpressionPresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "use": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "useInFieldsHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "useInFilter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "useInGroup": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "useInHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "useInHierarchicalGroup": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "useInOverall": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "useInOverallHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "useInOverallResourceFieldsHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "useInParameters": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "useInResourceFieldsHeader": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "userFields": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "userSettingID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "userSettingPresentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "viewMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    }
+  },
+  "source": "http_v8.1c.ru_8.1_data-composition-system_settings.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.1/data-composition-system/settings",
+  "imports": [
+    {
+      "namespace": "http://v8.1c.ru/8.1/data-composition-system/core",
+      "schemaLocation": "http_v8.1c.ru_8.1_data-composition-system_core.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/core",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_core.xsd"
+    },
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 63,
+  "namedComplexTypes": [
+    "DataCompositionAttributesPlacement",
+    "DataCompositionChartLegendPlacement",
+    "DataCompositionFixation",
+    "DataCompositionGroupFieldsPlacement",
+    "DataCompositionGroupPlacement",
+    "DataCompositionGroupTemplateType",
+    "DataCompositionGroupUseVariant",
+    "DataCompositionPictureOutputType",
+    "DataCompositionResourcesAutoPosition",
+    "DataCompositionResourcesPlacement",
+    "DataCompositionResourcesPlacementInChart",
+    "DataCompositionTextOutputType",
+    "FilterItemComparison",
+    "FilterItemGroup",
+    "GroupItemAuto",
+    "GroupItemField",
+    "OrderItemAuto",
+    "OrderItemField",
+    "SelectedItemAuto",
+    "SelectedItemField",
+    "SelectedItemFolder",
+    "SettingsParameterValue",
+    "StructureItemChart",
+    "StructureItemGroup",
+    "StructureItemNestedObject",
+    "StructureItemTable",
+    "UserFieldCase",
+    "UserFieldExpression"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "DcsSettings",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

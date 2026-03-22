@@ -1,0 +1,24 @@
+{
+  "roots": [
+    "TransportBinding"
+  ],
+  "elements": {
+    "TransportBinding": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    }
+  },
+  "source": "http_schemas.xmlsoap.org_ws_2005_07_securitypolicy.xsd",
+  "targetNamespace": "http://schemas.xmlsoap.org/ws/2005/07/securitypolicy",
+  "imports": [],
+  "globalElementsCount": 1,
+  "namedComplexTypes": [],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "WsSecurityPolicy",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

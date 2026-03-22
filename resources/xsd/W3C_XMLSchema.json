@@ -1,0 +1,57 @@
+{
+  "roots": [
+    "import",
+    "schema"
+  ],
+  "elements": {
+    "import": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "namespace",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "schemaLocation",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "schema": {
+      "children": [
+        "import"
+      ],
+      "childMin": {
+        "import": 4
+      },
+      "childMax": {
+        "import": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "targetNamespace",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    }
+  },
+  "source": "http_www.w3.org_2001_XMLSchema.xsd",
+  "targetNamespace": "http://www.w3.org/2001/XMLSchema",
+  "imports": [],
+  "globalElementsCount": 2,
+  "namedComplexTypes": [],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "W3C_XMLSchema",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

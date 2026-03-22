@@ -1,0 +1,118 @@
+{
+  "roots": [
+    "DetailedDailySchedules",
+    "Months",
+    "WeekDays"
+  ],
+  "elements": {
+    "DetailedDailySchedules": {
+      "children": [
+        "WeekDays",
+        "Months"
+      ],
+      "childMin": {
+        "WeekDays": 1,
+        "Months": 1
+      },
+      "childMax": {
+        "WeekDays": 1,
+        "Months": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "BeginDate",
+          "type": "xs:date",
+          "use": "required"
+        },
+        {
+          "name": "BeginTime",
+          "type": "xs:time",
+          "use": "required"
+        },
+        {
+          "name": "CompletionInterval",
+          "type": "xs:boolean",
+          "use": "required"
+        },
+        {
+          "name": "CompletionTime",
+          "type": "xs:time",
+          "use": "required"
+        },
+        {
+          "name": "DayInMonth",
+          "type": "xs:boolean",
+          "use": "required"
+        },
+        {
+          "name": "DaysRepeatPeriod",
+          "type": "xs:boolean",
+          "use": "required"
+        },
+        {
+          "name": "EndDate",
+          "type": "xs:date",
+          "use": "required"
+        },
+        {
+          "name": "EndTime",
+          "type": "xs:time",
+          "use": "required"
+        },
+        {
+          "name": "RepeatPause",
+          "type": "xs:boolean",
+          "use": "required"
+        },
+        {
+          "name": "RepeatPeriodInDay",
+          "type": "xs:boolean",
+          "use": "required"
+        },
+        {
+          "name": "WeekDayInMonth",
+          "type": "xs:boolean",
+          "use": "required"
+        },
+        {
+          "name": "WeeksPeriod",
+          "type": "xs:boolean",
+          "use": "required"
+        }
+      ]
+    },
+    "Months": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "WeekDays": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    }
+  },
+  "source": "http_v8.1c.ru_8.1_data_enterprise.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.1/data/enterprise",
+  "imports": [],
+  "globalElementsCount": 3,
+  "namedComplexTypes": [
+    "AccountType",
+    "AccumulationRecordType",
+    "ComparisonType",
+    "FoldersAndItemsUse",
+    "LinkedValueChangeMode"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "DataEnterprise",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

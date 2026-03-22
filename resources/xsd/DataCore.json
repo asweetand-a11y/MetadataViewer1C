@@ -1,0 +1,354 @@
+{
+  "roots": [
+    "AllowedLength",
+    "AllowedSign",
+    "DateFractions",
+    "DateQualifiers",
+    "Digits",
+    "FractionDigits",
+    "Key",
+    "Length",
+    "NumberQualifiers",
+    "Property",
+    "StringQualifiers",
+    "Type",
+    "TypeId",
+    "TypeSet",
+    "Value",
+    "content",
+    "date",
+    "endDate",
+    "id",
+    "item",
+    "lang",
+    "lastId",
+    "pair",
+    "presentation",
+    "startDate",
+    "value",
+    "valueType",
+    "variant"
+  ],
+  "elements": {
+    "AllowedLength": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "AllowedSign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "DateFractions": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "DateQualifiers": {
+      "children": [
+        "DateFractions"
+      ],
+      "childMin": {
+        "DateFractions": 1
+      },
+      "childMax": {
+        "DateFractions": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Digits": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "FractionDigits": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Key": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "Length": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "NumberQualifiers": {
+      "children": [
+        "Digits",
+        "FractionDigits",
+        "AllowedSign"
+      ],
+      "childMin": {
+        "Digits": 1,
+        "FractionDigits": 1,
+        "AllowedSign": 1
+      },
+      "childMax": {
+        "Digits": 1,
+        "FractionDigits": 1,
+        "AllowedSign": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Property": {
+      "children": [
+        "Value"
+      ],
+      "childMin": {
+        "Value": 1
+      },
+      "childMax": {
+        "Value": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "StringQualifiers": {
+      "children": [
+        "Length",
+        "AllowedLength"
+      ],
+      "childMin": {
+        "Length": 1,
+        "AllowedLength": 1
+      },
+      "childMax": {
+        "Length": 1,
+        "AllowedLength": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Type": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TypeId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TypeSet": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "content": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "date": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:dateTime"
+    },
+    "endDate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:dateTime"
+    },
+    "id": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "item": {
+      "children": [
+        "lang",
+        "content"
+      ],
+      "childMin": {
+        "lang": 1,
+        "content": 1
+      },
+      "childMax": {
+        "lang": 1,
+        "content": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "lang": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "lastId": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "pair": {
+      "children": [
+        "Key",
+        "Value"
+      ],
+      "childMin": {
+        "Key": 1,
+        "Value": 1
+      },
+      "childMax": {
+        "Key": 1,
+        "Value": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "presentation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "startDate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:dateTime"
+    },
+    "value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "valueType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "variant": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    }
+  },
+  "source": "http_v8.1c.ru_8.1_data_core.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.1/data/core",
+  "imports": [
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.2/managed-application/core",
+      "schemaLocation": "http_v8.1c.ru_8.2_managed-application_core.xsd"
+    }
+  ],
+  "globalElementsCount": 28,
+  "namedComplexTypes": [
+    "FixedArray",
+    "LocalStringType",
+    "Map",
+    "Null",
+    "StandardBeginningDate",
+    "StandardBeginningDateVariant",
+    "StandardPeriod",
+    "StandardPeriodVariant",
+    "Structure",
+    "Type",
+    "TypeDescription",
+    "UUID",
+    "ValueListType",
+    "ValueStorage"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "DataCore",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

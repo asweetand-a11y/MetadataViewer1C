@@ -1,0 +1,2345 @@
+{
+  "roots": [
+    "area",
+    "autoIndent",
+    "autoMarkIncomplete",
+    "autoSize",
+    "b",
+    "backColor",
+    "beginColumn",
+    "beginColumnOffset",
+    "beginRow",
+    "beginRowOffset",
+    "blackAndWhite",
+    "border",
+    "borderColor",
+    "bottomBorder",
+    "bottomMargin",
+    "bySelectedColumns",
+    "c",
+    "centerFooter",
+    "centerHeader",
+    "code",
+    "collate",
+    "column",
+    "columnSizeChange",
+    "columns",
+    "columnsID",
+    "columnsItem",
+    "containsValue",
+    "control",
+    "controlType",
+    "copies",
+    "currentLanguage",
+    "d",
+    "defaultFormatIndex",
+    "defaultLanguage",
+    "description",
+    "detailParameter",
+    "detailsUse",
+    "document",
+    "drawing",
+    "drawingBorder",
+    "drawingHaveBottomBorder",
+    "drawingHaveLeftBorder",
+    "drawingHaveRightBorder",
+    "drawingHaveTopBorder",
+    "drawingID",
+    "drawingType",
+    "duplexType",
+    "e",
+    "editFormat",
+    "empty",
+    "endColumn",
+    "endColumnOffset",
+    "endRow",
+    "endRowOffset",
+    "f",
+    "fillType",
+    "fitToPage",
+    "font",
+    "footerSize",
+    "format",
+    "formatIndex",
+    "groupsBackColor",
+    "groupsColor",
+    "h",
+    "headerSize",
+    "headersBackColor",
+    "headersColor",
+    "height",
+    "hidden",
+    "horizontalAlignment",
+    "horizontalUnmerge",
+    "hyperLink",
+    "i",
+    "id",
+    "indent",
+    "index",
+    "indexTo",
+    "languageInfo",
+    "languageSettings",
+    "leftBorder",
+    "leftFooter",
+    "leftHeader",
+    "leftMargin",
+    "line",
+    "markIncomplete",
+    "markNegatives",
+    "mask",
+    "merge",
+    "name",
+    "namedItem",
+    "note",
+    "o",
+    "object",
+    "pageHeight",
+    "pageOrientation",
+    "pagePlacementAlternation",
+    "pageSize",
+    "pageWidth",
+    "paper",
+    "paperSource",
+    "parameter",
+    "pattern",
+    "patternColor",
+    "perPage",
+    "picHorizontalAlignment",
+    "picIndex",
+    "picVerticalAlignment",
+    "picture",
+    "pictureIndex",
+    "pictureParameter",
+    "pictureSize",
+    "pictureSizeMode",
+    "position",
+    "print",
+    "printAccuracy",
+    "printArea",
+    "printSettings",
+    "printerName",
+    "protection",
+    "quickDrag",
+    "r",
+    "repeatRows",
+    "rightBorder",
+    "rightFooter",
+    "rightHeader",
+    "rightMargin",
+    "row",
+    "rowsItem",
+    "scale",
+    "size",
+    "stepDirection",
+    "t",
+    "templateMode",
+    "text",
+    "textColor",
+    "textOrientation",
+    "textPlacement",
+    "textPosition",
+    "tfl",
+    "tl",
+    "topBorder",
+    "topMargin",
+    "type",
+    "v",
+    "value",
+    "valueType",
+    "verticalAlignment",
+    "verticalPageBreak",
+    "verticalUnmerge",
+    "vg",
+    "vgLevels",
+    "vgRows",
+    "w",
+    "width",
+    "widthWeightFactor",
+    "zOrder"
+  ],
+  "elements": {
+    "area": {
+      "children": [
+        "type",
+        "beginRow",
+        "endRow",
+        "beginColumn",
+        "endColumn",
+        "columnsID"
+      ],
+      "childMin": {
+        "type": 1,
+        "beginRow": 1,
+        "endRow": 1,
+        "beginColumn": 1,
+        "endColumn": 1,
+        "columnsID": 0
+      },
+      "childMax": {
+        "type": 1,
+        "beginRow": 1,
+        "endRow": 1,
+        "beginColumn": 1,
+        "endColumn": 1,
+        "columnsID": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "autoIndent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "autoMarkIncomplete": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "autoSize": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "b": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "backColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "beginColumn": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "beginColumnOffset": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "beginRow": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "beginRowOffset": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "blackAndWhite": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "border": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "borderColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "bottomBorder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "bottomMargin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "bySelectedColumns": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "c": {
+      "children": [
+        "c",
+        "f",
+        "tl",
+        "d",
+        "parameter",
+        "i",
+        "detailParameter",
+        "note",
+        "pictureParameter",
+        "v",
+        "control"
+      ],
+      "childMin": {
+        "c": 0,
+        "f": 0,
+        "tl": 0,
+        "d": 0,
+        "parameter": 0,
+        "i": 0,
+        "detailParameter": 0,
+        "note": 0,
+        "pictureParameter": 0,
+        "v": 0,
+        "control": 0
+      },
+      "childMax": {
+        "c": 1,
+        "f": 1,
+        "tl": 1,
+        "d": 1,
+        "parameter": 1,
+        "i": 1,
+        "detailParameter": 1,
+        "note": 1,
+        "pictureParameter": 1,
+        "v": 1,
+        "control": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": true,
+      "attributes": []
+    },
+    "centerFooter": {
+      "children": [
+        "f",
+        "tfl",
+        "tl"
+      ],
+      "childMin": {
+        "f": 1,
+        "tfl": 0,
+        "tl": 0
+      },
+      "childMax": {
+        "f": 1,
+        "tfl": 1,
+        "tl": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "centerHeader": {
+      "children": [
+        "f",
+        "tfl",
+        "tl"
+      ],
+      "childMin": {
+        "f": 1,
+        "tfl": 0,
+        "tl": 0
+      },
+      "childMax": {
+        "f": 1,
+        "tfl": 1,
+        "tl": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "code": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "collate": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "column": {
+      "children": [
+        "formatIndex"
+      ],
+      "childMin": {
+        "formatIndex": 1
+      },
+      "childMax": {
+        "formatIndex": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "columnSizeChange": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "columns": {
+      "children": [
+        "id",
+        "size",
+        "columnsItem",
+        "formatIndex"
+      ],
+      "childMin": {
+        "id": 0,
+        "size": 1,
+        "columnsItem": 0,
+        "formatIndex": 0
+      },
+      "childMax": {
+        "id": 1,
+        "size": 1,
+        "columnsItem": -1,
+        "formatIndex": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "columnsID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "columnsItem": {
+      "children": [
+        "index",
+        "column"
+      ],
+      "childMin": {
+        "index": 1,
+        "column": 1
+      },
+      "childMax": {
+        "index": 1,
+        "column": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "containsValue": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "control": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "controlType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "copies": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "currentLanguage": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "d": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "defaultFormatIndex": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "defaultLanguage": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "description": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "detailParameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "detailsUse": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "document": {
+      "children": [
+        "languageSettings",
+        "columns",
+        "rowsItem",
+        "templateMode",
+        "defaultFormatIndex",
+        "height",
+        "vgRows",
+        "format",
+        "merge",
+        "namedItem",
+        "line",
+        "font",
+        "verticalUnmerge",
+        "printSettings",
+        "printArea",
+        "drawing",
+        "picture",
+        "vgLevels",
+        "vg",
+        "leftHeader",
+        "leftFooter",
+        "centerHeader",
+        "rightHeader",
+        "centerFooter",
+        "rightFooter",
+        "horizontalUnmerge",
+        "verticalPageBreak",
+        "stepDirection"
+      ],
+      "childMin": {
+        "languageSettings": 1,
+        "columns": 1,
+        "rowsItem": 1,
+        "templateMode": 1,
+        "defaultFormatIndex": 0,
+        "height": 1,
+        "vgRows": 1,
+        "format": 1,
+        "merge": 0,
+        "namedItem": 0,
+        "line": 0,
+        "font": 0,
+        "verticalUnmerge": 0,
+        "printSettings": 0,
+        "printArea": 0,
+        "drawing": 0,
+        "picture": 0,
+        "vgLevels": 0,
+        "vg": 0,
+        "leftHeader": 0,
+        "leftFooter": 0,
+        "centerHeader": 0,
+        "rightHeader": 0,
+        "centerFooter": 0,
+        "rightFooter": 0,
+        "horizontalUnmerge": 0,
+        "verticalPageBreak": 0,
+        "stepDirection": 0
+      },
+      "childMax": {
+        "languageSettings": 1,
+        "columns": -1,
+        "rowsItem": -1,
+        "templateMode": 1,
+        "defaultFormatIndex": 1,
+        "height": 1,
+        "vgRows": 1,
+        "format": -1,
+        "merge": -1,
+        "namedItem": -1,
+        "line": -1,
+        "font": -1,
+        "verticalUnmerge": -1,
+        "printSettings": 1,
+        "printArea": 1,
+        "drawing": -1,
+        "picture": -1,
+        "vgLevels": 1,
+        "vg": -1,
+        "leftHeader": 1,
+        "leftFooter": 1,
+        "centerHeader": 1,
+        "rightHeader": 1,
+        "centerFooter": 1,
+        "rightFooter": 1,
+        "horizontalUnmerge": -1,
+        "verticalPageBreak": -1,
+        "stepDirection": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "drawing": {
+      "children": [
+        "drawingType",
+        "id",
+        "formatIndex",
+        "beginRow",
+        "beginRowOffset",
+        "endRow",
+        "endRowOffset",
+        "beginColumn",
+        "beginColumnOffset",
+        "endColumn",
+        "endColumnOffset",
+        "autoSize",
+        "pictureSize",
+        "zOrder",
+        "pictureIndex",
+        "text",
+        "object",
+        "detailParameter",
+        "parameter",
+        "value",
+        "tfl"
+      ],
+      "childMin": {
+        "drawingType": 1,
+        "id": 1,
+        "formatIndex": 1,
+        "beginRow": 1,
+        "beginRowOffset": 1,
+        "endRow": 1,
+        "endRowOffset": 1,
+        "beginColumn": 1,
+        "beginColumnOffset": 1,
+        "endColumn": 1,
+        "endColumnOffset": 1,
+        "autoSize": 1,
+        "pictureSize": 1,
+        "zOrder": 1,
+        "pictureIndex": 0,
+        "text": 0,
+        "object": 0,
+        "detailParameter": 0,
+        "parameter": 0,
+        "value": 0,
+        "tfl": 0
+      },
+      "childMax": {
+        "drawingType": 1,
+        "id": 1,
+        "formatIndex": 1,
+        "beginRow": 1,
+        "beginRowOffset": 1,
+        "endRow": 1,
+        "endRowOffset": 1,
+        "beginColumn": 1,
+        "beginColumnOffset": 1,
+        "endColumn": 1,
+        "endColumnOffset": 1,
+        "autoSize": 1,
+        "pictureSize": 1,
+        "zOrder": 1,
+        "pictureIndex": 1,
+        "text": 1,
+        "object": 1,
+        "detailParameter": 1,
+        "parameter": 1,
+        "value": 1,
+        "tfl": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "drawingBorder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "drawingHaveBottomBorder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "drawingHaveLeftBorder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "drawingHaveRightBorder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "drawingHaveTopBorder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "drawingID": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "drawingType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "duplexType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "e": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "editFormat": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "empty": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "endColumn": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "endColumnOffset": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "endRow": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "endRowOffset": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "f": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "fillType": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "fitToPage": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "font": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "bold",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "faceName",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "height",
+          "type": "xs:decimal",
+          "use": "optional"
+        },
+        {
+          "name": "italic",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "kind",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "ref",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "scale",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "strikeout",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "underline",
+          "type": "xs:boolean",
+          "use": "optional"
+        }
+      ]
+    },
+    "footerSize": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "format": {
+      "children": [
+        "width",
+        "font",
+        "border",
+        "backColor",
+        "textPlacement",
+        "horizontalAlignment",
+        "detailsUse",
+        "topBorder",
+        "indent",
+        "autoIndent",
+        "fillType",
+        "height",
+        "textColor",
+        "verticalAlignment",
+        "format",
+        "item",
+        "borderColor",
+        "columnSizeChange",
+        "leftBorder",
+        "bottomBorder",
+        "rightBorder",
+        "autoMarkIncomplete",
+        "markNegatives",
+        "picVerticalAlignment",
+        "drawingBorder",
+        "hidden",
+        "protection",
+        "editFormat",
+        "pattern",
+        "hyperLink",
+        "picIndex",
+        "picHorizontalAlignment",
+        "textPosition",
+        "containsValue",
+        "valueType",
+        "controlType",
+        "bySelectedColumns",
+        "pictureSizeMode",
+        "widthWeightFactor",
+        "textOrientation",
+        "patternColor",
+        "print",
+        "topMargin",
+        "drawingHaveLeftBorder",
+        "drawingHaveTopBorder",
+        "drawingHaveRightBorder",
+        "drawingHaveBottomBorder",
+        "mask",
+        "leftMargin"
+      ],
+      "childMin": {
+        "width": 0,
+        "font": 0,
+        "border": 0,
+        "backColor": 0,
+        "textPlacement": 0,
+        "horizontalAlignment": 0,
+        "detailsUse": 0,
+        "topBorder": 0,
+        "indent": 0,
+        "autoIndent": 0,
+        "fillType": 0,
+        "height": 0,
+        "textColor": 0,
+        "verticalAlignment": 0,
+        "format": 0,
+        "item": 0,
+        "borderColor": 0,
+        "columnSizeChange": 0,
+        "leftBorder": 0,
+        "bottomBorder": 0,
+        "rightBorder": 0,
+        "autoMarkIncomplete": 0,
+        "markNegatives": 0,
+        "picVerticalAlignment": 0,
+        "drawingBorder": 0,
+        "hidden": 0,
+        "protection": 0,
+        "editFormat": 0,
+        "pattern": 0,
+        "hyperLink": 0,
+        "picIndex": 0,
+        "picHorizontalAlignment": 0,
+        "textPosition": 0,
+        "containsValue": 0,
+        "valueType": 0,
+        "controlType": 0,
+        "bySelectedColumns": 0,
+        "pictureSizeMode": 0,
+        "widthWeightFactor": 0,
+        "textOrientation": 0,
+        "patternColor": 0,
+        "print": 0,
+        "topMargin": 0,
+        "drawingHaveLeftBorder": 0,
+        "drawingHaveTopBorder": 0,
+        "drawingHaveRightBorder": 0,
+        "drawingHaveBottomBorder": 0,
+        "mask": 0,
+        "leftMargin": 0
+      },
+      "childMax": {
+        "width": 1,
+        "font": 1,
+        "border": 1,
+        "backColor": 1,
+        "textPlacement": 1,
+        "horizontalAlignment": 1,
+        "detailsUse": 1,
+        "topBorder": 1,
+        "indent": 1,
+        "autoIndent": 1,
+        "fillType": 1,
+        "height": 1,
+        "textColor": 1,
+        "verticalAlignment": 1,
+        "format": 1,
+        "item": 1,
+        "borderColor": 1,
+        "columnSizeChange": 1,
+        "leftBorder": 1,
+        "bottomBorder": 1,
+        "rightBorder": 1,
+        "autoMarkIncomplete": 1,
+        "markNegatives": 1,
+        "picVerticalAlignment": 1,
+        "drawingBorder": 1,
+        "hidden": 1,
+        "protection": 1,
+        "editFormat": 1,
+        "pattern": 1,
+        "hyperLink": 1,
+        "picIndex": 1,
+        "picHorizontalAlignment": 1,
+        "textPosition": 1,
+        "containsValue": 1,
+        "valueType": 1,
+        "controlType": 1,
+        "bySelectedColumns": 1,
+        "pictureSizeMode": 1,
+        "widthWeightFactor": 1,
+        "textOrientation": 1,
+        "patternColor": 1,
+        "print": 1,
+        "topMargin": 1,
+        "drawingHaveLeftBorder": 1,
+        "drawingHaveTopBorder": 1,
+        "drawingHaveRightBorder": 1,
+        "drawingHaveBottomBorder": 1,
+        "mask": 1,
+        "leftMargin": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "formatIndex": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "groupsBackColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "groupsColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "h": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "headerSize": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "headersBackColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "headersColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "height": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "hidden": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "horizontalAlignment": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "horizontalUnmerge": {
+      "children": [
+        "r",
+        "c",
+        "h",
+        "w"
+      ],
+      "childMin": {
+        "r": 1,
+        "c": 1,
+        "h": 0,
+        "w": 0
+      },
+      "childMax": {
+        "r": 1,
+        "c": 1,
+        "h": 1,
+        "w": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "hyperLink": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "i": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "id": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "indent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "index": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "indexTo": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "languageInfo": {
+      "children": [
+        "id",
+        "code",
+        "description"
+      ],
+      "childMin": {
+        "id": 1,
+        "code": 1,
+        "description": 1
+      },
+      "childMax": {
+        "id": 1,
+        "code": 1,
+        "description": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "languageSettings": {
+      "children": [
+        "currentLanguage",
+        "defaultLanguage",
+        "languageInfo"
+      ],
+      "childMin": {
+        "currentLanguage": 1,
+        "defaultLanguage": 1,
+        "languageInfo": 1
+      },
+      "childMax": {
+        "currentLanguage": 1,
+        "defaultLanguage": 1,
+        "languageInfo": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "leftBorder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "leftFooter": {
+      "children": [
+        "f",
+        "tfl",
+        "tl"
+      ],
+      "childMin": {
+        "f": 1,
+        "tfl": 0,
+        "tl": 0
+      },
+      "childMax": {
+        "f": 1,
+        "tfl": 1,
+        "tl": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "leftHeader": {
+      "children": [
+        "f",
+        "tfl",
+        "tl"
+      ],
+      "childMin": {
+        "f": 1,
+        "tfl": 0,
+        "tl": 0
+      },
+      "childMax": {
+        "f": 1,
+        "tfl": 1,
+        "tl": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "leftMargin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "line": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "gap",
+          "type": "xs:boolean",
+          "use": "required"
+        },
+        {
+          "name": "width",
+          "type": "xs:integer",
+          "use": "required"
+        }
+      ]
+    },
+    "markIncomplete": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "markNegatives": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "mask": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "merge": {
+      "children": [
+        "r",
+        "c",
+        "w",
+        "h",
+        "columnsID"
+      ],
+      "childMin": {
+        "r": 1,
+        "c": 1,
+        "w": 0,
+        "h": 0,
+        "columnsID": 0
+      },
+      "childMax": {
+        "r": 1,
+        "c": 1,
+        "w": 1,
+        "h": 1,
+        "columnsID": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "name": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "namedItem": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "note": {
+      "children": [
+        "drawingType",
+        "id",
+        "formatIndex",
+        "text",
+        "beginRow",
+        "beginRowOffset",
+        "endRow",
+        "endRowOffset",
+        "beginColumn",
+        "beginColumnOffset",
+        "endColumn",
+        "endColumnOffset",
+        "autoSize",
+        "pictureSize"
+      ],
+      "childMin": {
+        "drawingType": 1,
+        "id": 1,
+        "formatIndex": 1,
+        "text": 1,
+        "beginRow": 1,
+        "beginRowOffset": 1,
+        "endRow": 1,
+        "endRowOffset": 1,
+        "beginColumn": 1,
+        "beginColumnOffset": 1,
+        "endColumn": 1,
+        "endColumnOffset": 1,
+        "autoSize": 1,
+        "pictureSize": 1
+      },
+      "childMax": {
+        "drawingType": 1,
+        "id": 1,
+        "formatIndex": 1,
+        "text": 1,
+        "beginRow": 1,
+        "beginRowOffset": 1,
+        "endRow": 1,
+        "endRowOffset": 1,
+        "beginColumn": 1,
+        "beginColumnOffset": 1,
+        "endColumn": 1,
+        "endColumnOffset": 1,
+        "autoSize": 1,
+        "pictureSize": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "o": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "object": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "pageHeight": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "pageOrientation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "pagePlacementAlternation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "pageSize": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "pageWidth": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "paper": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "paperSource": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "parameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "pattern": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "patternColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "perPage": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "picHorizontalAlignment": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "picIndex": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "picVerticalAlignment": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "picture": {
+      "children": [
+        "index",
+        "picture"
+      ],
+      "childMin": {
+        "index": 0,
+        "picture": 0
+      },
+      "childMax": {
+        "index": 1,
+        "picture": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": true,
+      "attributes": [
+        {
+          "name": "ref",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "t",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "tx",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "ty",
+          "type": "xs:integer",
+          "use": "optional"
+        }
+      ]
+    },
+    "pictureIndex": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "pictureParameter": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "pictureSize": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "pictureSizeMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "position": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "print": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "printAccuracy": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "printArea": {
+      "children": [
+        "type",
+        "beginRow",
+        "endRow",
+        "beginColumn",
+        "endColumn",
+        "columnsID"
+      ],
+      "childMin": {
+        "type": 1,
+        "beginRow": 1,
+        "endRow": 1,
+        "beginColumn": 1,
+        "endColumn": 1,
+        "columnsID": 0
+      },
+      "childMax": {
+        "type": 1,
+        "beginRow": 1,
+        "endRow": 1,
+        "beginColumn": 1,
+        "endColumn": 1,
+        "columnsID": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "printSettings": {
+      "children": [
+        "pageOrientation",
+        "scale",
+        "collate",
+        "copies",
+        "perPage",
+        "topMargin",
+        "leftMargin",
+        "bottomMargin",
+        "rightMargin",
+        "headerSize",
+        "footerSize",
+        "fitToPage",
+        "blackAndWhite",
+        "printerName",
+        "paper",
+        "paperSource",
+        "pageWidth",
+        "pageHeight",
+        "duplexType",
+        "pagePlacementAlternation"
+      ],
+      "childMin": {
+        "pageOrientation": 0,
+        "scale": 0,
+        "collate": 0,
+        "copies": 0,
+        "perPage": 0,
+        "topMargin": 1,
+        "leftMargin": 1,
+        "bottomMargin": 1,
+        "rightMargin": 1,
+        "headerSize": 1,
+        "footerSize": 1,
+        "fitToPage": 0,
+        "blackAndWhite": 0,
+        "printerName": 0,
+        "paper": 0,
+        "paperSource": 0,
+        "pageWidth": 0,
+        "pageHeight": 0,
+        "duplexType": 0,
+        "pagePlacementAlternation": 0
+      },
+      "childMax": {
+        "pageOrientation": 1,
+        "scale": 1,
+        "collate": 1,
+        "copies": 1,
+        "perPage": 1,
+        "topMargin": 1,
+        "leftMargin": 1,
+        "bottomMargin": 1,
+        "rightMargin": 1,
+        "headerSize": 1,
+        "footerSize": 1,
+        "fitToPage": 1,
+        "blackAndWhite": 1,
+        "printerName": 1,
+        "paper": 1,
+        "paperSource": 1,
+        "pageWidth": 1,
+        "pageHeight": 1,
+        "duplexType": 1,
+        "pagePlacementAlternation": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "printerName": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "protection": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "quickDrag": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "r": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "repeatRows": {
+      "children": [
+        "type",
+        "beginRow",
+        "endRow",
+        "beginColumn",
+        "endColumn"
+      ],
+      "childMin": {
+        "type": 1,
+        "beginRow": 1,
+        "endRow": 1,
+        "beginColumn": 1,
+        "endColumn": 1
+      },
+      "childMax": {
+        "type": 1,
+        "beginRow": 1,
+        "endRow": 1,
+        "beginColumn": 1,
+        "endColumn": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "rightBorder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "rightFooter": {
+      "children": [
+        "f",
+        "tfl",
+        "tl"
+      ],
+      "childMin": {
+        "f": 1,
+        "tfl": 0,
+        "tl": 0
+      },
+      "childMax": {
+        "f": 1,
+        "tfl": 1,
+        "tl": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "rightHeader": {
+      "children": [
+        "f",
+        "tfl",
+        "tl"
+      ],
+      "childMin": {
+        "f": 1,
+        "tfl": 0,
+        "tl": 0
+      },
+      "childMax": {
+        "f": 1,
+        "tfl": 1,
+        "tl": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "rightMargin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "row": {
+      "children": [
+        "c",
+        "formatIndex",
+        "empty",
+        "columnsID"
+      ],
+      "childMin": {
+        "c": 0,
+        "formatIndex": 0,
+        "empty": 0,
+        "columnsID": 0
+      },
+      "childMax": {
+        "c": -1,
+        "formatIndex": 1,
+        "empty": 1,
+        "columnsID": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "rowsItem": {
+      "children": [
+        "index",
+        "row",
+        "indexTo"
+      ],
+      "childMin": {
+        "index": 1,
+        "row": 1,
+        "indexTo": 0
+      },
+      "childMax": {
+        "index": 1,
+        "row": 1,
+        "indexTo": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "scale": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "size": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "stepDirection": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "t": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 1
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "templateMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "text": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "textColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "textOrientation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "textPlacement": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "textPosition": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "tfl": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "tl": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "topBorder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "topMargin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "type": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "v": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "valueType": {
+      "children": [
+        "Type",
+        "StringQualifiers",
+        "NumberQualifiers",
+        "DateQualifiers"
+      ],
+      "childMin": {
+        "Type": 1,
+        "StringQualifiers": 0,
+        "NumberQualifiers": 0,
+        "DateQualifiers": 0
+      },
+      "childMax": {
+        "Type": -1,
+        "StringQualifiers": 1,
+        "NumberQualifiers": 1,
+        "DateQualifiers": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "verticalAlignment": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "verticalPageBreak": {
+      "children": [
+        "position"
+      ],
+      "childMin": {
+        "position": 1
+      },
+      "childMax": {
+        "position": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "verticalUnmerge": {
+      "children": [
+        "r",
+        "c",
+        "w",
+        "h"
+      ],
+      "childMin": {
+        "r": 1,
+        "c": 1,
+        "w": 0,
+        "h": 0
+      },
+      "childMax": {
+        "r": 1,
+        "c": 1,
+        "w": 1,
+        "h": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "vg": {
+      "children": [
+        "b",
+        "t",
+        "e",
+        "o"
+      ],
+      "childMin": {
+        "b": 1,
+        "t": 0,
+        "e": 0,
+        "o": 0
+      },
+      "childMax": {
+        "b": 1,
+        "t": 1,
+        "e": 1,
+        "o": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "vgLevels": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "vgRows": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "w": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "width": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "widthWeightFactor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "zOrder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    }
+  },
+  "source": "http_v8.1c.ru_8.2_data_spreadsheet.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.2/data/spreadsheet",
+  "imports": [
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/core",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_core.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/ui",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_ui.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.2/data/chart",
+      "schemaLocation": "http_v8.1c.ru_8.2_data_chart.xsd"
+    },
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 156,
+  "namedComplexTypes": [
+    "NamedItemCells",
+    "NamedItemDrawing",
+    "PictureSize",
+    "SpreadsheetDocument",
+    "TextPositionRelativeToPicture"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "DataSpreadsheet",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

@@ -1,0 +1,256 @@
+{
+  "roots": [
+    "ClientApplicationInterface",
+    "ext",
+    "functionality",
+    "group",
+    "height",
+    "isCustom",
+    "item",
+    "left",
+    "mime",
+    "panel",
+    "panelDef",
+    "processingVariant",
+    "top",
+    "use",
+    "uti",
+    "uuid",
+    "value"
+  ],
+  "elements": {
+    "ClientApplicationInterface": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "ext": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "functionality": {
+      "children": [
+        "functionality",
+        "use"
+      ],
+      "childMin": {
+        "functionality": 0,
+        "use": 0
+      },
+      "childMax": {
+        "functionality": 1,
+        "use": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": true,
+      "attributes": []
+    },
+    "group": {
+      "children": [
+        "panel",
+        "group"
+      ],
+      "childMin": {
+        "panel": 0,
+        "group": 0
+      },
+      "childMax": {
+        "panel": 1,
+        "group": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:string",
+          "use": "optional"
+        }
+      ]
+    },
+    "height": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "isCustom": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "item": {
+      "children": [
+        "value"
+      ],
+      "childMin": {
+        "value": 1
+      },
+      "childMax": {
+        "value": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "left": {
+      "children": [
+        "group"
+      ],
+      "childMin": {
+        "group": 1
+      },
+      "childMax": {
+        "group": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "mime": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "panel": {
+      "children": [
+        "uuid",
+        "height"
+      ],
+      "childMin": {
+        "uuid": 1,
+        "height": 0
+      },
+      "childMax": {
+        "uuid": 1,
+        "height": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "panelDef": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "processingVariant": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "top": {
+      "children": [
+        "group"
+      ],
+      "childMin": {
+        "group": 1
+      },
+      "childMax": {
+        "group": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "use": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "uti": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "uuid": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    }
+  },
+  "source": "http_v8.1c.ru_8.2_managed-application_core.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.2/managed-application/core",
+  "imports": [
+    {
+      "namespace": "http://v8.1c.ru/8.3/xcf/logform",
+      "schemaLocation": "http_v8.1c.ru_8.3_xcf_logform.xsd"
+    },
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 17,
+  "namedComplexTypes": [
+    "AllowedIncomingShareRequestType",
+    "ApplicationUsePurpose",
+    "InterfaceLayouter"
+  ],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "ManagedAppCore",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

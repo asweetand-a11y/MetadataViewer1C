@@ -1,0 +1,93 @@
+{
+  "roots": [
+    "All",
+    "ExactlyOne",
+    "Policy",
+    "PolicyReference"
+  ],
+  "elements": {
+    "All": {
+      "children": [
+        "TransportBinding"
+      ],
+      "childMin": {
+        "TransportBinding": 1
+      },
+      "childMax": {
+        "TransportBinding": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ExactlyOne": {
+      "children": [
+        "All"
+      ],
+      "childMin": {
+        "All": 1
+      },
+      "childMax": {
+        "All": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Policy": {
+      "children": [
+        "ExactlyOne"
+      ],
+      "childMin": {
+        "ExactlyOne": 1
+      },
+      "childMax": {
+        "ExactlyOne": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "Id",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "PolicyReference": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "URI",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    }
+  },
+  "source": "http_schemas.xmlsoap.org_ws_2004_09_policy.xsd",
+  "targetNamespace": "http://schemas.xmlsoap.org/ws/2004/09/policy",
+  "imports": [
+    {
+      "namespace": "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
+      "schemaLocation": ""
+    },
+    {
+      "namespace": "http://schemas.xmlsoap.org/ws/2005/07/securitypolicy",
+      "schemaLocation": "http_schemas.xmlsoap.org_ws_2005_07_securitypolicy.xsd"
+    }
+  ],
+  "globalElementsCount": 4,
+  "namedComplexTypes": [],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "WsPolicy",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}

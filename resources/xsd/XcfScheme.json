@@ -1,0 +1,1217 @@
+{
+  "roots": [
+    "Activity",
+    "AddressingAttribute",
+    "AddressingAttributes",
+    "Angle",
+    "BackColor",
+    "BeginArrow",
+    "BlackAndWhite",
+    "Border",
+    "BottomMargin",
+    "Completion",
+    "Condition",
+    "Connect",
+    "ConnectionLine",
+    "Decoration",
+    "DecorativeLine",
+    "DrawGridMode",
+    "End",
+    "EndArrow",
+    "Event",
+    "Events",
+    "Explanation",
+    "FalsePortIndex",
+    "FitPageMode",
+    "FlipMode",
+    "Font",
+    "From",
+    "GraphicalSchema",
+    "GridEnabled",
+    "GridHorizontalStep",
+    "GridVerticalStep",
+    "Group",
+    "GroupNumber",
+    "HorizontalAlign",
+    "Hyperlink",
+    "Item",
+    "Items",
+    "LeftMargin",
+    "Line",
+    "LineColor",
+    "Location",
+    "ManualyMovedSegments",
+    "Name",
+    "Picture",
+    "PictureLocation",
+    "PictureSize",
+    "PivotPoints",
+    "Point",
+    "PortIndex",
+    "PrintParameters",
+    "Processing",
+    "Properties",
+    "RightMargin",
+    "Segment",
+    "Shape",
+    "Start",
+    "TabOrder",
+    "TaskDescription",
+    "TextColor",
+    "TextLocation",
+    "Title",
+    "To",
+    "ToolTip",
+    "TopMargin",
+    "Transparent",
+    "TruePortIndex",
+    "Value",
+    "VerticalAlign",
+    "ZOrder"
+  ],
+  "elements": {
+    "Activity": {
+      "children": [
+        "Properties",
+        "Events"
+      ],
+      "childMin": {
+        "Properties": 1,
+        "Events": 1
+      },
+      "childMax": {
+        "Properties": 1,
+        "Events": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "uuid",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "AddressingAttribute": {
+      "children": [
+        "Value"
+      ],
+      "childMin": {
+        "Value": 1
+      },
+      "childMax": {
+        "Value": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "ref",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "AddressingAttributes": {
+      "children": [
+        "AddressingAttribute"
+      ],
+      "childMin": {
+        "AddressingAttribute": 0
+      },
+      "childMax": {
+        "AddressingAttribute": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Angle": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:anyType"
+    },
+    "BackColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "BeginArrow": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "BlackAndWhite": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Border": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "gap",
+          "type": "xs:boolean",
+          "use": "required"
+        },
+        {
+          "name": "width",
+          "type": "xs:boolean",
+          "use": "required"
+        }
+      ]
+    },
+    "BottomMargin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Completion": {
+      "children": [
+        "Properties",
+        "Events"
+      ],
+      "childMin": {
+        "Properties": 1,
+        "Events": 1
+      },
+      "childMax": {
+        "Properties": 1,
+        "Events": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "uuid",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Condition": {
+      "children": [
+        "Properties",
+        "Events"
+      ],
+      "childMin": {
+        "Properties": 1,
+        "Events": 1
+      },
+      "childMax": {
+        "Properties": 1,
+        "Events": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "uuid",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Connect": {
+      "children": [
+        "From",
+        "To"
+      ],
+      "childMin": {
+        "From": 1,
+        "To": 1
+      },
+      "childMax": {
+        "From": 1,
+        "To": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ConnectionLine": {
+      "children": [
+        "Properties"
+      ],
+      "childMin": {
+        "Properties": 1
+      },
+      "childMax": {
+        "Properties": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        }
+      ]
+    },
+    "Decoration": {
+      "children": [
+        "Properties"
+      ],
+      "childMin": {
+        "Properties": 1
+      },
+      "childMax": {
+        "Properties": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        }
+      ]
+    },
+    "DecorativeLine": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "DrawGridMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "End": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "x",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "y",
+          "type": "xs:integer",
+          "use": "required"
+        }
+      ]
+    },
+    "EndArrow": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Event": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "name",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Events": {
+      "children": [
+        "Event"
+      ],
+      "childMin": {
+        "Event": 1
+      },
+      "childMax": {
+        "Event": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Explanation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "FalsePortIndex": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "FitPageMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "FlipMode": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Font": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "bold",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "faceName",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "height",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "italic",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "kind",
+          "type": "xs:string",
+          "use": "required"
+        },
+        {
+          "name": "ref",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "strikeout",
+          "type": "xs:boolean",
+          "use": "optional"
+        },
+        {
+          "name": "underline",
+          "type": "xs:boolean",
+          "use": "optional"
+        }
+      ]
+    },
+    "From": {
+      "children": [
+        "Item",
+        "PortIndex"
+      ],
+      "childMin": {
+        "Item": 1,
+        "PortIndex": 1
+      },
+      "childMax": {
+        "Item": 1,
+        "PortIndex": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "GraphicalSchema": {
+      "children": [
+        "BackColor",
+        "GridEnabled",
+        "DrawGridMode",
+        "GridHorizontalStep",
+        "GridVerticalStep",
+        "PrintParameters",
+        "Items"
+      ],
+      "childMin": {
+        "BackColor": 1,
+        "GridEnabled": 1,
+        "DrawGridMode": 1,
+        "GridHorizontalStep": 1,
+        "GridVerticalStep": 1,
+        "PrintParameters": 1,
+        "Items": 1
+      },
+      "childMax": {
+        "BackColor": 1,
+        "GridEnabled": 1,
+        "DrawGridMode": 1,
+        "GridHorizontalStep": 1,
+        "GridVerticalStep": 1,
+        "PrintParameters": 1,
+        "Items": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "version",
+          "type": "xs:decimal",
+          "use": "required"
+        }
+      ]
+    },
+    "GridEnabled": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "GridHorizontalStep": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "GridVerticalStep": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Group": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "GroupNumber": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "HorizontalAlign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Hyperlink": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "Item": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Items": {
+      "children": [
+        "Start",
+        "ConnectionLine",
+        "Completion",
+        "Activity",
+        "Condition",
+        "Decoration",
+        "Processing"
+      ],
+      "childMin": {
+        "Start": 0,
+        "ConnectionLine": 0,
+        "Completion": 0,
+        "Activity": 0,
+        "Condition": 0,
+        "Decoration": 0,
+        "Processing": 0
+      },
+      "childMax": {
+        "Start": 1,
+        "ConnectionLine": -1,
+        "Completion": 1,
+        "Activity": -1,
+        "Condition": -1,
+        "Decoration": -1,
+        "Processing": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "LeftMargin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Line": {
+      "children": [
+        "style"
+      ],
+      "childMin": {
+        "style": 1
+      },
+      "childMax": {
+        "style": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "gap",
+          "type": "xs:boolean",
+          "use": "required"
+        },
+        {
+          "name": "width",
+          "type": "xs:boolean",
+          "use": "required"
+        }
+      ]
+    },
+    "LineColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Location": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "bottom",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "left",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "right",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "top",
+          "type": "xs:integer",
+          "use": "required"
+        }
+      ]
+    },
+    "ManualyMovedSegments": {
+      "children": [
+        "Segment"
+      ],
+      "childMin": {
+        "Segment": 1
+      },
+      "childMax": {
+        "Segment": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Name": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Picture": {
+      "children": [
+        "Abs",
+        "LoadTransparent"
+      ],
+      "childMin": {
+        "Abs": 0,
+        "LoadTransparent": 0
+      },
+      "childMax": {
+        "Abs": 1,
+        "LoadTransparent": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "PictureLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "PictureSize": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "PivotPoints": {
+      "children": [
+        "Point"
+      ],
+      "childMin": {
+        "Point": 2
+      },
+      "childMax": {
+        "Point": -1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Point": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "x",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "y",
+          "type": "xs:integer",
+          "use": "required"
+        }
+      ]
+    },
+    "PortIndex": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "PrintParameters": {
+      "children": [
+        "TopMargin",
+        "LeftMargin",
+        "BottomMargin",
+        "RightMargin",
+        "BlackAndWhite",
+        "FitPageMode"
+      ],
+      "childMin": {
+        "TopMargin": 1,
+        "LeftMargin": 1,
+        "BottomMargin": 1,
+        "RightMargin": 1,
+        "BlackAndWhite": 1,
+        "FitPageMode": 1
+      },
+      "childMax": {
+        "TopMargin": 1,
+        "LeftMargin": 1,
+        "BottomMargin": 1,
+        "RightMargin": 1,
+        "BlackAndWhite": 1,
+        "FitPageMode": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "Processing": {
+      "children": [
+        "Properties",
+        "Events"
+      ],
+      "childMin": {
+        "Properties": 1,
+        "Events": 1
+      },
+      "childMax": {
+        "Properties": 1,
+        "Events": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "required"
+        },
+        {
+          "name": "uuid",
+          "type": "xs:string",
+          "use": "required"
+        }
+      ]
+    },
+    "Properties": {
+      "children": [
+        "Name",
+        "Title",
+        "ToolTip",
+        "TabOrder",
+        "BackColor",
+        "TextColor",
+        "LineColor",
+        "GroupNumber",
+        "ZOrder",
+        "Hyperlink",
+        "Transparent",
+        "Font",
+        "HorizontalAlign",
+        "VerticalAlign",
+        "PictureLocation",
+        "PivotPoints",
+        "Connect",
+        "Line",
+        "DecorativeLine",
+        "TextLocation",
+        "BeginArrow",
+        "EndArrow",
+        "Location",
+        "Border",
+        "Picture",
+        "PictureSize",
+        "TaskDescription",
+        "Explanation",
+        "Group",
+        "AddressingAttributes",
+        "TruePortIndex",
+        "FalsePortIndex",
+        "ManualyMovedSegments",
+        "Shape",
+        "FlipMode",
+        "Angle"
+      ],
+      "childMin": {
+        "Name": 1,
+        "Title": 1,
+        "ToolTip": 1,
+        "TabOrder": 1,
+        "BackColor": 1,
+        "TextColor": 1,
+        "LineColor": 1,
+        "GroupNumber": 1,
+        "ZOrder": 1,
+        "Hyperlink": 1,
+        "Transparent": 1,
+        "Font": 1,
+        "HorizontalAlign": 1,
+        "VerticalAlign": 1,
+        "PictureLocation": 1,
+        "PivotPoints": 0,
+        "Connect": 0,
+        "Line": 0,
+        "DecorativeLine": 0,
+        "TextLocation": 0,
+        "BeginArrow": 0,
+        "EndArrow": 0,
+        "Location": 0,
+        "Border": 0,
+        "Picture": 0,
+        "PictureSize": 0,
+        "TaskDescription": 0,
+        "Explanation": 0,
+        "Group": 0,
+        "AddressingAttributes": 0,
+        "TruePortIndex": 0,
+        "FalsePortIndex": 0,
+        "ManualyMovedSegments": 0,
+        "Shape": 0,
+        "FlipMode": 0,
+        "Angle": 0
+      },
+      "childMax": {
+        "Name": 1,
+        "Title": 1,
+        "ToolTip": 1,
+        "TabOrder": 1,
+        "BackColor": 1,
+        "TextColor": 1,
+        "LineColor": 1,
+        "GroupNumber": 1,
+        "ZOrder": 1,
+        "Hyperlink": 1,
+        "Transparent": 1,
+        "Font": 1,
+        "HorizontalAlign": 1,
+        "VerticalAlign": 1,
+        "PictureLocation": 1,
+        "PivotPoints": 1,
+        "Connect": 1,
+        "Line": 1,
+        "DecorativeLine": 1,
+        "TextLocation": 1,
+        "BeginArrow": 1,
+        "EndArrow": 1,
+        "Location": 1,
+        "Border": 1,
+        "Picture": 1,
+        "PictureSize": 1,
+        "TaskDescription": 1,
+        "Explanation": 1,
+        "Group": 1,
+        "AddressingAttributes": 1,
+        "TruePortIndex": 1,
+        "FalsePortIndex": 1,
+        "ManualyMovedSegments": 1,
+        "Shape": 1,
+        "FlipMode": 1,
+        "Angle": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "RightMargin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Segment": {
+      "children": [
+        "Start",
+        "End"
+      ],
+      "childMin": {
+        "Start": 1,
+        "End": 1
+      },
+      "childMax": {
+        "Start": 1,
+        "End": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "index",
+          "type": "xs:integer",
+          "use": "required"
+        }
+      ]
+    },
+    "Shape": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Start": {
+      "children": [
+        "Properties",
+        "Events"
+      ],
+      "childMin": {
+        "Properties": 0,
+        "Events": 0
+      },
+      "childMax": {
+        "Properties": 1,
+        "Events": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": [
+        {
+          "name": "id",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "uuid",
+          "type": "xs:string",
+          "use": "optional"
+        },
+        {
+          "name": "x",
+          "type": "xs:integer",
+          "use": "optional"
+        },
+        {
+          "name": "y",
+          "type": "xs:integer",
+          "use": "optional"
+        }
+      ]
+    },
+    "TabOrder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "TaskDescription": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TextColor": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "TextLocation": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "Title": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "To": {
+      "children": [
+        "Item",
+        "PortIndex"
+      ],
+      "childMin": {
+        "Item": 1,
+        "PortIndex": 1
+      },
+      "childMax": {
+        "Item": 1,
+        "PortIndex": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "ToolTip": {
+      "children": [
+        "item"
+      ],
+      "childMin": {
+        "item": 0
+      },
+      "childMax": {
+        "item": 1
+      },
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "TopMargin": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Transparent": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:boolean"
+    },
+    "TruePortIndex": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    },
+    "Value": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": false,
+      "mixed": false,
+      "attributes": []
+    },
+    "VerticalAlign": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:string"
+    },
+    "ZOrder": {
+      "children": [],
+      "childMin": {},
+      "childMax": {},
+      "allowAny": false,
+      "simpleType": true,
+      "xsd_type": "xs:integer"
+    }
+  },
+  "source": "http_v8.1c.ru_8.3_xcf_scheme.xsd",
+  "targetNamespace": "http://v8.1c.ru/8.3/xcf/scheme",
+  "imports": [
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/core",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_core.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.1/data/ui",
+      "schemaLocation": "http_v8.1c.ru_8.1_data_ui.xsd"
+    },
+    {
+      "namespace": "http://v8.1c.ru/8.3/xcf/readable",
+      "schemaLocation": "http_v8.1c.ru_8.3_xcf_readable.xsd"
+    },
+    {
+      "namespace": "http://www.w3.org/2001/XMLSchema-instance",
+      "schemaLocation": ""
+    }
+  ],
+  "globalElementsCount": 68,
+  "namedComplexTypes": [],
+  "namedSimpleTypes": [],
+  "exportJsonBasename": "XcfScheme",
+  "mergeNote": "Дополнено из предыдущего JSON: сохранены корни/элементы, отсутствующие в XSD; ChildObjects — объединение списков дочерних элементов."
+}
