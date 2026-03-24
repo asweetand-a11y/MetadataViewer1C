@@ -41,6 +41,8 @@ const typeUtils_1 = require("../../utils/typeUtils");
 const EditAttributeModal_1 = require("./modals/EditAttributeModal");
 const EditCommandModal_1 = require("./modals/EditCommandModal");
 const ConfirmDeleteModal_1 = require("./modals/ConfirmDeleteModal");
+const formLayoutProps_1 = require("./formLayoutProps");
+const formSchemaEnums_1 = require("./formSchemaEnums");
 function formatValue(value) {
     if (value === null)
         return 'null';
@@ -361,7 +363,12 @@ function collectColumnsFromItem(item, prefix) {
                 // Листовые колонки внутри группы
                 const leafCols = [];
                 for (const ch of child) {
-                    if (ch.type === 'InputField' || ch.type === 'LabelField' || ch.type === 'PictureField' || ch.type === 'TableField' || ch.type === 'CheckBoxField') {
+                    if (ch.type === 'InputField' ||
+                        ch.type === 'SelectField' ||
+                        ch.type === 'LabelField' ||
+                        ch.type === 'PictureField' ||
+                        ch.type === 'TableField' ||
+                        ch.type === 'CheckBoxField') {
                         const chTitle = getItemTitleFromProps(ch.properties) || ch.name || deriveLabelFromDataPath(getDataPath(ch.properties)) || '';
                         if (!chTitle)
                             continue;
@@ -379,7 +386,12 @@ function collectColumnsFromItem(item, prefix) {
         }
     }
     // Листовые элементы (колонки)
-    if (item.type === 'InputField' || item.type === 'LabelField' || item.type === 'PictureField' || item.type === 'TableField' || item.type === 'CheckBoxField') {
+    if (item.type === 'InputField' ||
+        item.type === 'SelectField' ||
+        item.type === 'LabelField' ||
+        item.type === 'PictureField' ||
+        item.type === 'TableField' ||
+        item.type === 'CheckBoxField') {
         if (!headerAllowed && !t)
             return [];
         const colTitle = t || item.name || deriveLabelFromDataPath(dp) || '';
@@ -428,7 +440,8 @@ function deriveTableColumns(table) {
         if (ch.type === 'CommandBar' ||
             isPanelItemType(ch.type) ||
             ch.type === 'SearchStringAddition' ||
-            ch.type === 'ViewStatusAddition') {
+            ch.type === 'ViewStatusAddition' ||
+            ch.type === 'SearchControlAddition') {
             continue;
         }
         cols.push(...collectColumnsFromItem(ch, ''));
@@ -451,7 +464,12 @@ function deriveTableColumnsStructured(table) {
     const collectLeafsWithPrefix = (it, prefix) => {
         if (!it)
             return [];
-        if (it.type === 'InputField' || it.type === 'LabelField' || it.type === 'PictureField' || it.type === 'TableField' || it.type === 'CheckBoxField') {
+        if (it.type === 'InputField' ||
+            it.type === 'SelectField' ||
+            it.type === 'LabelField' ||
+            it.type === 'PictureField' ||
+            it.type === 'TableField' ||
+            it.type === 'CheckBoxField') {
             const t = leafTitle(it);
             return t ? [prefix ? `${prefix} / ${t}` : t] : [];
         }
@@ -534,7 +552,12 @@ function toLeafNodes(items, prefix) {
             continue;
         if (it.type === 'CommandBar' || isPanelItemType(it.type))
             continue;
-        if (it.type === 'InputField' || it.type === 'LabelField' || it.type === 'PictureField' || it.type === 'TableField' || it.type === 'CheckBoxField') {
+        if (it.type === 'InputField' ||
+            it.type === 'SelectField' ||
+            it.type === 'LabelField' ||
+            it.type === 'PictureField' ||
+            it.type === 'TableField' ||
+            it.type === 'CheckBoxField') {
             const lt = getLeafTitle(it);
             const title = lt ? (prefix ? `${prefix} / ${lt}` : lt) : '';
             if (title)
@@ -650,11 +673,21 @@ function buildTableHeadModel(table) {
             continue;
         if (ch.type === 'CommandBar' || isPanelItemType(ch.type))
             continue;
+        if (ch.type === 'SearchStringAddition' ||
+            ch.type === 'ViewStatusAddition' ||
+            ch.type === 'SearchControlAddition') {
+            continue;
+        }
         if (ch.type === 'ColumnGroup') {
             topNodes.push(...parseColumnGroupToNodes(ch, 1));
             continue;
         }
-        if (ch.type === 'InputField' || ch.type === 'LabelField' || ch.type === 'PictureField' || ch.type === 'TableField' || ch.type === 'CheckBoxField') {
+        if (ch.type === 'InputField' ||
+            ch.type === 'SelectField' ||
+            ch.type === 'LabelField' ||
+            ch.type === 'PictureField' ||
+            ch.type === 'TableField' ||
+            ch.type === 'CheckBoxField') {
             const t = getLeafTitle(ch);
             if (t)
                 topNodes.push({ kind: 'leaf', title: t });
@@ -801,6 +834,7 @@ const FormPreviewApp = ({ vscode }) => {
     const [form, setForm] = (0, react_1.useState)(null);
     const [isDirty, setIsDirty] = (0, react_1.useState)(false);
     const [metadata, setMetadata] = (0, react_1.useState)({ registers: [], referenceTypes: [] });
+    const [formSchemaEnums, setFormSchemaEnums] = (0, react_1.useState)(undefined);
     const [selectedPath, setSelectedPath] = (0, react_1.useState)('');
     const [leftTab, setLeftTab] = (0, react_1.useState)('elements');
     const [rightTab, setRightTab] = (0, react_1.useState)('attributes');
@@ -918,6 +952,13 @@ const FormPreviewApp = ({ vscode }) => {
                         referenceTypeStructures: md.referenceTypeStructures && typeof md.referenceTypeStructures === 'object' ? md.referenceTypeStructures : undefined,
                     });
                 }
+                const fse = message.formSchemaEnums;
+                if (fse?.byProperty && typeof fse.byProperty === 'object') {
+                    setFormSchemaEnums(fse);
+                }
+                else {
+                    setFormSchemaEnums(undefined);
+                }
                 const normalized = attachPanelsToForm(payload);
                 setForm(normalized);
                 setIsDirty(false);
@@ -1013,12 +1054,14 @@ const FormPreviewApp = ({ vscode }) => {
                 return prev;
             const attrs = Array.isArray(prev.attributes) ? [...prev.attributes] : [];
             const formattedType = (0, typeUtils_1.formatTypeForDisplay)(type);
+            // Name/Type не дублируем в properties — они в attr.name / attr.type; UseAlways в XSD — <Field>, не boolean в тексте
             const baseProperties = {
                 ...(attributeModal?.mode === 'edit' && attributeModal.index !== undefined ? (attrs[attributeModal.index]?.properties || {}) : {}),
-                Name: name,
-                UseAlways: useAlways,
+                ...(useAlways ? { UseAlways: true } : {}),
                 Type: type,
             };
+            delete baseProperties.Name;
+            delete baseProperties.name;
             const isValueTable = isValueTableTypeValue(type);
             if (isValueTable && columns) {
                 const serializedColumns = serializeAttributeColumns(columns);
@@ -1282,7 +1325,7 @@ const FormPreviewApp = ({ vscode }) => {
                             react_1.default.createElement("b", null, getItemLabel(selectedItem)))) : null,
                         react_1.default.createElement(DesignerPreview, { items: form.childItems || [], selectedPath: selectedPath, onSelect: onSelect })))),
             propertiesPanelOpen && (react_1.default.createElement("div", { className: "edt-properties-panel", style: { width: 320, minWidth: 260, flexShrink: 0 } },
-                react_1.default.createElement(PropertiesPanel, { item: selectedItem, commands: form.commands || [], title: getPropertiesPanelTitle(selectedItem), onClose: () => setPropertiesPanelOpen(false), onPropertyChange: (key, nextValue) => {
+                react_1.default.createElement(PropertiesPanel, { item: selectedItem, commands: form.commands || [], title: getPropertiesPanelTitle(selectedItem), formSchemaEnums: formSchemaEnums, onClose: () => setPropertiesPanelOpen(false), onPropertyChange: (key, nextValue) => {
                         if (!selectedPath)
                             return;
                         setFormAndDirty((prev) => {
@@ -1622,7 +1665,7 @@ const CommandsGrid = ({ commands, selectedIndex, onSelectIndex }) => {
  * Редактор свойств выбранного элемента формы (MVP).
  * Изменения применяются "в памяти" (state) и сразу отражаются в дизайнере.
  */
-const ElementPropertiesEditor = ({ item, onChange, searchFilter }) => {
+const ElementPropertiesEditor = ({ item, onChange, searchFilter, parentElementType, formSchemaEnums }) => {
     const [drafts, setDrafts] = (0, react_1.useState)({});
     const [errors, setErrors] = (0, react_1.useState)({});
     /** Ширина колонки «Свойство» в % (остальное — «Значение»). */
@@ -1756,7 +1799,15 @@ const ElementPropertiesEditor = ({ item, onChange, searchFilter }) => {
                 const isBool = typeof r.value === 'boolean';
                 const isJson = typeof r.value === 'object' && r.value !== null;
                 const isNum = typeof r.value === 'number';
+                const isStr = typeof r.value === 'string';
                 const isNullish = r.value === null || r.value === undefined;
+                const enumOpts = isStr
+                    ? (0, formSchemaEnums_1.resolvePropertyEnumOptions)(r.key, parentElementType, formSchemaEnums)
+                    : undefined;
+                const draftStr = drafts[r.key] ?? '';
+                const selectOptions = enumOpts && enumOpts.length > 0
+                    ? Array.from(new Set(draftStr && !enumOpts.includes(draftStr) ? [draftStr, ...enumOpts] : enumOpts))
+                    : undefined;
                 return (react_1.default.createElement("tr", { key: r.key },
                     react_1.default.createElement("td", { className: "edt-grid__cell--mono edt-props-editor__cell-property", title: r.key }, r.key),
                     react_1.default.createElement("td", { className: "edt-props-editor__resizer-cell" }),
@@ -1764,7 +1815,12 @@ const ElementPropertiesEditor = ({ item, onChange, searchFilter }) => {
                         react_1.default.createElement("input", { type: "checkbox", checked: Boolean(r.value), onChange: (e) => onChange(r.key, e.target.checked) }),
                         react_1.default.createElement("span", null, Boolean(r.value) ? 'true' : 'false'))) : isJson ? (react_1.default.createElement(react_1.default.Fragment, null,
                         react_1.default.createElement("textarea", { className: `edt-props-editor__textarea ${err ? 'is-error' : ''}`, value: drafts[r.key] ?? '', onChange: (e) => onChangeDraft(r.key, e.target.value), onBlur: () => apply(r.key) }),
-                        err ? react_1.default.createElement("div", { className: "edt-props-editor__error" }, err) : null)) : (react_1.default.createElement(react_1.default.Fragment, null,
+                        err ? react_1.default.createElement("div", { className: "edt-props-editor__error" }, err) : null)) : isStr && selectOptions ? (react_1.default.createElement("select", { className: `edt-props-editor__select ${err ? 'is-error' : ''}`, value: draftStr, title: r.key, "aria-label": r.key, onChange: (e) => {
+                            const v = e.target.value;
+                            onChangeDraft(r.key, v);
+                            clearError(r.key);
+                            onChange(r.key, v);
+                        } }, selectOptions.map((opt) => (react_1.default.createElement("option", { key: opt, value: opt }, opt))))) : (react_1.default.createElement(react_1.default.Fragment, null,
                         react_1.default.createElement("input", { className: `edt-props-editor__input ${err ? 'is-error' : ''}`, value: drafts[r.key] ?? '', disabled: isNullish, onChange: (e) => onChangeDraft(r.key, e.target.value), onBlur: () => apply(r.key), inputMode: isNum ? 'numeric' : undefined }),
                         err ? react_1.default.createElement("div", { className: "edt-props-editor__error" }, err) : null)))));
             }))))));
@@ -1852,7 +1908,7 @@ const EVENT_RUSSIAN_TO_XML_NAME = {
 /**
  * Панель «Свойства»: заголовок, поиск, секции «Основные» и «События».
  */
-const PropertiesPanel = ({ item, commands, title, onClose, onPropertyChange, onOpenModuleAtProcedure }) => {
+const PropertiesPanel = ({ item, commands, title, onClose, onPropertyChange, onOpenModuleAtProcedure, formSchemaEnums }) => {
     const [propertySearch, setPropertySearch] = (0, react_1.useState)('');
     /** Высота блока «Основные» в пикселях (перетаскиваемый разделитель). */
     const [mainSectionHeight, setMainSectionHeight] = (0, react_1.useState)(200);
@@ -1921,7 +1977,7 @@ const PropertiesPanel = ({ item, commands, title, onClose, onPropertyChange, onO
                 } },
                 react_1.default.createElement("details", { className: "edt-properties-panel__section", open: true, style: { flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' } },
                     react_1.default.createElement("summary", { className: "edt-properties-panel__section-title" }, "\u041E\u0441\u043D\u043E\u0432\u043D\u044B\u0435"),
-                    react_1.default.createElement("div", { className: "edt-properties-panel__section-content edt-properties-panel__section-content--scrollable" }, item ? (react_1.default.createElement(ElementPropertiesEditor, { item: item, onChange: onPropertyChange, searchFilter: propertySearch })) : (react_1.default.createElement("div", { className: "form-preview__empty" }, "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0432 \u0434\u0435\u0440\u0435\u0432\u0435"))))),
+                    react_1.default.createElement("div", { className: "edt-properties-panel__section-content edt-properties-panel__section-content--scrollable" }, item ? (react_1.default.createElement(ElementPropertiesEditor, { item: item, onChange: onPropertyChange, searchFilter: propertySearch, parentElementType: item.type, formSchemaEnums: formSchemaEnums })) : (react_1.default.createElement("div", { className: "form-preview__empty" }, "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0432 \u0434\u0435\u0440\u0435\u0432\u0435"))))),
             react_1.default.createElement("div", { role: "separator", className: "edt-properties-panel__resizer", onMouseDown: handleResizerMouseDown, title: "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0440\u0430\u0437\u043C\u0435\u0440 \u0441\u0435\u043A\u0446\u0438\u0439", "aria-label": "\u0420\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u044C \u0441\u0435\u043A\u0446\u0438\u0439" }),
             react_1.default.createElement("div", { className: "edt-properties-panel__section-area edt-properties-panel__section-area--events", style: { flex: '1 1 0', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' } },
                 react_1.default.createElement("details", { className: "edt-properties-panel__section edt-properties-panel__section--events", open: true, style: { flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' } },
@@ -2047,8 +2103,12 @@ function getOrientation(props) {
     return 'horizontalAlways';
 }
 function getDataPath(props) {
-    const dp = props?.DataPath;
-    return typeof dp === 'string' ? dp : '';
+    if (!props?.DataPath)
+        return '';
+    const dp = props.DataPath;
+    if (typeof dp === 'string')
+        return dp;
+    return (0, formLayoutProps_1.readLayoutProp)(props, 'DataPath');
 }
 function deriveLabelFromDataPath(dp) {
     if (!dp)
@@ -2326,10 +2386,13 @@ const DesignerPreview = ({ items, selectedPath, onSelect }) => {
 const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage }) => {
     const isSelected = node.path === selectedPath;
     const type = node.item.type || 'Unknown';
+    const layoutProps = node.item.properties;
+    const layoutHidden = (0, formLayoutProps_1.isLayoutInvisible)(layoutProps);
+    const hiddenClass = layoutHidden ? ' designer-node--layout-hidden' : '';
     const title = getItemTitleFromProps(node.item.properties);
     const dp = getDataPath(node.item.properties);
     const children = node.children;
-    const baseClass = `designer-node ${isSelected ? 'is-selected' : ''}`;
+    const baseClass = `designer-node ${isSelected ? 'is-selected' : ''}${hiddenClass}`;
     const onClickSelect = (e) => {
         e.stopPropagation();
         onSelect(node.path);
@@ -2345,7 +2408,7 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
     if (!showTitle) {
         if (isLayoutGroup) {
             const orientation = getOrientation(node.item.properties);
-            return (react_1.default.createElement("div", { className: `designer-group__content designer-group__content--${orientation}` }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage })))));
+            return (react_1.default.createElement("div", { className: `designer-group__content designer-group__content--${orientation}${hiddenClass}` }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage })))));
         }
         return (react_1.default.createElement(react_1.default.Fragment, null, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage })))));
     }
@@ -2391,24 +2454,35 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
                 react_1.default.createElement("span", { className: "designer-node__name" }, showTitle ? (title || node.item.name || '') : (node.item.name || ''))),
             children.length > 0 ? (react_1.default.createElement("div", { className: `designer-group__content designer-group__content--${orientation}` }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage }))))) : (react_1.default.createElement("div", { className: "designer-node__props" }, dp ? react_1.default.createElement("span", { className: "designer-node__datapath" }, formatValue(dp)) : null))));
     }
-    if (type === 'InputField') {
+    if (type === 'InputField' || type === 'SelectField') {
         const label = title || deriveLabelFromDataPath(dp) || node.item.name || '';
         const multiline = Boolean(node.item.properties?.MultiLine);
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--field`, onClick: onClickSelect, title: node.path },
-            react_1.default.createElement("div", { className: "designer-field" },
+        const titleLoc = (0, formLayoutProps_1.parseTitleLocation)(layoutProps);
+        const fieldLayoutClass = titleLoc === 'none'
+            ? 'designer-field designer-field--title-none'
+            : titleLoc === 'top' || titleLoc === 'other'
+                ? 'designer-field designer-field--title-top'
+                : 'designer-field designer-field--title-left';
+        const readOnly = (0, formLayoutProps_1.isLayoutReadOnly)(layoutProps);
+        const fieldBoxStyle = (0, formLayoutProps_1.buildFieldPreviewStyle)(layoutProps);
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--field`, style: fieldBoxStyle, onClick: onClickSelect, title: node.path },
+            react_1.default.createElement("div", { className: `${fieldLayoutClass}${readOnly ? ' designer-field--readonly' : ''}` },
                 react_1.default.createElement("div", { className: "designer-field__label" }, label),
                 react_1.default.createElement("div", { className: `designer-field__control ${multiline ? 'is-multiline' : ''}` }, dp ? react_1.default.createElement("span", { className: "designer-field__hint" }, dp) : react_1.default.createElement("span", { className: "designer-field__hint" }, "\u00A0")))));
     }
     if (type === 'CheckBoxField') {
         const label = title || deriveLabelFromDataPath(dp) || node.item.name || '';
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--checkbox`, onClick: onClickSelect, title: node.path },
-            react_1.default.createElement("div", { className: "designer-checkbox" },
+        const readOnly = (0, formLayoutProps_1.isLayoutReadOnly)(layoutProps);
+        const cbStyle = (0, formLayoutProps_1.buildFieldPreviewStyle)(layoutProps);
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--checkbox`, style: cbStyle, onClick: onClickSelect, title: node.path },
+            react_1.default.createElement("div", { className: `designer-checkbox${readOnly ? ' designer-checkbox--readonly' : ''}` },
                 react_1.default.createElement("input", { type: "checkbox", className: "designer-checkbox__input", disabled: true, "aria-hidden": true }),
                 react_1.default.createElement("span", { className: "designer-checkbox__label" }, label || (dp ? formatValue(dp) : '\u00A0')))));
     }
     if (type === 'LabelField') {
         const label = title || node.item.name || '';
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--label`, onClick: onClickSelect, title: node.path },
+        const lfStyle = (0, formLayoutProps_1.buildFieldPreviewStyle)(layoutProps);
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--label`, style: lfStyle, onClick: onClickSelect, title: node.path },
             react_1.default.createElement("div", { className: "designer-label" }, label)));
     }
     if (type === 'LabelDecoration') {
@@ -2435,7 +2509,8 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
             node.item.properties?.CommandName ||
             node.item.name ||
             'Кнопка';
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--button`, onClick: onClickSelect, title: node.path },
+        const btnBoxStyle = (0, formLayoutProps_1.buildFieldPreviewStyle)(layoutProps);
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--button`, style: btnBoxStyle, onClick: onClickSelect, title: node.path },
             react_1.default.createElement("button", { type: "button", className: "designer-button", onClick: (e) => {
                     e.stopPropagation();
                     onSelect(node.path);
@@ -2443,6 +2518,13 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
     }
     if (type === 'Table') {
         const tTitle = title || node.item.name || 'Таблица';
+        const titleLoc = (0, formLayoutProps_1.parseTitleLocation)(layoutProps);
+        const showTableTitle = titleLoc !== 'none';
+        const showHead = (0, formLayoutProps_1.tableShowsHeader)(layoutProps);
+        const hLines = (0, formLayoutProps_1.tableHorizontalLines)(layoutProps);
+        const vLines = (0, formLayoutProps_1.tableVerticalLines)(layoutProps);
+        const adds = (0, formLayoutProps_1.hasTableAdditionPlaceholder)(layoutProps);
+        const tableBoxStyle = (0, formLayoutProps_1.buildTablePreviewStyle)(layoutProps);
         const panelNodes = children.filter((c) => isPanelItemType(c.item.type));
         const contextPanel = panelNodes.find((c) => c.item.type === 'ContextMenu') || null;
         const autoPanel = panelNodes.find((c) => c.item.type === 'AutoCommandBar') || null;
@@ -2465,8 +2547,20 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
                 return 'designer-table__cell designer-table__cell--head';
             return 'designer-table__cell designer-table__cell--spacer';
         };
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--table`, onClick: onClickSelect, title: node.path },
-            react_1.default.createElement("div", { className: "designer-table__title" }, tTitle),
+        const tableSurfaceClass = [
+            'designer-table',
+            !hLines ? 'designer-table--no-h-lines' : '',
+            !vLines ? 'designer-table--no-v-lines' : '',
+        ]
+            .filter(Boolean)
+            .join(' ');
+        const readOnly = (0, formLayoutProps_1.isLayoutReadOnly)(layoutProps);
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--table${readOnly ? ' designer-node--table-readonly' : ''}`, style: tableBoxStyle, onClick: onClickSelect, title: node.path },
+            showTableTitle ? react_1.default.createElement("div", { className: "designer-table__title" }, tTitle) : null,
+            adds.search || adds.status || adds.control ? (react_1.default.createElement("div", { className: "designer-table__additions", onClick: (e) => e.stopPropagation() },
+                adds.search ? (react_1.default.createElement("div", { className: "designer-table__addition designer-table__addition--search", title: "SearchStringAddition" }, "\u0421\u0442\u0440\u043E\u043A\u0430 \u043F\u043E\u0438\u0441\u043A\u0430")) : null,
+                adds.status ? (react_1.default.createElement("div", { className: "designer-table__addition designer-table__addition--status", title: "ViewStatusAddition" }, "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430")) : null,
+                adds.control ? (react_1.default.createElement("div", { className: "designer-table__addition designer-table__addition--control", title: "SearchControlAddition" }, "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043F\u043E\u0438\u0441\u043A\u043E\u043C")) : null)) : null,
             contextPanel || autoPanel ? (react_1.default.createElement("div", { className: "designer-table__bars" },
                 autoPanel ? (react_1.default.createElement("div", { className: "designer-table__bar", title: autoPanel.item.name || 'AutoCommandBar' },
                     react_1.default.createElement("div", { className: "designer-table__barButtons" }, autoCommands.length === 0 ? (react_1.default.createElement("span", { className: "designer-table__barEmpty" }, "\u041D\u0435\u0442 \u043A\u043E\u043C\u0430\u043D\u0434")) : (autoCommands.map((cmd) => {
@@ -2484,13 +2578,13 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
                                 onSelect(cmd.path);
                             } }, caption));
                     }))))) : null)) : null,
-            react_1.default.createElement("div", { className: "designer-table", style: gridStyle },
-                react_1.default.createElement("div", { className: "designer-table__headGrid", style: headStyle }, model.cells.map((c) => (react_1.default.createElement("div", { key: c.key, className: cellClass(c.kind), style: {
+            react_1.default.createElement("div", { className: tableSurfaceClass, style: gridStyle },
+                showHead && model.colCount > 0 ? (react_1.default.createElement("div", { className: "designer-table__headGrid", style: headStyle }, model.cells.map((c) => (react_1.default.createElement("div", { key: c.key, className: cellClass(c.kind), style: {
                         gridColumnStart: c.colStart,
                         gridColumnEnd: `span ${c.colSpan}`,
                         gridRowStart: c.rowStart,
                         gridRowEnd: `span ${c.rowSpan}`,
-                    }, title: c.label }, c.label || '\u00A0')))),
+                    }, title: c.label }, c.label || '\u00A0'))))) : null,
                 react_1.default.createElement("div", { className: "designer-table__row" }, Array.from({ length: model.colCount }).map((_, i) => (react_1.default.createElement("div", { key: i, className: "designer-table__cell" }, "\u00A0")))),
                 react_1.default.createElement("div", { className: "designer-table__row" }, Array.from({ length: model.colCount }).map((_, i) => (react_1.default.createElement("div", { key: i, className: "designer-table__cell" }, "\u00A0"))))),
             dp ? react_1.default.createElement("div", { className: "designer-node__props" },

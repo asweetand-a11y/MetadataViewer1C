@@ -2356,6 +2356,23 @@ body.edt-resizing-props-sections {
 }
 
 /* ===== Properties editor (Form element) ===== */
+.edt-props-editor__select {
+  width: 100%;
+  min-height: 26px;
+  padding: 2px 8px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 3px;
+  background: var(--vscode-dropdown-background, var(--vscode-input-background));
+  color: var(--vscode-dropdown-foreground, var(--vscode-input-foreground));
+  font-family: var(--vscode-font-family);
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+.edt-props-editor__select.is-error {
+  border-color: var(--vscode-inputValidation-errorBorder, #f14c4c);
+}
+
 .edt-props-editor__input {
   width: 100%;
   box-sizing: border-box;
@@ -2609,11 +2626,55 @@ body.edt-resizing-props-cols {
   min-width: 280px;
 }
 
+.designer-node--layout-hidden {
+  opacity: 0.55;
+  outline: 1px dashed var(--vscode-panel-border);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .designer-field {
   display: grid;
   grid-template-columns: minmax(120px, 32%) 1fr;
   gap: 8px;
   align-items: center;
+}
+
+.designer-field--title-left {
+  grid-template-columns: minmax(120px, 32%) 1fr;
+}
+
+.designer-field--title-top {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto;
+  align-items: start;
+}
+
+.designer-field--title-top .designer-field__label {
+  white-space: normal;
+}
+
+.designer-field--title-none {
+  grid-template-columns: 1fr;
+}
+
+.designer-field--title-none .designer-field__label {
+  display: none;
+}
+
+.designer-field--readonly .designer-field__control {
+  background: var(--vscode-input-background, rgba(127, 127, 127, 0.12));
+  opacity: 0.85;
+  cursor: not-allowed;
+}
+
+.designer-checkbox--readonly {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.designer-node--table-readonly .designer-table {
+  opacity: 0.9;
 }
 
 .designer-field__label {
@@ -2718,6 +2779,26 @@ body.edt-resizing-props-cols {
   margin-bottom: 6px;
 }
 
+.designer-table__additions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.designer-table__addition {
+  flex: 1 1 120px;
+  min-height: 22px;
+  padding: 2px 8px;
+  border: 1px dashed var(--vscode-panel-border);
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-editor-background);
+  display: flex;
+  align-items: center;
+}
+
 .designer-table__bars {
   display: flex;
   gap: 8px;
@@ -2799,6 +2880,21 @@ body.edt-resizing-props-cols {
 .designer-table__cell--spacer {
   background: var(--vscode-editor-background);
   color: transparent;
+}
+
+.designer-table--no-h-lines .designer-table__cell,
+.designer-table--no-h-lines .designer-table__headGrid > .designer-table__cell {
+  border-bottom: none !important;
+}
+
+.designer-table--no-v-lines .designer-table__cell,
+.designer-table--no-v-lines .designer-table__headGrid > .designer-table__cell {
+  border-right: none !important;
+}
+
+.designer-table--no-v-lines .designer-table__cell:last-child,
+.designer-table--no-v-lines .designer-table__headGrid > .designer-table__cell:last-child {
+  border-right: none !important;
 }
 
 

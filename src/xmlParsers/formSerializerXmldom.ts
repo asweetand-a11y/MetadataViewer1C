@@ -7,6 +7,122 @@
 import { XMLSerializer } from '@xmldom/xmldom';
 import type { ParsedFormFullXmldom } from './formParserXmldom';
 import type { FormAttribute, FormCommand, FormItem } from './formParser';
+import { logFormTagUsesNameOrIdAsXmlAttributes } from './generated/formXmlAlignment';
+
+/**
+ * В XSD логической формы 1С у ContextMenu, ExtendedTooltip, AutoCommandBar и ряда
+ * соседних элементов поля name/id задаются как XML-атрибуты, не как дочерние теги.
+ */
+function getNameIdFromPlainObject(obj: Record<string, unknown>): { name?: string; id?: string } {
+  if (!obj || typeof obj !== 'object') return {};
+  const nameRaw = obj.name ?? obj.Name;
+  const idRaw = obj.id ?? obj.Id;
+  const out: { name?: string; id?: string } = {};
+  if (nameRaw !== undefined && nameRaw !== null) out.name = String(nameRaw);
+  if (idRaw !== undefined && idRaw !== null) out.id = String(idRaw);
+  return out;
+}
+
+function applyNameIdAttributes(target: Element, obj: Record<string, unknown>): void {
+  const { name, id } = getNameIdFromPlainObject(obj);
+  if (name !== undefined) target.setAttribute('name', name);
+  if (id !== undefined) target.setAttribute('id', id);
+}
+
+function isNameOrIdPropertyKey(key: string): boolean {
+  const k = key.toLowerCase();
+  return k === 'name' || k === 'id';
+}
+
+/** Убрать из объекта свойств ключи, которые в XSD — атрибуты тега, а не дочерние элементы. */
+function stripNameIdKeysFromRecord(obj: Record<string, any>): Record<string, any> {
+  const o = { ...obj };
+  delete o.name;
+  delete o.Name;
+  delete o.id;
+  delete o.Id;
+  return o;
+}
+
+function formElementHasDirectChildElement(formElement: Element, tagName: string): boolean {
+  for (let i = 0; i < formElement.childNodes.length; i++) {
+    const n = formElement.childNodes[i];
+    if (n.nodeType === 1 && (n as Element).tagName === tagName) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function normalizeFormCommandForSerialization(cmd: FormCommand): {
+  idAttr?: string;
+  properties: Record<string, any>;
+} {
+  const properties = { ...(cmd.properties || {}) };
+  const idRaw = properties.id ?? properties.Id;
+  const idAttr =
+    idRaw !== undefined && idRaw !== null && String(idRaw) !== '' ? String(idRaw) : undefined;
+  delete properties.id;
+  delete properties.Id;
+  delete properties.name;
+  delete properties.Name;
+  return { idAttr, properties };
+}
+
+/**
+ * Реквизит формы: один дочерний <Type>, имя только в атрибуте name у <Attribute>.
+ * Type/Name в properties дают дубликат <Type> или недопустимый <Name>.
+ */
+function normalizeFormAttributeForSerialization(attr: FormAttribute): {
+  typeValue: any;
+  properties: Record<string, any>;
+} {
+  const properties = { ...(attr.properties || {}) };
+  const typeFromProps = properties.Type ?? properties.type;
+  delete properties.Type;
+  delete properties.type;
+  delete properties.Name;
+  delete properties.name;
+  const typeValue = attr.type ?? typeFromProps;
+  return { typeValue, properties };
+}
+
+/**
+ * В Form.xml у дочернего <UseAlways> реквизита по XSD есть <Field>, а не текст true/false.
+ * Редактор хранит boolean — при true подставляем имя реквизита как поле (как в типовых формах 1С).
+ * @returns элемент, false если не выводить, null — передать в общую сериализацию (объект с вложениями)
+ */
+function trySerializeUseAlwaysOnFormAttribute(
+  doc: Document,
+  propKey: string,
+  value: unknown,
+  attributeName: string,
+  attrContentIndent: string
+): Element | false | null {
+  if (propKey !== 'UseAlways') {
+    return null;
+  }
+  if (value === false) {
+    return false;
+  }
+  if (value === undefined || value === null) {
+    return false;
+  }
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return null;
+  }
+  const propElement = doc.createElement('UseAlways');
+  const nestedIndent = attrContentIndent + '\t';
+  const fieldText = value === true ? attributeName : String(value);
+  propElement.appendChild(doc.createTextNode('\n'));
+  propElement.appendChild(doc.createTextNode(nestedIndent));
+  const fieldEl = doc.createElement('Field');
+  fieldEl.appendChild(doc.createTextNode(fieldText));
+  propElement.appendChild(fieldEl);
+  propElement.appendChild(doc.createTextNode('\n'));
+  propElement.appendChild(doc.createTextNode(attrContentIndent));
+  return propElement;
+}
 
 /**
  * Маппинг префиксов namespace к их URI для 1C:Enterprise
@@ -235,7 +351,10 @@ export function updateFormDomFromData(
   }
   
   // 1. Добавляем свойства формы (в порядке их появления в properties)
-  if (formData.properties) {
+  // По XSD логической формы у <Form> minOccurs=1 для AutoCommandBar — не терять при сохранении.
+  const properties =
+    formData.properties && typeof formData.properties === 'object' ? formData.properties : {};
+  {
     const propertyOrder = [
       'AutoSaveDataInSettings', 'VerticalScroll', 'AutoTime', 'UsePostingMode', 'RepostOnWrite',
       'AutoCommandBar', 'Events', 'Title', 'WindowOpeningMode',
@@ -247,7 +366,20 @@ export function updateFormDomFromData(
     
     // Сначала добавляем свойства в определенном порядке
     for (const propName of propertyOrder) {
-      if (formData.properties[propName] !== undefined && formData.properties[propName] !== null) {
+      let propValue = properties[propName];
+      // AutoCommandBar обязателен в Form (XSD); если в модели нет — восстанавливаем из исходного DOM
+      if (
+        propName === 'AutoCommandBar' &&
+        (propValue === undefined || propValue === null) &&
+        existingElements.has('AutoCommandBar')
+      ) {
+        const fallback = existingElements.get('AutoCommandBar')!.cloneNode(true) as Element;
+        formElement.appendChild(doc.createTextNode('\t'));
+        formElement.appendChild(fallback);
+        formElement.appendChild(doc.createTextNode('\n'));
+        continue;
+      }
+      if (propValue !== undefined && propValue !== null) {
         // ВАЖНО: Для AutoCommandBar используем оригинальный элемент из DOM для сохранения кодировки атрибутов
         const existingElement = existingElements.get(propName);
         let propElement: Element | null = null;
@@ -255,17 +387,17 @@ export function updateFormDomFromData(
         if (existingElement && propName === 'AutoCommandBar') {
           // Для AutoCommandBar клонируем оригинальный элемент, чтобы сохранить правильную кодировку атрибутов
           const cloned = existingElement.cloneNode(true) as Element;
-          const propValue = formData.properties[propName];
-          if (typeof propValue === 'object' && propValue.name && propValue.id) {
+          const propValueAc = properties[propName];
+          if (typeof propValueAc === 'object' && propValueAc.name && propValueAc.id) {
             const existingName = cloned.getAttribute('name');
             const existingId = cloned.getAttribute('id');
             // Если атрибуты не изменились, используем оригинальный элемент как есть
-            if (existingName === propValue.name && existingId === propValue.id) {
+            if (existingName === propValueAc.name && existingId === propValueAc.id) {
               propElement = cloned;
             } else {
               // Атрибуты изменились - обновляем их
-              cloned.setAttribute('name', propValue.name);
-              cloned.setAttribute('id', propValue.id);
+              cloned.setAttribute('name', propValueAc.name);
+              cloned.setAttribute('id', propValueAc.id);
               propElement = cloned;
             }
           } else {
@@ -273,10 +405,10 @@ export function updateFormDomFromData(
           }
         } else if (existingElement) {
           // Для остальных свойств обновляем существующий элемент
-          propElement = updatePropertyElement(doc, existingElement.cloneNode(true) as Element, propName, formData.properties[propName]);
+          propElement = updatePropertyElement(doc, existingElement.cloneNode(true) as Element, propName, propValue);
         } else {
           // Создаем новый элемент
-          propElement = createPropertyElement(doc, propName, formData.properties[propName]);
+          propElement = createPropertyElement(doc, propName, propValue);
         }
         
         if (propElement) {
@@ -288,7 +420,7 @@ export function updateFormDomFromData(
     }
     
     // Затем добавляем остальные свойства
-    for (const [key, value] of Object.entries(formData.properties)) {
+    for (const [key, value] of Object.entries(properties)) {
       if (propertyOrder.includes(key)) continue; // Уже добавлено
       if (value === undefined || value === null) continue;
       
@@ -304,6 +436,16 @@ export function updateFormDomFromData(
     }
   }
   
+  // Если AutoCommandBar так и не появился — типовые значения 1С (иначе XDTO отклонит Form)
+  if (!formElementHasDirectChildElement(formElement, 'AutoCommandBar')) {
+    const ac = doc.createElement('AutoCommandBar');
+    ac.setAttribute('name', 'FormCommandBar');
+    ac.setAttribute('id', '-1');
+    formElement.appendChild(doc.createTextNode('\t'));
+    formElement.appendChild(ac);
+    formElement.appendChild(doc.createTextNode('\n'));
+  }
+  
   // 2. Добавляем ChildItems
   if (formData.childItems !== undefined) {
       const existingChildItems = existingElements.get('ChildItems');
@@ -317,17 +459,16 @@ export function updateFormDomFromData(
     }
   }
   
-  // 3. Добавляем Attributes
-  if (formData.attributes) {
+  // 3. Добавляем Attributes (по XSD у Form minOccurs=1 — даже без реквизитов нужен пустой блок)
+  {
+    const attrsList = Array.isArray(formData.attributes) ? formData.attributes : [];
     const existingAttributes = existingElements.get('Attributes');
     const attributesElement = existingAttributes
-      ? updateAttributesElement(doc, existingAttributes.cloneNode(true) as Element, formData.attributes)
-      : createAttributesElement(doc, formData.attributes);
-    if (attributesElement) {
-      formElement.appendChild(doc.createTextNode('\t'));
-      formElement.appendChild(attributesElement);
-      formElement.appendChild(doc.createTextNode('\n'));
-    }
+      ? updateAttributesElement(doc, existingAttributes.cloneNode(true) as Element, attrsList)
+      : createAttributesElement(doc, attrsList);
+    formElement.appendChild(doc.createTextNode('\t'));
+    formElement.appendChild(attributesElement);
+    formElement.appendChild(doc.createTextNode('\n'));
   }
   
   // 4. Добавляем Commands
@@ -460,7 +601,7 @@ function createPropertyElement(doc: Document, propName: string, propValue: any):
       // Объект (например, AutoCommandBar)
       // Для AutoCommandBar не добавляем дочерние элементы name и id, так как они уже в атрибутах
       // Но если есть другие свойства, добавляем их с форматированием
-      const hasOtherProperties = Object.keys(propValue).some(key => key !== 'name' && key !== 'id');
+      const hasOtherProperties = Object.keys(propValue).some(key => !isNameOrIdPropertyKey(key));
       if (hasOtherProperties) {
         // Добавляем перенос строки после открывающего тега
         propElement.appendChild(doc.createTextNode('\n'));
@@ -470,7 +611,7 @@ function createPropertyElement(doc: Document, propName: string, propValue: any):
         
         for (const [key, value] of Object.entries(propValue)) {
           if (value === undefined || value === null) continue;
-          if (key === 'name' || key === 'id') continue; // Пропускаем, так как они в атрибутах
+          if (isNameOrIdPropertyKey(key)) continue; // Пропускаем, так как они в атрибутах
           
           // Отступ перед свойством
           propElement.appendChild(doc.createTextNode(propIndent));
@@ -480,8 +621,12 @@ function createPropertyElement(doc: Document, propName: string, propValue: any):
             childElement.appendChild(doc.createTextNode(String(value)));
           } else if (typeof value === 'object') {
             // Вложенная структура
+            if (logFormTagUsesNameOrIdAsXmlAttributes(key)) {
+              applyNameIdAttributes(childElement, value as Record<string, unknown>);
+            }
             for (const [nestedKey, nestedValue] of Object.entries(value as any)) {
               if (nestedValue === undefined || nestedValue === null) continue;
+              if (isNameOrIdPropertyKey(nestedKey)) continue;
               const nestedElement = doc.createElement(nestedKey);
               if (typeof nestedValue === 'string' || typeof nestedValue === 'number' || typeof nestedValue === 'boolean') {
                 nestedElement.appendChild(doc.createTextNode(String(nestedValue)));
@@ -496,17 +641,15 @@ function createPropertyElement(doc: Document, propName: string, propValue: any):
         }
       }
       
-      // Если это AutoCommandBar с атрибутами name и id, устанавливаем их
-      // ВАЖНО: Используем прямое присвоение значения для сохранения кодировки
-      // xmldom правильно обработает UTF-8, если значение уже в правильной кодировке
-      if (propName === 'AutoCommandBar' && propValue.name && propValue.id) {
-        // Устанавливаем атрибуты напрямую
-        // propValue.name и propValue.id уже правильно закодированы (читаются из DOM)
-        propElement.setAttribute('name', propValue.name);
-        propElement.setAttribute('id', propValue.id);
-        
-        // ВАЖНО: Если есть дочерние элементы (например, ChildItems), добавляем их с форматированием
-        // Но не добавляем дочерние элементы name и id, так как они уже в атрибутах
+      // name/id — атрибуты корневого тега (по XcfLogForm.json)
+      if (
+        logFormTagUsesNameOrIdAsXmlAttributes(propName) &&
+        typeof propValue === 'object' &&
+        !Array.isArray(propValue)
+      ) {
+        applyNameIdAttributes(propElement, propValue as Record<string, unknown>);
+      }
+      if (propName === 'AutoCommandBar' && typeof propValue === 'object' && !Array.isArray(propValue)) {
         if (propValue.ChildItems && propValue.ChildItems.length > 0) {
           // Добавляем перенос строки после открывающего тега AutoCommandBar
           propElement.appendChild(doc.createTextNode('\n'));
@@ -590,12 +733,17 @@ function createChildItemsElement(doc: Document, childItems: FormItem[], depth: n
 /**
  * Обновляет существующий элемент Attributes
  */
-function updateAttributesElement(doc: Document, existingElement: Element, attributes: FormAttribute[]): Element | null {
-  if (!attributes || attributes.length === 0) return null;
-  
+function updateAttributesElement(doc: Document, existingElement: Element, attributes: FormAttribute[]): Element {
   // Очищаем содержимое
   while (existingElement.firstChild) {
     existingElement.removeChild(existingElement.firstChild);
+  }
+  
+  // Пустой <Attributes> допустим по контенту, но элемент обязателен для Form (XSD minOccurs=1)
+  if (!attributes || attributes.length === 0) {
+    existingElement.appendChild(doc.createTextNode('\n'));
+    existingElement.appendChild(doc.createTextNode('\t'));
+    return existingElement;
   }
   
   // Добавляем перенос строки после открывающего тега
@@ -613,9 +761,9 @@ function updateAttributesElement(doc: Document, existingElement: Element, attrib
     // ВАЖНО: Используем прямое присвоение значения для сохранения кодировки
     attrElement.setAttribute('name', attr.name);
     
-    // Проверяем, есть ли Type или свойства для определения, нужен ли перенос строки
-    const hasType = !!attr.type;
-    const hasProperties = attr.properties && Object.keys(attr.properties).length > 0;
+    const { typeValue, properties: attrProps } = normalizeFormAttributeForSerialization(attr);
+    const hasType = !!typeValue;
+    const hasProperties = Object.keys(attrProps).length > 0;
     const hasContent = hasType || hasProperties;
     
     if (hasContent) {
@@ -628,7 +776,7 @@ function updateAttributesElement(doc: Document, existingElement: Element, attrib
       // Добавляем Type
       if (hasType) {
         attrElement.appendChild(doc.createTextNode(attrContentIndent));
-        const typeElement = createTypeElement(doc, attr.type);
+        const typeElement = createTypeElement(doc, typeValue);
         if (typeElement) {
           attrElement.appendChild(typeElement);
           attrElement.appendChild(doc.createTextNode('\n'));
@@ -636,8 +784,19 @@ function updateAttributesElement(doc: Document, existingElement: Element, attrib
       }
       
       // Добавляем свойства
-      for (const [key, value] of Object.entries(attr.properties || {})) {
+      for (const [key, value] of Object.entries(attrProps)) {
         if (value === undefined || value === null) continue;
+        
+        const useAlwaysEl = trySerializeUseAlwaysOnFormAttribute(doc, key, value, attr.name, attrContentIndent);
+        if (useAlwaysEl === false) {
+          continue;
+        }
+        if (useAlwaysEl !== null) {
+          attrElement.appendChild(doc.createTextNode(attrContentIndent));
+          attrElement.appendChild(useAlwaysEl);
+          attrElement.appendChild(doc.createTextNode('\n'));
+          continue;
+        }
         
         // Отступ перед свойством
         attrElement.appendChild(doc.createTextNode(attrContentIndent));
@@ -726,10 +885,14 @@ function updateAttributesElement(doc: Document, existingElement: Element, attrib
 /**
  * Создает элемент Attributes
  */
-function createAttributesElement(doc: Document, attributes: FormAttribute[]): Element | null {
-  if (!attributes || attributes.length === 0) return null;
-  
+function createAttributesElement(doc: Document, attributes: FormAttribute[]): Element {
   const attributesElement = doc.createElement('Attributes');
+  
+  if (!attributes || attributes.length === 0) {
+    attributesElement.appendChild(doc.createTextNode('\n'));
+    attributesElement.appendChild(doc.createTextNode('\t'));
+    return attributesElement;
+  }
   
   // Добавляем перенос строки после открывающего тега
   attributesElement.appendChild(doc.createTextNode('\n'));
@@ -745,9 +908,9 @@ function createAttributesElement(doc: Document, attributes: FormAttribute[]): El
     // ВАЖНО: Используем прямое присвоение значения для сохранения кодировки
     attrElement.setAttribute('name', attr.name);
     
-    // Проверяем, есть ли Type или свойства для определения, нужен ли перенос строки
-    const hasType = !!attr.type;
-    const hasProperties = attr.properties && Object.keys(attr.properties).length > 0;
+    const { typeValue, properties: attrProps } = normalizeFormAttributeForSerialization(attr);
+    const hasType = !!typeValue;
+    const hasProperties = Object.keys(attrProps).length > 0;
     const hasContent = hasType || hasProperties;
     
     if (hasContent) {
@@ -760,7 +923,7 @@ function createAttributesElement(doc: Document, attributes: FormAttribute[]): El
       // Добавляем Type
       if (hasType) {
         attrElement.appendChild(doc.createTextNode(attrContentIndent));
-        const typeElement = createTypeElement(doc, attr.type);
+        const typeElement = createTypeElement(doc, typeValue);
         if (typeElement) {
           attrElement.appendChild(typeElement);
           attrElement.appendChild(doc.createTextNode('\n'));
@@ -768,8 +931,19 @@ function createAttributesElement(doc: Document, attributes: FormAttribute[]): El
       }
       
       // Добавляем свойства
-      for (const [key, value] of Object.entries(attr.properties || {})) {
+      for (const [key, value] of Object.entries(attrProps)) {
         if (value === undefined || value === null) continue;
+        
+        const useAlwaysEl = trySerializeUseAlwaysOnFormAttribute(doc, key, value, attr.name, attrContentIndent);
+        if (useAlwaysEl === false) {
+          continue;
+        }
+        if (useAlwaysEl !== null) {
+          attrElement.appendChild(doc.createTextNode(attrContentIndent));
+          attrElement.appendChild(useAlwaysEl);
+          attrElement.appendChild(doc.createTextNode('\n'));
+          continue;
+        }
         
         // Отступ перед свойством
         attrElement.appendChild(doc.createTextNode(attrContentIndent));
@@ -880,9 +1054,13 @@ function updateCommandsElement(doc: Document, existingElement: Element, commands
     const cmdElement = doc.createElement('Command');
     // ВАЖНО: Используем прямое присвоение значения для сохранения кодировки
     cmdElement.setAttribute('name', cmd.name);
+    const { idAttr, properties: cmdProps } = normalizeFormCommandForSerialization(cmd);
+    if (idAttr !== undefined) {
+      cmdElement.setAttribute('id', idAttr);
+    }
     
     // Добавляем свойства
-    for (const [key, value] of Object.entries(cmd.properties || {})) {
+    for (const [key, value] of Object.entries(cmdProps)) {
       if (value === undefined || value === null) continue;
       const propElement = doc.createElement(key);
       if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -923,9 +1101,13 @@ function createCommandsElement(doc: Document, commands: FormCommand[]): Element 
     const cmdElement = doc.createElement('Command');
     // ВАЖНО: Используем прямое присвоение значения для сохранения кодировки
     cmdElement.setAttribute('name', cmd.name);
+    const { idAttr, properties: cmdProps } = normalizeFormCommandForSerialization(cmd);
+    if (idAttr !== undefined) {
+      cmdElement.setAttribute('id', idAttr);
+    }
     
     // Проверяем, есть ли свойства
-    const hasProperties = cmd.properties && Object.keys(cmd.properties).length > 0;
+    const hasProperties = Object.keys(cmdProps).length > 0;
     
     if (hasProperties) {
       // Добавляем перенос строки после открывающего тега Command
@@ -935,7 +1117,7 @@ function createCommandsElement(doc: Document, commands: FormCommand[]): Element 
       const cmdContentIndent = '\t\t';
       
       // Добавляем свойства
-      for (const [key, value] of Object.entries(cmd.properties || {})) {
+      for (const [key, value] of Object.entries(cmdProps)) {
         if (value === undefined || value === null) continue;
         
         // Отступ перед свойством
@@ -1098,17 +1280,28 @@ function updateFormAttributes(doc: Document, formElement: Element, attributes: F
     const attrElement = doc.createElement('Attribute');
     attrElement.setAttribute('name', attr.name);
     
+    const { typeValue, properties: attrProps } = normalizeFormAttributeForSerialization(attr);
+    
     // Добавляем Type
-    if (attr.type) {
-      const typeElement = createTypeElement(doc, attr.type);
+    if (typeValue) {
+      const typeElement = createTypeElement(doc, typeValue);
       if (typeElement) {
         attrElement.appendChild(typeElement);
       }
     }
     
     // Добавляем свойства
-    for (const [key, value] of Object.entries(attr.properties || {})) {
+    const attrPropIndent = '\t\t';
+    for (const [key, value] of Object.entries(attrProps)) {
       if (value === undefined || value === null) continue;
+      const useAlwaysEl = trySerializeUseAlwaysOnFormAttribute(doc, key, value, attr.name, attrPropIndent);
+      if (useAlwaysEl === false) {
+        continue;
+      }
+      if (useAlwaysEl !== null) {
+        attrElement.appendChild(useAlwaysEl);
+        continue;
+      }
       const propElement = doc.createElement(key);
       if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
         propElement.appendChild(doc.createTextNode(String(value)));
@@ -1348,13 +1541,24 @@ function createFormItemElement(doc: Document, item: FormItem, depth: number = 0)
   if (!item.type) return null;
   
   const itemElement = doc.createElement(item.type);
+  const rawProps = item.properties || {};
   
-  // Устанавливаем атрибуты name и id
+  // Устанавливаем атрибуты name и id (в XML это атрибуты тега элемента, не дочерние <name>/<id>)
   if (item.name) {
     itemElement.setAttribute('name', item.name);
+  } else {
+    const fromProps = rawProps.name ?? rawProps.Name;
+    if (fromProps !== undefined && fromProps !== null && String(fromProps) !== '') {
+      itemElement.setAttribute('name', String(fromProps));
+    }
   }
   if (item.id) {
     itemElement.setAttribute('id', item.id);
+  } else {
+    const fromPropsId = rawProps.id ?? rawProps.Id;
+    if (fromPropsId !== undefined && fromPropsId !== null && String(fromPropsId) !== '') {
+      itemElement.setAttribute('id', String(fromPropsId));
+    }
   }
   
   // Проверяем, есть ли дочерние элементы или свойства
@@ -1372,6 +1576,13 @@ function createFormItemElement(doc: Document, item: FormItem, depth: number = 0)
     // Добавляем свойства
     for (const [key, value] of Object.entries(item.properties || {})) {
       if (value === undefined || value === null) continue;
+      // Скалярные name/id в properties — дубликаты атрибутов корневого тега (после ошибочного <name> в XML или слияния модели)
+      if (
+        isNameOrIdPropertyKey(key) &&
+        (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+      ) {
+        continue;
+      }
       
       // Отступ перед свойством
       itemElement.appendChild(doc.createTextNode(contentIndent));
@@ -1429,22 +1640,19 @@ function createFormItemElement(doc: Document, item: FormItem, depth: number = 0)
             propElement.appendChild(doc.createTextNode(contentIndent));
           }
         } else if (typeof value === 'object' && !Array.isArray(value)) {
-          // Для других сложных структур (например, ExtendedTooltip с name и id, UseAlways с Field)
-          // Проверяем, есть ли атрибуты name и id
-          const hasName = (value as any).name !== undefined;
-          const hasId = (value as any).id !== undefined;
-          
-          if (hasName || hasId) {
-            // Элемент с атрибутами (например, ExtendedTooltip)
-            if (hasName) {
-              propElement.setAttribute('name', String((value as any).name));
-            }
-            if (hasId) {
-              propElement.setAttribute('id', String((value as any).id));
-            }
+          const raw = value as Record<string, any>;
+          const useAttrNameId = logFormTagUsesNameOrIdAsXmlAttributes(key);
+          const { name: vName, id: vId } = getNameIdFromPlainObject(raw);
+          const hasName = vName !== undefined;
+          const hasId = vId !== undefined;
+          const workValue =
+            !useAttrNameId && (hasName || hasId) ? stripNameIdKeysFromRecord(raw) : raw;
+
+          if (useAttrNameId && (hasName || hasId)) {
+            applyNameIdAttributes(propElement, raw);
             
             // Если есть другие свойства, добавляем их
-            const otherProps = Object.keys(value as any).filter(k => k !== 'name' && k !== 'id');
+            const otherProps = Object.keys(raw).filter(k => !isNameOrIdPropertyKey(k));
             if (otherProps.length > 0) {
               // Добавляем перенос строки после открывающего тега
               propElement.appendChild(doc.createTextNode('\n'));
@@ -1453,7 +1661,7 @@ function createFormItemElement(doc: Document, item: FormItem, depth: number = 0)
               const propIndent = '\t'.repeat(depth + 2);
               
               for (const propKey of otherProps) {
-                const propValue = (value as any)[propKey];
+                const propValue = raw[propKey];
                 if (propValue === undefined || propValue === null) continue;
                 
                 // Отступ перед свойством
@@ -1463,9 +1671,13 @@ function createFormItemElement(doc: Document, item: FormItem, depth: number = 0)
                 if (typeof propValue === 'string' || typeof propValue === 'number' || typeof propValue === 'boolean') {
                   childPropElement.appendChild(doc.createTextNode(String(propValue)));
                 } else if (typeof propValue === 'object') {
-                  // Вложенная структура (например, Field в UseAlways)
+                  // Вложенная структура (например, ContextMenu/ExtendedTooltip под SearchStringAddition)
+                  if (logFormTagUsesNameOrIdAsXmlAttributes(propKey)) {
+                    applyNameIdAttributes(childPropElement, propValue as Record<string, unknown>);
+                  }
                   for (const [nestedKey, nestedValue] of Object.entries(propValue as any)) {
                     if (nestedValue === undefined || nestedValue === null) continue;
+                    if (isNameOrIdPropertyKey(nestedKey)) continue;
                     const nestedElement = doc.createElement(nestedKey);
                     if (typeof nestedValue === 'string' || typeof nestedValue === 'number' || typeof nestedValue === 'boolean') {
                       nestedElement.appendChild(doc.createTextNode(String(nestedValue)));
@@ -1488,8 +1700,17 @@ function createFormItemElement(doc: Document, item: FormItem, depth: number = 0)
             // Отступ для вложенных элементов (depth + 2 табуляции)
             const nestedIndent = '\t'.repeat(depth + 2);
             
-            for (const [nestedKey, nestedValue] of Object.entries(value as any)) {
+            for (const [nestedKey, nestedValue] of Object.entries(workValue)) {
               if (nestedValue === undefined || nestedValue === null) continue;
+              
+              if (
+                logFormTagUsesNameOrIdAsXmlAttributes(key) &&
+                isNameOrIdPropertyKey(nestedKey) &&
+                (typeof nestedValue === 'string' || typeof nestedValue === 'number' || typeof nestedValue === 'boolean')
+              ) {
+                propElement.setAttribute(nestedKey.toLowerCase(), String(nestedValue));
+                continue;
+              }
               
               // Отступ перед вложенным элементом
               propElement.appendChild(doc.createTextNode(nestedIndent));
@@ -1519,8 +1740,14 @@ function createFormItemElement(doc: Document, item: FormItem, depth: number = 0)
                 // Отступ для глубоко вложенных элементов (depth + 3 табуляции)
                 const deepIndent = '\t'.repeat(depth + 3);
                 
+                if (logFormTagUsesNameOrIdAsXmlAttributes(nestedKey)) {
+                  applyNameIdAttributes(nestedElement, nestedValue as Record<string, unknown>);
+                }
+                
                 for (const [deepKey, deepValue] of Object.entries(nestedValue as any)) {
                   if (deepValue === undefined || deepValue === null) continue;
+                  
+                  if (isNameOrIdPropertyKey(deepKey)) continue;
                   
                   // Отступ перед глубоко вложенным элементом
                   nestedElement.appendChild(doc.createTextNode(deepIndent));
@@ -1610,6 +1837,11 @@ export function serializeFormToXml(formData: ParsedFormFullXmldom): string {
     commands: formData.commands,
     childItems: formData.childItems,
   });
+  
+  // Атрибут version у корня Form обязателен для XDTO 1С
+  if (!formElement.getAttribute('version')) {
+    formElement.setAttribute('version', '2.0');
+  }
   
   // Сериализуем
   return serializeFormDomToXml(newDoc);

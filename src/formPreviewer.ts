@@ -15,7 +15,7 @@ import { parseFormXmlFull, ParsedFormFull } from "./xmlParsers/formParser";
 import { parseFormXmlFullXmldom, ParsedFormFullXmldom } from "./xmlParsers/formParserXmldom";
 import { serializeFormToXml } from "./xmlParsers/formSerializerXmldom";
 import { normalizeXML, validateXML } from "./utils/xmlUtils";
-import { validateXmlStructure } from "./validation/xmlStructureValidator";
+import { summarizeStructureValidationErrors, validateXmlStructure } from "./validation/xmlStructureValidator";
 import { CommitFileLogger } from "./utils/commitFileLogger";
 import { statusBarProgress, contextStatusBar } from "./extension";
 
@@ -28,7 +28,7 @@ export class FormPreviewer {
     objectsWithPaths: Array<{ objectTypeDir: string; displayName: string; fsName: string; mainXmlPath: string }>;
   } | null = null;
   private webviewReady: boolean = false;
-  private pendingInitMessage: { type: string; payload: any; metadata: any } | null = null;
+  private pendingInitMessage: { type: string; payload: any; metadata?: any; formSchemaEnums?: unknown } | null = null;
   private fallbackTimeout: NodeJS.Timeout | null = null;
 
   private async scanMetadataForWebview(): Promise<{
@@ -207,6 +207,33 @@ export class FormPreviewer {
     return result;
   }
 
+  /**
+   * Загружает варианты значений для свойств формы (выпадающие списки в webview).
+   */
+  private loadFormSchemaEnums(): {
+    byProperty: Record<string, string[]>;
+    byParentProperty?: Record<string, Record<string, string[]>>;
+  } | undefined {
+    if (!this.extensionUri) return undefined;
+    try {
+      const p = path.join(this.extensionUri.fsPath, 'resources', 'xsd', 'XcfLogForm.enums.json');
+      if (!fs.existsSync(p)) return undefined;
+      const data = JSON.parse(fs.readFileSync(p, 'utf8')) as {
+        byProperty?: Record<string, string[]>;
+        byParentProperty?: Record<string, Record<string, string[]>>;
+      };
+      if (!data?.byProperty || typeof data.byProperty !== 'object') return undefined;
+      return {
+        byProperty: data.byProperty,
+        ...(data.byParentProperty && typeof data.byParentProperty === 'object'
+          ? { byParentProperty: data.byParentProperty }
+          : {}),
+      };
+    } catch {
+      return undefined;
+    }
+  }
+
   // Исторически использовались для XSLT/картинок/подстановок; оставляем в сигнатуре конструктора,
   // чтобы не ломать вызовы из extension.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -374,7 +401,7 @@ export class FormPreviewer {
               rootTag: 'Form'
             });
             if (!structureResult.valid && structureResult.errors?.length) {
-              const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+              const errorMessage = summarizeStructureValidationErrors(structureResult.errors);
               vscode.window.showErrorMessage(`Ошибка структуры XML формы: ${errorMessage}`);
               throw new Error(`XML structure validation failed: ${errorMessage}`);
             }
@@ -419,10 +446,12 @@ export class FormPreviewer {
         parsed.attributes || [],
         metadata
       );
+      const formSchemaEnums = this.loadFormSchemaEnums();
       const initMessage = {
         type: "formPreviewInit",
         payload: parsed,
         metadata: { ...metadata, referenceTypeStructures },
+        ...(formSchemaEnums ? { formSchemaEnums } : {}),
       };
       
       // Если webview еще не готов, сохраняем сообщение для отправки позже

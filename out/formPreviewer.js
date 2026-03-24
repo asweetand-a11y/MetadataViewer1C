@@ -206,6 +206,30 @@ class FormPreviewer {
         }
         return result;
     }
+    /**
+     * Загружает варианты значений для свойств формы (выпадающие списки в webview).
+     */
+    loadFormSchemaEnums() {
+        if (!this.extensionUri)
+            return undefined;
+        try {
+            const p = path.join(this.extensionUri.fsPath, 'resources', 'xsd', 'XcfLogForm.enums.json');
+            if (!fs.existsSync(p))
+                return undefined;
+            const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+            if (!data?.byProperty || typeof data.byProperty !== 'object')
+                return undefined;
+            return {
+                byProperty: data.byProperty,
+                ...(data.byParentProperty && typeof data.byParentProperty === 'object'
+                    ? { byParentProperty: data.byParentProperty }
+                    : {}),
+            };
+        }
+        catch {
+            return undefined;
+        }
+    }
     constructor(confPath, rootFilePath, filePath) {
         this.metadataCache = null;
         this.webviewReady = false;
@@ -349,7 +373,7 @@ class FormPreviewer {
                             rootTag: 'Form'
                         });
                         if (!structureResult.valid && structureResult.errors?.length) {
-                            const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+                            const errorMessage = (0, xmlStructureValidator_1.summarizeStructureValidationErrors)(structureResult.errors);
                             vscode.window.showErrorMessage(`Ошибка структуры XML формы: ${errorMessage}`);
                             throw new Error(`XML structure validation failed: ${errorMessage}`);
                         }
@@ -386,10 +410,12 @@ class FormPreviewer {
             const { _originalXml, _domDocument, _rootAttrs, ...parsed } = parsedXmldom;
             const metadata = await this.scanMetadataForWebview();
             const referenceTypeStructures = await this.loadReferenceTypeStructures(parsed.attributes || [], metadata);
+            const formSchemaEnums = this.loadFormSchemaEnums();
             const initMessage = {
                 type: "formPreviewInit",
                 payload: parsed,
                 metadata: { ...metadata, referenceTypeStructures },
+                ...(formSchemaEnums ? { formSchemaEnums } : {}),
             };
             // Если webview еще не готов, сохраняем сообщение для отправки позже
             if (!this.webviewReady) {

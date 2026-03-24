@@ -11,7 +11,7 @@ import { WebviewMessage, InitMessage } from "../metadata/types";
 import { safeReadFile, safeWriteFile, createBackup, validatePath } from "../utils/fileUtils";
 import { createXMLParser, normalizeXML, validateXML } from "../utils/xmlUtils";
 import { applyChangesToXmlString } from "../utils/xmlStringPatcher";
-import { validateXmlStructure } from "../validation/xmlStructureValidator";
+import { summarizeStructureValidationErrors, validateXmlStructure } from "../validation/xmlStructureValidator";
 import { applyFormChangesToXmlStringWithDom } from "../utils/xmlDomUtils";
 import { XmlDiffMerge } from "../utils/xmlDiffMerge";
 import { ensureMetadataInConfigurationXml } from "../utils/configurationXmlUpdater";
@@ -27,6 +27,25 @@ function xmlEscapeAttrValue(value: string): string {
         .replace(/"/g, "&quot;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
+}
+
+/**
+ * В ChildObjects/Attribute/Properties комментарий в конфигурации обычно есть как пустой тег;
+ * при добавлении реквизита из UI ключ часто отсутствует — подставляем пустую строку для XML/платформы.
+ */
+function ensureOptionalMetadataAttributeComment(properties: Record<string, any> | undefined): void {
+    if (!properties || typeof properties !== "object") return;
+    if (properties.Comment === undefined && properties.comment === undefined) {
+        properties.Comment = "";
+    }
+}
+
+function ensureOptionalMetadataCommentOnTabularSectionAttributes(ts: any): void {
+    const raw = ts?.ChildObjects?.Attribute;
+    const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    for (const a of list) {
+        ensureOptionalMetadataAttributeComment(a?.Properties);
+    }
 }
 
 /**
@@ -1077,6 +1096,7 @@ export class MetadataPanel {
                     }
                 };
                 const restoredAttr = XmlDiffMerge.merge(originalAttr || {}, changedAttr);
+                ensureOptionalMetadataAttributeComment(restoredAttr?.Properties);
                 updatedAttrs.push(restoredAttr);
             }
 
@@ -1116,6 +1136,7 @@ export class MetadataPanel {
                     }
                 };
                 const restoredTS = XmlDiffMerge.merge(originalTS || {}, changedTS);
+                ensureOptionalMetadataCommentOnTabularSectionAttributes(restoredTS);
                 updatedTabs.push(restoredTS);
             }
 
@@ -1476,7 +1497,7 @@ export class MetadataPanel {
                 rootTag: 'Form'
             });
             if (!structureResult.valid && structureResult.errors?.length) {
-                const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+                const errorMessage = summarizeStructureValidationErrors(structureResult.errors);
                 throw new Error(`Ошибка структуры XML формы. Файл: ${formPath} — ${errorMessage}`);
             }
         }

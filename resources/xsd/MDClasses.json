@@ -3855,7 +3855,7 @@
       "childMin": {
         "Name": 1,
         "Synonym": 1,
-        "Comment": 1,
+        "Comment": 0,
         "Type": 0,
         "PasswordMode": 0,
         "Format": 0,

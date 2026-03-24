@@ -49,6 +49,12 @@ export interface InitMessage {
     };
 }
 
+/** Перечисления для выпадающих списков в редакторе свойств формы (XcfLogForm.enums.json). */
+export interface FormSchemaEnumsPayload {
+    byProperty: Record<string, string[]>;
+    byParentProperty?: Record<string, Record<string, string[]>>;
+}
+
 /**
  * Инициализация preview формы (extension -> webview).
  * Используется для EDT-подобного предпросмотра структуры формы.
@@ -60,6 +66,7 @@ export interface FormPreviewInitMessage {
         registers: string[];
         referenceTypes: string[];
     };
+    formSchemaEnums?: FormSchemaEnumsPayload;
 }
 
 /**

@@ -52,6 +52,24 @@ function xmlEscapeAttrValue(value) {
         .replace(/>/g, "&gt;");
 }
 /**
+ * В ChildObjects/Attribute/Properties комментарий в конфигурации обычно есть как пустой тег;
+ * при добавлении реквизита из UI ключ часто отсутствует — подставляем пустую строку для XML/платформы.
+ */
+function ensureOptionalMetadataAttributeComment(properties) {
+    if (!properties || typeof properties !== "object")
+        return;
+    if (properties.Comment === undefined && properties.comment === undefined) {
+        properties.Comment = "";
+    }
+}
+function ensureOptionalMetadataCommentOnTabularSectionAttributes(ts) {
+    const raw = ts?.ChildObjects?.Attribute;
+    const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    for (const a of list) {
+        ensureOptionalMetadataAttributeComment(a?.Properties);
+    }
+}
+/**
  * Находит диапазон (start..endExclusive) XML-блока <Metadata ...>...</Metadata>
  * по точному совпадению атрибута name="...".
  *
@@ -995,6 +1013,7 @@ class MetadataPanel {
                     }
                 };
                 const restoredAttr = xmlDiffMerge_1.XmlDiffMerge.merge(originalAttr || {}, changedAttr);
+                ensureOptionalMetadataAttributeComment(restoredAttr?.Properties);
                 updatedAttrs.push(restoredAttr);
             }
             // Обновляем ChildObjects.Attribute только если поле реально передано из UI
@@ -1029,6 +1048,7 @@ class MetadataPanel {
                     }
                 };
                 const restoredTS = xmlDiffMerge_1.XmlDiffMerge.merge(originalTS || {}, changedTS);
+                ensureOptionalMetadataCommentOnTabularSectionAttributes(restoredTS);
                 updatedTabs.push(restoredTS);
             }
             // Обновляем ChildObjects.TabularSection только если поле реально передано из UI
@@ -1339,7 +1359,7 @@ class MetadataPanel {
                 rootTag: 'Form'
             });
             if (!structureResult.valid && structureResult.errors?.length) {
-                const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+                const errorMessage = (0, xmlStructureValidator_1.summarizeStructureValidationErrors)(structureResult.errors);
                 throw new Error(`Ошибка структуры XML формы. Файл: ${formPath} — ${errorMessage}`);
             }
         }

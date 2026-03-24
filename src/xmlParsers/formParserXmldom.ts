@@ -267,6 +267,64 @@ function parseElementToObject(element: Element): any {
 }
 
 /**
+ * Дочерний элемент внутри свойства вида SearchStringAddition / ViewStatusAddition / SearchControlAddition.
+ * Раньше ContextMenu и ExtendedTooltip с только name/id (без #text) отбрасывались; пустой AdditionSource — тоже.
+ */
+function captureNestedFormPropertyChild(nestedEl: Element, nestedTag: string): any {
+  const nName = nestedEl.getAttribute('name');
+  const nId = nestedEl.getAttribute('id');
+  const nestedText = extractTextContent(nestedEl);
+  const subKids = Array.from(nestedEl.childNodes).filter(n => n.nodeType === 1) as Element[];
+
+  if (subKids.length > 0) {
+    const sub: Record<string, any> = {};
+    if (nName) sub.name = nName;
+    if (nId) sub.id = nId;
+    for (const sk of subKids) {
+      const skTag = sk.tagName;
+      if (
+        skTag === 'ChildItems' &&
+        (nestedTag === 'ContextMenu' || nestedTag === 'AutoCommandBar')
+      ) {
+        const items = parseFormChildItemsFromDom(sk);
+        if (items.length > 0) sub.ChildItems = items;
+      } else {
+        const skText = extractTextContent(sk);
+        const skDeep = Array.from(sk.childNodes).filter(n => n.nodeType === 1) as Element[];
+        if (skDeep.length === 0) {
+          if (skText) {
+            sub[skTag] = skText;
+          } else {
+            const skn = sk.getAttribute('name');
+            const ski = sk.getAttribute('id');
+            if (skn || ski) {
+              sub[skTag] = {
+                ...(skn ? { name: skn } : {}),
+                ...(ski ? { id: ski } : {}),
+              };
+            } else {
+              sub[skTag] = '';
+            }
+          }
+        } else {
+          sub[skTag] = parseElementToObject(sk);
+        }
+      }
+    }
+    return sub;
+  }
+
+  if (nestedText) return nestedText;
+  if (nName || nId) {
+    return {
+      ...(nName ? { name: nName } : {}),
+      ...(nId ? { id: nId } : {}),
+    };
+  }
+  return '';
+}
+
+/**
  * Парсит один элемент Column внутри Columns (реквизит типа ValueTable)
  */
 function parseColumnFromDom(colElement: Element): Record<string, any> {
@@ -338,8 +396,13 @@ function parseFormAttributesFromDom(formElement: Element): FormAttribute[] {
       const childElement = child as Element;
       const childTag = childElement.tagName;
       
-      // Пропускаем Type и служебные элементы
-      if (childTag === 'Type' || childTag.startsWith('xmlns')) {
+      // Пропускаем Type; имя реквизита — атрибут name у <Attribute>, не дочерний <Name>
+      if (
+        childTag === 'Type' ||
+        childTag === 'Name' ||
+        childTag === 'name' ||
+        childTag.startsWith('xmlns')
+      ) {
         continue;
       }
       
@@ -483,6 +546,11 @@ function parseFormCommandsFromDom(formElement: Element): FormCommand[] {
     if (!nameAttr) continue;
     
     const properties: Record<string, any> = {};
+    const idAttr = cmdElement.getAttribute('id');
+    if (idAttr) {
+      properties.id = idAttr;
+    }
+    
     for (let i = 0; i < cmdElement.childNodes.length; i++) {
       const child = cmdElement.childNodes[i];
       if (child.nodeType !== 1) continue;
@@ -491,6 +559,15 @@ function parseFormCommandsFromDom(formElement: Element): FormCommand[] {
       
       // Пропускаем служебные элементы
       if (childTag.startsWith('xmlns')) {
+        continue;
+      }
+      // Имя и id команды — атрибуты <Command>, не дочерние теги
+      if (
+        childTag === 'Name' ||
+        childTag === 'name' ||
+        childTag === 'id' ||
+        childTag === 'Id'
+      ) {
         continue;
       }
       
@@ -632,10 +709,7 @@ function parseFormItemFromDom(element: Element, tagName: string): FormItem | nul
                 attrObj.ChildItems = parsedChildItems;
               }
             } else {
-              const nestedText = extractTextContent(nestedEl);
-              if (nestedText) {
-                attrObj[nestedTag] = nestedText;
-              }
+              attrObj[nestedTag] = captureNestedFormPropertyChild(nestedEl, nestedTag);
             }
           }
         }

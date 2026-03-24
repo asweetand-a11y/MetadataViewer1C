@@ -39,6 +39,22 @@ import { formatTypeForDisplay, extractTypeString } from '../../utils/typeUtils';
 import { EditAttributeModal } from './modals/EditAttributeModal';
 import { EditCommandModal } from './modals/EditCommandModal';
 import { ConfirmDeleteModal } from './modals/ConfirmDeleteModal';
+import {
+  isLayoutInvisible,
+  isLayoutReadOnly,
+  parseTitleLocation,
+  readLayoutProp,
+  tableShowsHeader,
+  tableHorizontalLines,
+  tableVerticalLines,
+  hasTableAdditionPlaceholder,
+  buildTablePreviewStyle,
+  buildFieldPreviewStyle,
+} from './formLayoutProps';
+import {
+  type FormSchemaEnumsPayload,
+  resolvePropertyEnumOptions,
+} from './formSchemaEnums';
 
 function formatValue(value: any): string {
   if (value === null) return 'null';
@@ -405,7 +421,12 @@ function collectColumnsFromItem(item: FormItem, prefix: string): string[] {
         // Листовые колонки внутри группы
         const leafCols: string[] = [];
         for (const ch of child) {
-          if (ch.type === 'InputField' || ch.type === 'LabelField' || ch.type === 'PictureField' || ch.type === 'TableField' || ch.type === 'CheckBoxField') {
+          if (ch.type === 'InputField' ||
+            ch.type === 'SelectField' ||
+            ch.type === 'LabelField' ||
+            ch.type === 'PictureField' ||
+            ch.type === 'TableField' ||
+            ch.type === 'CheckBoxField') {
             const chTitle = getItemTitleFromProps(ch.properties) || ch.name || deriveLabelFromDataPath(getDataPath(ch.properties)) || '';
             if (!chTitle) continue;
             leafCols.push(groupTitle ? `${groupTitle} / ${chTitle}` : chTitle);
@@ -423,7 +444,14 @@ function collectColumnsFromItem(item: FormItem, prefix: string): string[] {
   }
 
   // Листовые элементы (колонки)
-  if (item.type === 'InputField' || item.type === 'LabelField' || item.type === 'PictureField' || item.type === 'TableField' || item.type === 'CheckBoxField') {
+  if (
+    item.type === 'InputField' ||
+    item.type === 'SelectField' ||
+    item.type === 'LabelField' ||
+    item.type === 'PictureField' ||
+    item.type === 'TableField' ||
+    item.type === 'CheckBoxField'
+  ) {
     if (!headerAllowed && !t) return [];
     const colTitle = t || item.name || deriveLabelFromDataPath(dp) || '';
     if (!colTitle) return [];
@@ -473,7 +501,8 @@ function deriveTableColumns(table: FormItem): string[] {
       ch.type === 'CommandBar' ||
       isPanelItemType(ch.type) ||
       ch.type === 'SearchStringAddition' ||
-      ch.type === 'ViewStatusAddition'
+      ch.type === 'ViewStatusAddition' ||
+      ch.type === 'SearchControlAddition'
     ) {
       continue;
     }
@@ -504,7 +533,14 @@ function deriveTableColumnsStructured(table: FormItem): {
   const collectLeafsWithPrefix = (it: FormItem, prefix: string): string[] => {
     if (!it) return [];
 
-    if (it.type === 'InputField' || it.type === 'LabelField' || it.type === 'PictureField' || it.type === 'TableField' || it.type === 'CheckBoxField') {
+    if (
+      it.type === 'InputField' ||
+      it.type === 'SelectField' ||
+      it.type === 'LabelField' ||
+      it.type === 'PictureField' ||
+      it.type === 'TableField' ||
+      it.type === 'CheckBoxField'
+    ) {
       const t = leafTitle(it);
       return t ? [prefix ? `${prefix} / ${t}` : t] : [];
     }
@@ -617,7 +653,14 @@ function toLeafNodes(items: FormItem[], prefix: string): ColNode[] {
     if (!it) continue;
     if (it.type === 'CommandBar' || isPanelItemType(it.type)) continue;
 
-    if (it.type === 'InputField' || it.type === 'LabelField' || it.type === 'PictureField' || it.type === 'TableField' || it.type === 'CheckBoxField') {
+    if (
+      it.type === 'InputField' ||
+      it.type === 'SelectField' ||
+      it.type === 'LabelField' ||
+      it.type === 'PictureField' ||
+      it.type === 'TableField' ||
+      it.type === 'CheckBoxField'
+    ) {
       const lt = getLeafTitle(it);
       const title = lt ? (prefix ? `${prefix} / ${lt}` : lt) : '';
       if (title) out.push({ kind: 'leaf', title });
@@ -739,13 +782,27 @@ function buildTableHeadModel(table: FormItem): TableHeadModel {
   for (const ch of children) {
     if (!ch) continue;
     if (ch.type === 'CommandBar' || isPanelItemType(ch.type)) continue;
+    if (
+      ch.type === 'SearchStringAddition' ||
+      ch.type === 'ViewStatusAddition' ||
+      ch.type === 'SearchControlAddition'
+    ) {
+      continue;
+    }
 
     if (ch.type === 'ColumnGroup') {
       topNodes.push(...parseColumnGroupToNodes(ch, 1));
       continue;
     }
 
-    if (ch.type === 'InputField' || ch.type === 'LabelField' || ch.type === 'PictureField' || ch.type === 'TableField' || ch.type === 'CheckBoxField') {
+    if (
+      ch.type === 'InputField' ||
+      ch.type === 'SelectField' ||
+      ch.type === 'LabelField' ||
+      ch.type === 'PictureField' ||
+      ch.type === 'TableField' ||
+      ch.type === 'CheckBoxField'
+    ) {
       const t = getLeafTitle(ch);
       if (t) topNodes.push({ kind: 'leaf', title: t });
       continue;
@@ -916,6 +973,7 @@ export const FormPreviewApp: React.FC<FormPreviewAppProps> = ({ vscode }) => {
     referenceTypes: string[];
     referenceTypeStructures?: Record<string, { attributes: Array<{ name: string; typeDisplay: string }>; tabularSections: Array<{ name: string; attributes: Array<{ name: string; typeDisplay: string }> }> }>;
   }>({ registers: [], referenceTypes: [] });
+  const [formSchemaEnums, setFormSchemaEnums] = useState<FormSchemaEnumsPayload | undefined>(undefined);
   const [selectedPath, setSelectedPath] = useState<string>('');
   const [leftTab, setLeftTab] = useState<LeftTab>('elements');
   const [rightTab, setRightTab] = useState<RightTab>('attributes');
@@ -1045,6 +1103,12 @@ export const FormPreviewApp: React.FC<FormPreviewAppProps> = ({ vscode }) => {
             referenceTypeStructures: md.referenceTypeStructures && typeof md.referenceTypeStructures === 'object' ? md.referenceTypeStructures : undefined,
           });
         }
+        const fse = (message as { formSchemaEnums?: FormSchemaEnumsPayload }).formSchemaEnums;
+        if (fse?.byProperty && typeof fse.byProperty === 'object') {
+          setFormSchemaEnums(fse);
+        } else {
+          setFormSchemaEnums(undefined);
+        }
         const normalized = attachPanelsToForm(payload);
         setForm(normalized);
         setIsDirty(false);
@@ -1148,12 +1212,14 @@ export const FormPreviewApp: React.FC<FormPreviewAppProps> = ({ vscode }) => {
       if (!prev) return prev;
       const attrs = Array.isArray(prev.attributes) ? [...prev.attributes] : [];
       const formattedType = formatTypeForDisplay(type);
+      // Name/Type не дублируем в properties — они в attr.name / attr.type; UseAlways в XSD — <Field>, не boolean в тексте
       const baseProperties = {
         ...(attributeModal?.mode === 'edit' && attributeModal.index !== undefined ? (attrs[attributeModal.index]?.properties || {}) : {}),
-        Name: name,
-        UseAlways: useAlways,
+        ...(useAlways ? { UseAlways: true as const } : {}),
         Type: type,
       } as Record<string, any>;
+      delete baseProperties.Name;
+      delete baseProperties.name;
       
       const isValueTable = isValueTableTypeValue(type);
       if (isValueTable && columns) {
@@ -1568,6 +1634,7 @@ export const FormPreviewApp: React.FC<FormPreviewAppProps> = ({ vscode }) => {
               item={selectedItem}
               commands={form.commands || []}
               title={getPropertiesPanelTitle(selectedItem)}
+              formSchemaEnums={formSchemaEnums}
               onClose={() => setPropertiesPanelOpen(false)}
               onPropertyChange={(key, nextValue) => {
                 if (!selectedPath) return;
@@ -2188,7 +2255,11 @@ const ElementPropertiesEditor: React.FC<{
   onChange: (key: string, nextValue: any) => void;
   /** Фильтр по имени свойства (поиск в панели «Свойства»). */
   searchFilter?: string;
-}> = ({ item, onChange, searchFilter }) => {
+  /** Тип элемента (Table, InputField, Form, …) — для byParentProperty в XcfLogForm.enums.json */
+  parentElementType?: string;
+  /** Перечисления из расширения (resources/xsd/XcfLogForm.enums.json). */
+  formSchemaEnums?: FormSchemaEnumsPayload;
+}> = ({ item, onChange, searchFilter, parentElementType, formSchemaEnums }) => {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   /** Ширина колонки «Свойство» в % (остальное — «Значение»). */
@@ -2351,7 +2422,18 @@ const ElementPropertiesEditor: React.FC<{
               const isBool = typeof r.value === 'boolean';
               const isJson = typeof r.value === 'object' && r.value !== null;
               const isNum = typeof r.value === 'number';
+              const isStr = typeof r.value === 'string';
               const isNullish = r.value === null || r.value === undefined;
+              const enumOpts = isStr
+                ? resolvePropertyEnumOptions(r.key, parentElementType, formSchemaEnums)
+                : undefined;
+              const draftStr = drafts[r.key] ?? '';
+              const selectOptions =
+                enumOpts && enumOpts.length > 0
+                  ? Array.from(
+                      new Set(draftStr && !enumOpts.includes(draftStr) ? [draftStr, ...enumOpts] : enumOpts)
+                    )
+                  : undefined;
 
               return (
                 <tr key={r.key}>
@@ -2377,6 +2459,25 @@ const ElementPropertiesEditor: React.FC<{
                         />
                         {err ? <div className="edt-props-editor__error">{err}</div> : null}
                       </>
+                    ) : isStr && selectOptions ? (
+                      <select
+                        className={`edt-props-editor__select ${err ? 'is-error' : ''}`}
+                        value={draftStr}
+                        title={r.key}
+                        aria-label={r.key}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          onChangeDraft(r.key, v);
+                          clearError(r.key);
+                          onChange(r.key, v);
+                        }}
+                      >
+                        {selectOptions.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
                     ) : (
                       <>
                         <input
@@ -2495,7 +2596,8 @@ const PropertiesPanel: React.FC<{
   onPropertyChange: (key: string, nextValue: any) => void;
   /** Открыть модуль формы и перейти к процедуре/функции (по имени обработчика). */
   onOpenModuleAtProcedure?: (procedureName: string) => void;
-}> = ({ item, commands, title, onClose, onPropertyChange, onOpenModuleAtProcedure }) => {
+  formSchemaEnums?: FormSchemaEnumsPayload;
+}> = ({ item, commands, title, onClose, onPropertyChange, onOpenModuleAtProcedure, formSchemaEnums }) => {
   const [propertySearch, setPropertySearch] = useState('');
   /** Высота блока «Основные» в пикселях (перетаскиваемый разделитель). */
   const [mainSectionHeight, setMainSectionHeight] = useState(200);
@@ -2590,6 +2692,8 @@ const PropertiesPanel: React.FC<{
                   item={item}
                   onChange={onPropertyChange}
                   searchFilter={propertySearch}
+                  parentElementType={item.type}
+                  formSchemaEnums={formSchemaEnums}
                 />
               ) : (
                 <div className="form-preview__empty">Выберите элемент в дереве</div>
@@ -2769,8 +2873,10 @@ function getOrientation(props: any): 'vertical' | 'horizontalAlways' | 'horizont
 }
 
 function getDataPath(props: any): string {
-  const dp = props?.DataPath;
-  return typeof dp === 'string' ? dp : '';
+  if (!props?.DataPath) return '';
+  const dp = props.DataPath;
+  if (typeof dp === 'string') return dp;
+  return readLayoutProp(props as Record<string, unknown>, 'DataPath');
 }
 
 function deriveLabelFromDataPath(dp: string): string {
@@ -3082,11 +3188,15 @@ const DesignerNode: React.FC<{
   const isSelected = node.path === selectedPath;
   const type = node.item.type || 'Unknown';
 
+  const layoutProps = node.item.properties as Record<string, unknown> | undefined;
+  const layoutHidden = isLayoutInvisible(layoutProps);
+  const hiddenClass = layoutHidden ? ' designer-node--layout-hidden' : '';
+
   const title = getItemTitleFromProps(node.item.properties);
   const dp = getDataPath(node.item.properties);
 
   const children = node.children;
-  const baseClass = `designer-node ${isSelected ? 'is-selected' : ''}`;
+  const baseClass = `designer-node ${isSelected ? 'is-selected' : ''}${hiddenClass}`;
 
   const onClickSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -3106,7 +3216,7 @@ const DesignerNode: React.FC<{
     if (isLayoutGroup) {
       const orientation = getOrientation(node.item.properties);
       return (
-        <div className={`designer-group__content designer-group__content--${orientation}`}>
+        <div className={`designer-group__content designer-group__content--${orientation}${hiddenClass}`}>
           {children.map((ch) => (
             <DesignerNode
               key={ch.path}
@@ -3251,13 +3361,27 @@ const DesignerNode: React.FC<{
     );
   }
 
-  if (type === 'InputField') {
+  if (type === 'InputField' || type === 'SelectField') {
     const label = title || deriveLabelFromDataPath(dp) || node.item.name || '';
     const multiline = Boolean((node.item.properties as any)?.MultiLine);
+    const titleLoc = parseTitleLocation(layoutProps);
+    const fieldLayoutClass =
+      titleLoc === 'none'
+        ? 'designer-field designer-field--title-none'
+        : titleLoc === 'top' || titleLoc === 'other'
+          ? 'designer-field designer-field--title-top'
+          : 'designer-field designer-field--title-left';
+    const readOnly = isLayoutReadOnly(layoutProps);
+    const fieldBoxStyle = buildFieldPreviewStyle(layoutProps) as React.CSSProperties;
 
     return (
-      <div className={`${baseClass} designer-node--field`} onClick={onClickSelect} title={node.path}>
-        <div className="designer-field">
+      <div
+        className={`${baseClass} designer-node--field`}
+        style={fieldBoxStyle}
+        onClick={onClickSelect}
+        title={node.path}
+      >
+        <div className={`${fieldLayoutClass}${readOnly ? ' designer-field--readonly' : ''}`}>
           <div className="designer-field__label">{label}</div>
           <div className={`designer-field__control ${multiline ? 'is-multiline' : ''}`}>
             {dp ? <span className="designer-field__hint">{dp}</span> : <span className="designer-field__hint">&nbsp;</span>}
@@ -3269,9 +3393,16 @@ const DesignerNode: React.FC<{
 
   if (type === 'CheckBoxField') {
     const label = title || deriveLabelFromDataPath(dp) || node.item.name || '';
+    const readOnly = isLayoutReadOnly(layoutProps);
+    const cbStyle = buildFieldPreviewStyle(layoutProps) as React.CSSProperties;
     return (
-      <div className={`${baseClass} designer-node--checkbox`} onClick={onClickSelect} title={node.path}>
-        <div className="designer-checkbox">
+      <div
+        className={`${baseClass} designer-node--checkbox`}
+        style={cbStyle}
+        onClick={onClickSelect}
+        title={node.path}
+      >
+        <div className={`designer-checkbox${readOnly ? ' designer-checkbox--readonly' : ''}`}>
           <input type="checkbox" className="designer-checkbox__input" disabled aria-hidden />
           <span className="designer-checkbox__label">{label || (dp ? formatValue(dp) : '\u00A0')}</span>
         </div>
@@ -3281,8 +3412,9 @@ const DesignerNode: React.FC<{
 
   if (type === 'LabelField') {
     const label = title || node.item.name || '';
+    const lfStyle = buildFieldPreviewStyle(layoutProps) as React.CSSProperties;
     return (
-      <div className={`${baseClass} designer-node--label`} onClick={onClickSelect} title={node.path}>
+      <div className={`${baseClass} designer-node--label`} style={lfStyle} onClick={onClickSelect} title={node.path}>
         <div className="designer-label">{label}</div>
       </div>
     );
@@ -3341,8 +3473,9 @@ const DesignerNode: React.FC<{
       (node.item.properties as any)?.CommandName ||
       node.item.name ||
       'Кнопка';
+    const btnBoxStyle = buildFieldPreviewStyle(layoutProps) as React.CSSProperties;
     return (
-      <div className={`${baseClass} designer-node--button`} onClick={onClickSelect} title={node.path}>
+      <div className={`${baseClass} designer-node--button`} style={btnBoxStyle} onClick={onClickSelect} title={node.path}>
         <button
           type="button"
           className="designer-button"
@@ -3359,6 +3492,13 @@ const DesignerNode: React.FC<{
 
   if (type === 'Table') {
     const tTitle = title || node.item.name || 'Таблица';
+    const titleLoc = parseTitleLocation(layoutProps);
+    const showTableTitle = titleLoc !== 'none';
+    const showHead = tableShowsHeader(layoutProps);
+    const hLines = tableHorizontalLines(layoutProps);
+    const vLines = tableVerticalLines(layoutProps);
+    const adds = hasTableAdditionPlaceholder(layoutProps);
+    const tableBoxStyle = buildTablePreviewStyle(layoutProps) as React.CSSProperties;
 
     const panelNodes = children.filter((c) => isPanelItemType(c.item.type));
     const contextPanel = panelNodes.find((c) => c.item.type === 'ContextMenu') || null;
@@ -3383,9 +3523,44 @@ const DesignerNode: React.FC<{
       return 'designer-table__cell designer-table__cell--spacer';
     };
 
+    const tableSurfaceClass = [
+      'designer-table',
+      !hLines ? 'designer-table--no-h-lines' : '',
+      !vLines ? 'designer-table--no-v-lines' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    const readOnly = isLayoutReadOnly(layoutProps);
+
     return (
-      <div className={`${baseClass} designer-node--table`} onClick={onClickSelect} title={node.path}>
-        <div className="designer-table__title">{tTitle}</div>
+      <div
+        className={`${baseClass} designer-node--table${readOnly ? ' designer-node--table-readonly' : ''}`}
+        style={tableBoxStyle}
+        onClick={onClickSelect}
+        title={node.path}
+      >
+        {showTableTitle ? <div className="designer-table__title">{tTitle}</div> : null}
+
+        {adds.search || adds.status || adds.control ? (
+          <div className="designer-table__additions" onClick={(e) => e.stopPropagation()}>
+            {adds.search ? (
+              <div className="designer-table__addition designer-table__addition--search" title="SearchStringAddition">
+                Строка поиска
+              </div>
+            ) : null}
+            {adds.status ? (
+              <div className="designer-table__addition designer-table__addition--status" title="ViewStatusAddition">
+                Состояние просмотра
+              </div>
+            ) : null}
+            {adds.control ? (
+              <div className="designer-table__addition designer-table__addition--control" title="SearchControlAddition">
+                Управление поиском
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {contextPanel || autoPanel ? (
           <div className="designer-table__bars">
@@ -3444,24 +3619,26 @@ const DesignerNode: React.FC<{
           </div>
         ) : null}
 
-        <div className="designer-table" style={gridStyle}>
-          <div className="designer-table__headGrid" style={headStyle}>
-            {model.cells.map((c) => (
-              <div
-                key={c.key}
-                className={cellClass(c.kind)}
-                style={{
-                  gridColumnStart: c.colStart,
-                  gridColumnEnd: `span ${c.colSpan}`,
-                  gridRowStart: c.rowStart,
-                  gridRowEnd: `span ${c.rowSpan}`,
-                }}
-                title={c.label}
-              >
-                {c.label || '\u00A0'}
-              </div>
-            ))}
-          </div>
+        <div className={tableSurfaceClass} style={gridStyle}>
+          {showHead && model.colCount > 0 ? (
+            <div className="designer-table__headGrid" style={headStyle}>
+              {model.cells.map((c) => (
+                <div
+                  key={c.key}
+                  className={cellClass(c.kind)}
+                  style={{
+                    gridColumnStart: c.colStart,
+                    gridColumnEnd: `span ${c.colSpan}`,
+                    gridRowStart: c.rowStart,
+                    gridRowEnd: `span ${c.rowSpan}`,
+                  }}
+                  title={c.label}
+                >
+                  {c.label || '\u00A0'}
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           <div className="designer-table__row">
             {Array.from({ length: model.colCount }).map((_, i) => (

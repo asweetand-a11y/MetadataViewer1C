@@ -16,6 +16,21 @@ export interface StructureValidationResult {
     errors?: string[];
 }
 
+/** Сколько ошибок включать в краткое сообщение об ошибке (остальные всё равно в массиве). */
+export const STRUCTURE_VALIDATION_ERROR_SUMMARY_LIMIT = 20;
+
+export function summarizeStructureValidationErrors(
+    errors: string[],
+    limit: number = STRUCTURE_VALIDATION_ERROR_SUMMARY_LIMIT
+): string {
+    if (!errors.length) {
+        return '';
+    }
+    const head = errors.slice(0, limit);
+    const suffix = errors.length > limit ? ` … (+${errors.length - limit} ещё)` : '';
+    return head.join('; ') + suffix;
+}
+
 const ATTR_PREFIX = '@';
 const TEXT_KEY = '#text';
 
