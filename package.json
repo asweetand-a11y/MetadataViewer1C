@@ -1,7 +1,7 @@
 {
-	"name": "cursor-1c-metadata-viewer",
-	"displayName": "1C Metadata Viewer",
-	"description": "Explore 1C:Enterprise 8 configuration in the usual way",
+	"name": "1c-configuration-tree",
+	"displayName": "1C Configuration tree",
+	"description": "Дерево конфигураций 1С: Предприятие 8",
 	"version": "2.10.6",
 	"publisher": "whiterabbit",
 	"license": "MIT",
@@ -36,7 +36,7 @@
 			"explorer": [
 				{
 					"id": "metadataView",
-					"name": "1C Metadata Viewer"
+					"name": "1C Configuration tree"
 				}
 			]
 		},
@@ -394,7 +394,7 @@
 		},
 		"configuration": [
 			{
-				"title": "1C Metadata Viewer",
+				"title": "1C Configuration tree",
 				"properties": {
 					"metadataViewer.searchDepth": {
 						"type": "integer",
@@ -404,7 +404,7 @@
 					"metadataViewer.debugMode": {
 						"type": "boolean",
 						"default": false,
-						"description": "Включить детальное логирование для отладки (логи будут видны в Output канале '1C Metadata Viewer')"
+						"description": "Включить детальное логирование для отладки (логи будут видны в Output канале '1C Configuration tree')"
 					},
 					"metadataViewer.commitFilePath": {
 						"type": "string",
