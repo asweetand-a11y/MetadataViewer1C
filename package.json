@@ -4,6 +4,10 @@
 	"description": "Дерево конфигураций 1С: Предприятие 8",
 	"version": "2.10.6",
 	"publisher": "whiterabbit",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/asweetand-a11y/MetadataViewer1C"
+  },
 	"license": "MIT",
 	"author": {
     "name": "Andrey Ponomarev",
