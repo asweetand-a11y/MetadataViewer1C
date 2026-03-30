@@ -2,12 +2,12 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { CommitFileLogger } from "../utils/commitFileLogger";
-import { parseMetadataXml, ParsedMetadataObject } from "../xmlParsers/metadataParser";
+import { parseMetadataXml, ParsedMetadataObject, isParsedTypeRefDate } from "../xmlParsers/metadataParser";
 import { parsePredefinedXml } from "../xmlParsers/predefinedParser";
 import { parseFormXml, isFormFile, parseFormXmlFull, ParsedFormFull } from "../xmlParsers/formParser";
-import { FIELD_VALUES, TEXT_INPUT_FIELDS } from "../metadata/field-values";
+import { FIELD_VALUES, TEXT_INPUT_FIELDS, normalizeAccumulationRegisterTypeValue } from "../metadata/field-values";
 import { createRefDisplayMap, createRefBSLMap } from "../metadata/metadata-types";
-import { WebviewMessage, InitMessage } from "../metadata/types";
+import { WebviewMessage, InitMessage, InformationRegisterScheduleEntry } from "../metadata/types";
 import { safeReadFile, safeWriteFile, createBackup, validatePath } from "../utils/fileUtils";
 import { createXMLParser, normalizeXML, validateXML } from "../utils/xmlUtils";
 import { applyChangesToXmlString } from "../utils/xmlStringPatcher";
@@ -15,7 +15,18 @@ import { summarizeStructureValidationErrors, validateXmlStructure } from "../val
 import { applyFormChangesToXmlStringWithDom } from "../utils/xmlDomUtils";
 import { XmlDiffMerge } from "../utils/xmlDiffMerge";
 import { ensureMetadataInConfigurationXml } from "../utils/configurationXmlUpdater";
+import {
+    loadSubsystemMembershipForObject,
+    applySubsystemMembershipChanges,
+    shouldOfferSubsystemMembership,
+} from "../utils/subsystemMembership";
+import { clearSubsystemContentCache } from "../metadataView";
 import { statusBarProgress, contextStatusBar } from "../extension";
+import {
+    buildRegisterRefToDocumentNamesMap,
+    isRegisterRecorderXmlType,
+    syncRegisterRecorderDocuments,
+} from "../utils/syncRegisterRecorderDocuments";
 
 
 /**
@@ -383,6 +394,23 @@ export class MetadataPanel {
                         console.error('Failed to parse Predefined.xml:', err);
                     }
                 }
+
+                const configRootForSubs = path.dirname(path.dirname(filePath));
+                if (
+                    shouldOfferSubsystemMembership(filePath, parsed.xmlObjectType) &&
+                    fs.existsSync(path.join(configRootForSubs, "Subsystems"))
+                ) {
+                    try {
+                        const mdRef = `${parsed.xmlObjectType}.${parsed.name}`;
+                        parsed.subsystems = await loadSubsystemMembershipForObject({
+                            configRoot: configRootForSubs,
+                            mdRef,
+                        });
+                    } catch (subLoadErr) {
+                        console.warn("[MetadataPanel.createOrShowForFile] Подсистемы не загружены:", subLoadErr);
+                        parsed.subsystems = [];
+                    }
+                }
             }
 
             const titlePrefix = isForm ? "Форма" : parsed.objectType;
@@ -495,9 +523,14 @@ export class MetadataPanel {
     /**
      * Сканирование метаданных конфигурации для получения списков регистров и ссылочных типов
      */
-    private async scanMetadataForWebview(): Promise<{ registers: string[]; referenceTypes: string[] }> {
+    private async scanMetadataForWebview(): Promise<{
+        registers: string[];
+        referenceTypes: string[];
+        informationRegistersSchedule: InformationRegisterScheduleEntry[];
+    }> {
         const registers: string[] = [];
         const referenceTypes: string[] = [];
+        const informationRegistersSchedule: InformationRegisterScheduleEntry[] = [];
         
         try {
             // Определяем корень конфигурации для сканирования.
@@ -687,16 +720,106 @@ export class MetadataPanel {
                     }
                 }
             }
-            
+            const refTypeSet = new Set(referenceTypes);
+            for (const obj of scanResult.objects) {
+                if (obj.objectTypeDir !== "ChartsOfCalculationTypes") {
+                    continue;
+                }
+                const full = "ChartOfCalculationTypes." + obj.displayName;
+                if (!refTypeSet.has(full)) {
+                    referenceTypes.push(full);
+                    refTypeSet.add(full);
+                }
+            }
+
             // Сортируем списки
             registers.sort();
             referenceTypes.sort();
-            
+
+            // Независимые регистры сведений с измерениями/ресурсами — для графика регистра расчёта
+            const irObjs = scanResult.objects.filter((o) => o.objectTypeDir === "InformationRegisters");
+            for (const o of irObjs) {
+                if (!validatePath(effectiveRoot, o.mainXmlPath)) {
+                    continue;
+                }
+                try {
+                    const parsed = await parseMetadataXml(o.mainXmlPath);
+                    if (parsed.properties?.WriteMode !== "Independent") {
+                        continue;
+                    }
+                    if (parsed.properties?.InformationRegisterPeriodicity !== "Nonperiodical") {
+                        continue;
+                    }
+                    const regName =
+                        typeof parsed.properties?.Name === "string"
+                            ? parsed.properties.Name
+                            : typeof parsed.name === "string"
+                              ? parsed.name
+                              : "";
+                    if (!regName) {
+                        continue;
+                    }
+                    const dimAttrs = (parsed.attributes || []).filter((a) => a.childObjectKind === "Dimension");
+                    const dimensions = dimAttrs
+                        .map((a) => String(a.name || "").trim())
+                        .filter(Boolean);
+                    const dateDimensions = dimAttrs
+                        .filter((a) => isParsedTypeRefDate(a.type))
+                        .map((a) => String(a.name || "").trim())
+                        .filter(Boolean);
+                    const resources = (parsed.attributes || [])
+                        .filter((a) => a.childObjectKind === "Resource")
+                        .map((a) => String(a.name || "").trim())
+                        .filter(Boolean);
+                    if (dimensions.length === 0 && resources.length === 0) {
+                        continue;
+                    }
+                    informationRegistersSchedule.push({
+                        ref: `InformationRegister.${regName}`,
+                        displayName: regName,
+                        dimensions,
+                        dateDimensions,
+                        resources,
+                    });
+                } catch {
+                    /* пропускаем повреждённый XML */
+                }
+            }
+            informationRegistersSchedule.sort((a, b) =>
+                a.displayName.localeCompare(b.displayName, "ru")
+            );
         } catch (error) {
             console.error('[MetadataPanel.scanMetadataForWebview] Ошибка сканирования метаданных:', error);
         }
         
-        return { registers, referenceTypes };
+        return { registers, referenceTypes, informationRegistersSchedule };
+    }
+
+    /**
+     * Заполняет recorderDocumentNames у объектов-регистров по фактическим RegisterRecords в XML документов.
+     */
+    private async enrichParsedObjectsRecorderDocuments(): Promise<void> {
+        try {
+            const map = await buildRegisterRefToDocumentNamesMap(this.configRoot);
+            for (const obj of this.parsedObjects) {
+                if (!isRegisterRecorderXmlType(obj.xmlObjectType)) {
+                    continue;
+                }
+                const regName =
+                    typeof obj.properties?.Name === "string"
+                        ? obj.properties.Name
+                        : typeof obj.name === "string"
+                          ? obj.name
+                          : "";
+                if (!regName || !obj.xmlObjectType) {
+                    continue;
+                }
+                const ref = `${obj.xmlObjectType}.${regName}`;
+                obj.recorderDocumentNames = [...(map.get(ref) || [])];
+            }
+        } catch (e) {
+            console.warn("[MetadataPanel.enrichParsedObjectsRecorderDocuments]", e);
+        }
     }
 
     /**
@@ -715,11 +838,17 @@ export class MetadataPanel {
         console.log('[MetadataPanel.postMetadata] Webview готов, сканируем метаданные...');
         // Сканируем метаданные для получения списков регистров и ссылочных типов
         const metadata = await this.scanMetadataForWebview();
+
+        await this.enrichParsedObjectsRecorderDocuments();
         
         const message: InitMessage = {
             type: "init",
             payload: this.parsedObjects,
-            metadata: metadata
+            metadata: {
+                registers: metadata.registers,
+                referenceTypes: metadata.referenceTypes,
+                informationRegistersSchedule: metadata.informationRegistersSchedule,
+            },
         };
         
         console.log('[MetadataPanel.postMetadata] Отправка сообщения init, объектов:', this.parsedObjects.length);
@@ -958,7 +1087,13 @@ export class MetadataPanel {
             const changedProperties: Record<string, any> = {};
             
             for (const key of Object.keys(obj.properties)) {
-                const value = obj.properties[key];
+                let value = obj.properties[key];
+                if (key === "RegisterType" && xmlObjectType === "AccumulationRegister") {
+                    const n = normalizeAccumulationRegisterTypeValue(value);
+                    if (n !== undefined) {
+                        value = n;
+                    }
+                }
 
                 // Специальная сериализация для RegisterRecords
                 if (key === "RegisterRecords") {
@@ -1342,10 +1477,79 @@ export class MetadataPanel {
                     console.warn("[MetadataPanel.handleSave] Не удалось обновить Configuration.xml:", e);
                 }
 
+                try {
+                    const regXt = obj.xmlObjectType || xmlObjectType;
+                    if (isRegisterRecorderXmlType(regXt) && Array.isArray(obj.recorderDocumentNames)) {
+                        const allowIrSync =
+                            regXt !== "InformationRegister" ||
+                            obj.properties?.WriteMode === "RecorderSubordinate";
+                        if (allowIrSync) {
+                            const regName =
+                                typeof obj.properties?.Name === "string"
+                                    ? obj.properties.Name
+                                    : typeof obj.name === "string"
+                                      ? obj.name
+                                      : "";
+                            if (regName) {
+                                const syncResult = await syncRegisterRecorderDocuments({
+                                    configRoot: this.configRoot,
+                                    registerXmlType: regXt,
+                                    registerName: regName,
+                                    selectedDocumentNames: obj.recorderDocumentNames,
+                                });
+                                for (const p of syncResult.updatedFiles) {
+                                    CommitFileLogger.getInstance().logChangedFile(p);
+                                }
+                                if (syncResult.errors.length > 0) {
+                                    vscode.window.showWarningMessage(
+                                        `Объект сохранён; обновление RegisterRecords в документах: ${syncResult.errors
+                                            .slice(0, 2)
+                                            .join("; ")}`
+                                    );
+                                }
+                            }
+                        }
+                    }
+                } catch (syncDocErr: unknown) {
+                    const m = syncDocErr instanceof Error ? syncDocErr.message : String(syncDocErr);
+                    console.error("[MetadataPanel.handleSave] sync RegisterRecords в документах:", syncDocErr);
+                    vscode.window.showWarningMessage(
+                        `Объект сохранён; не удалось обновить документы (RegisterRecords): ${m.substring(0, 200)}`
+                    );
+                }
+
                 vscode.window.showInformationMessage("Изменения объекта успешно сохранены.");
                 
                 // Логируем измененный файл в Commit.txt
                 CommitFileLogger.getInstance().logChangedFile(obj.sourcePath);
+
+                if (
+                    obj.subsystems !== undefined &&
+                    shouldOfferSubsystemMembership(obj.sourcePath, obj.xmlObjectType)
+                ) {
+                    const mdRefType = obj.xmlObjectType ?? xmlObjectType;
+                    const mdRef = `${mdRefType}.${obj.name}`;
+                    try {
+                        const changedSubsystemFiles = await applySubsystemMembershipChanges({
+                            configRoot: this.configRoot,
+                            mdRef,
+                            rows: obj.subsystems,
+                            extensionPath: this.extensionUri.fsPath,
+                            validateStructure: structureValidationEnabled,
+                        });
+                        for (const p of changedSubsystemFiles) {
+                            CommitFileLogger.getInstance().logChangedFile(p);
+                        }
+                        if (changedSubsystemFiles.length > 0) {
+                            clearSubsystemContentCache();
+                        }
+                    } catch (subErr: unknown) {
+                        const subMsg = subErr instanceof Error ? subErr.message : String(subErr);
+                        vscode.window.showWarningMessage(
+                            `Объект сохранён, но обновление подсистем не выполнено: ${subMsg.substring(0, 250)}`
+                        );
+                    }
+                }
             } catch (writeError) {
                 const errorMessage = writeError instanceof Error ? writeError.message : String(writeError);
                 console.error('[MetadataPanel.handleSave] Ошибка записи файла:', writeError);

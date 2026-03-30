@@ -7,6 +7,7 @@
  * попадают в объект рядом с дочерними элементами и ошибочно считаются «лишними» дочерними тегами.
  */
 
+import { DOMParser } from '@xmldom/xmldom';
 import { XMLParser } from 'fast-xml-parser';
 import { loadJsonSchema, type JsonSchemaDefinition } from './schemaLoader';
 import { getJsonSchemaNameForXml, type SchemaContext } from './schemaMapping';
@@ -34,6 +35,34 @@ export function summarizeStructureValidationErrors(
 const ATTR_PREFIX = '@';
 const TEXT_KEY = '#text';
 
+/**
+ * Локальные имена тегов, которые в XML метаданных 1С часто идут подряд одним именем.
+ * Без isArray fast-xml-parser оставляет только последний экземпляр (объект вместо массива),
+ * из-за чего проверка minOccurs по MDClasses.json даёт ложные ошибки
+ * (например, ChartOfAccounts / StandardTabularSections / xr:StandardTabularSection — в EDT обычно одна секция ExtDimensionTypes).
+ */
+const REPEATING_METADATA_TAG_LOCAL_NAMES = new Set([
+    'StandardTabularSection',
+    'StandardAttribute',
+    'Item',
+    'item'
+]);
+
+function tagLocalNameForIsArray(tagName: string): string {
+    const idx = tagName.lastIndexOf(':');
+    return idx >= 0 ? tagName.slice(idx + 1) : tagName;
+}
+
+function structureValidationIsArray(
+    tagName: string,
+    _jpath: string,
+    _isLeafNode: boolean,
+    isAttribute: boolean
+): boolean {
+    if (isAttribute) return false;
+    return REPEATING_METADATA_TAG_LOCAL_NAMES.has(tagLocalNameForIsArray(tagName));
+}
+
 /** Парсер только для структурной валидации: атрибуты отделены от элементов. */
 function createStructureValidationParser(): XMLParser {
     return new XMLParser({
@@ -42,6 +71,7 @@ function createStructureValidationParser(): XMLParser {
         textNodeName: 'text',
         allowBooleanAttributes: true,
         preserveOrder: false,
+        isArray: structureValidationIsArray
     });
 }
 
@@ -53,6 +83,104 @@ function createStructureValidationParser(): XMLParser {
 function toLocalName(name: string): string {
     const idx = String(name || '').lastIndexOf(':');
     return idx >= 0 ? name.slice(idx + 1) : name;
+}
+
+function domElementLocalName(el: Element): string {
+    const ln = (el as { localName?: string }).localName;
+    if (ln) return ln;
+    const tag = el.tagName || el.nodeName || '';
+    const i = tag.lastIndexOf(':');
+    return i >= 0 ? tag.slice(i + 1) : tag;
+}
+
+/**
+ * Считает прямых потомков xr:StandardTabularSection внутри StandardTabularSections
+ * у первого ChartOfAccounts (как в файле объекта метаданных).
+ * Используется для снятия ложных minOccurs после fast-xml-parser.
+ */
+function countChartOfAccountsStandardTabularSectionsInDom(xmlContent: string): number | null {
+    let clean = xmlContent;
+    if (clean.charCodeAt(0) === 0xfeff) {
+        clean = clean.slice(1);
+    }
+    try {
+        const parser = new DOMParser({
+            locator: {},
+            errorHandler: {
+                warning: () => undefined,
+                error: () => undefined,
+                fatalError: () => undefined
+            }
+        });
+        const doc = parser.parseFromString(clean, 'text/xml');
+        const pe = doc.getElementsByTagName('parsererror')[0];
+        if (pe) return null;
+
+        const root = doc.documentElement;
+        if (!root || domElementLocalName(root) !== 'MetaDataObject') return null;
+
+        let chartEl: Element | null = null;
+        for (let i = 0; i < root.childNodes.length; i++) {
+            const n = root.childNodes[i];
+            if (n.nodeType === 1 && domElementLocalName(n as Element) === 'ChartOfAccounts') {
+                chartEl = n as Element;
+                break;
+            }
+        }
+        if (!chartEl) return null;
+
+        let propsEl: Element | null = null;
+        for (let i = 0; i < chartEl.childNodes.length; i++) {
+            const n = chartEl.childNodes[i];
+            if (n.nodeType === 1 && domElementLocalName(n as Element) === 'Properties') {
+                propsEl = n as Element;
+                break;
+            }
+        }
+        if (!propsEl) return null;
+
+        let stsEl: Element | null = null;
+        for (let i = 0; i < propsEl.childNodes.length; i++) {
+            const n = propsEl.childNodes[i];
+            if (n.nodeType === 1 && domElementLocalName(n as Element) === 'StandardTabularSections') {
+                stsEl = n as Element;
+                break;
+            }
+        }
+        if (!stsEl) return null;
+
+        let n = 0;
+        for (let i = 0; i < stsEl.childNodes.length; i++) {
+            const cn = stsEl.childNodes[i];
+            if (cn.nodeType === 1 && domElementLocalName(cn as Element) === 'StandardTabularSection') {
+                n++;
+            }
+        }
+        return n;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Если в DOM действительно ≥3 стандартных табличных частей плана счетов, а FXP дал count=1,
+ * убираем только ошибки minOccurs по StandardTabularSection (остальные по ветке остаются).
+ */
+function stripFalsePositiveStandardTabularSectionsMinErrors(
+    errors: string[],
+    xmlContent: string
+): string[] {
+    const domCount = countChartOfAccountsStandardTabularSectionsInDom(xmlContent);
+    if (domCount === null || domCount < 3) {
+        return errors;
+    }
+    return errors.filter((msg) => {
+        if (!msg.includes('StandardTabularSections')) return true;
+        const isStsMin =
+            msg.includes('StandardTabularSection') &&
+            (msg.includes('ожидается минимум') || msg.includes('обязательный элемент'));
+        return !isStsMin;
+    });
 }
 
 /**
@@ -109,9 +237,11 @@ export function validateXmlStructure(
 
     validateElement(rootKey, parsed[rootKey], schema, '', errors);
 
+    const filteredErrors = stripFalsePositiveStandardTabularSectionsMinErrors(errors, xmlContent);
+
     return {
-        valid: errors.length === 0,
-        errors: errors.length > 0 ? errors : undefined
+        valid: filteredErrors.length === 0,
+        errors: filteredErrors.length > 0 ? filteredErrors : undefined
     };
 }
 

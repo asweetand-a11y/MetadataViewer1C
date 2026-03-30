@@ -33,7 +33,9 @@ const xmlStructureValidator_1 = require("./validation/xmlStructureValidator");
 const metadata_types_1 = require("./Metadata/metadata-types");
 const MetadataScanner_1 = require("./metadata_utils/MetadataScanner");
 const ChartOfAccountsDataLoader_1 = require("./metadata_utils/ChartOfAccountsDataLoader");
+const ChartOfCalculationTypesDataLoader_1 = require("./metadata_utils/ChartOfCalculationTypesDataLoader");
 const commitFileLogger_1 = require("./utils/commitFileLogger");
+const predefinedTreeMutations_1 = require("./utils/predefinedTreeMutations");
 const extension_1 = require("./extension");
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
@@ -220,12 +222,23 @@ class PredefinedDataPanel {
                 console.error(`[PredefinedDataPanel.postInitialData] Ошибка загрузки данных плана счетов: ${errorMessage}`);
             }
         }
+        let chartOfCalculationTypesData = undefined;
+        if (this.state.objectType === 'ChartOfCalculationTypes') {
+            try {
+                chartOfCalculationTypesData = await (0, ChartOfCalculationTypesDataLoader_1.loadChartOfCalculationTypesEditorContext)(this.state.configRoot, this.state.objectName);
+            }
+            catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                console.error(`[PredefinedDataPanel.postInitialData] Ошибка контекста ПВР: ${errorMessage}`);
+            }
+        }
         const message = {
             type: 'init',
             payload: this.state.items,
             objectType: this.state.objectType,
             metadata,
-            chartOfAccountsData
+            chartOfAccountsData,
+            chartOfCalculationTypesData
         };
         this.panel.webview.postMessage(message);
         console.log(`[PredefinedDataPanel.postInitialData] Сообщение отправлено, payload:`, JSON.stringify(this.state.items.slice(0, 2))); // Логируем первые 2 элемента
@@ -396,8 +409,17 @@ class PredefinedDataPanel {
             }
         });
     }
-    handleAddItem(item) {
-        this.state.items = [...this.state.items, item];
+    handleAddItem(payload) {
+        let item;
+        let parentPath = [];
+        if (payload && typeof payload === 'object' && 'item' in payload) {
+            item = payload.item;
+            parentPath = Array.isArray(payload.parentPath) ? payload.parentPath : [];
+        }
+        else {
+            item = payload;
+        }
+        this.state.items = (0, predefinedTreeMutations_1.insertItemUnderParent)(this.state.items, parentPath, item);
         this.postInitialData();
     }
     handleUpdateItem(payload) {
@@ -430,7 +452,7 @@ class PredefinedDataPanel {
                     rootTag: 'PredefinedData'
                 });
                 if (!structureResult.valid && structureResult.errors?.length) {
-                    const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+                    const errorMessage = (0, xmlStructureValidator_1.summarizeStructureValidationErrors)(structureResult.errors);
                     throw new Error(`Ошибка структуры XML: ${errorMessage}`);
                 }
             }

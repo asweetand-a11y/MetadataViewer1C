@@ -4,11 +4,13 @@ import { parsePredefinedXmlWithDom } from './xmlParsers/predefinedParser';
 import { serializePredefinedXmlWithDom } from './xmlParsers/predefinedSerializer';
 import { updateConfigDumpInfoForPredefined } from './utils/configDumpInfoUpdater';
 import { normalizeXML, validateXML } from './utils/xmlUtils';
-import { validateXmlStructure } from './validation/xmlStructureValidator';
+import { validateXmlStructure, summarizeStructureValidationErrors } from './validation/xmlStructureValidator';
 import { METADATA_TYPES } from './Metadata/metadata-types';
 import { scanMetadataRoot } from './metadata_utils/MetadataScanner';
 import { loadChartOfAccountsMetadata } from './metadata_utils/ChartOfAccountsDataLoader';
+import { loadChartOfCalculationTypesEditorContext } from './metadata_utils/ChartOfCalculationTypesDataLoader';
 import { CommitFileLogger } from './utils/commitFileLogger';
+import { insertItemUnderParent } from './utils/predefinedTreeMutations';
 import { statusBarProgress, contextStatusBar } from './extension';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -243,13 +245,27 @@ export class PredefinedDataPanel {
                 console.error(`[PredefinedDataPanel.postInitialData] Ошибка загрузки данных плана счетов: ${errorMessage}`);
             }
         }
+
+        let chartOfCalculationTypesData = undefined;
+        if (this.state.objectType === 'ChartOfCalculationTypes') {
+            try {
+                chartOfCalculationTypesData = await loadChartOfCalculationTypesEditorContext(
+                    this.state.configRoot,
+                    this.state.objectName
+                );
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                console.error(`[PredefinedDataPanel.postInitialData] Ошибка контекста ПВР: ${errorMessage}`);
+            }
+        }
         
         const message = {
             type: 'init',
             payload: this.state.items,
             objectType: this.state.objectType,
             metadata,
-            chartOfAccountsData
+            chartOfAccountsData,
+            chartOfCalculationTypesData
         };
         this.panel.webview.postMessage(message);
         console.log(`[PredefinedDataPanel.postInitialData] Сообщение отправлено, payload:`, JSON.stringify(this.state.items.slice(0, 2))); // Логируем первые 2 элемента
@@ -430,8 +446,18 @@ export class PredefinedDataPanel {
         });
     }
 
-    private handleAddItem(item: PredefinedDataItem) {
-        this.state.items = [...this.state.items, item];
+    private handleAddItem(
+        payload: PredefinedDataItem | { item: PredefinedDataItem; parentPath?: number[] }
+    ) {
+        let item: PredefinedDataItem;
+        let parentPath: number[] = [];
+        if (payload && typeof payload === 'object' && 'item' in payload) {
+            item = payload.item;
+            parentPath = Array.isArray(payload.parentPath) ? payload.parentPath : [];
+        } else {
+            item = payload as PredefinedDataItem;
+        }
+        this.state.items = insertItemUnderParent(this.state.items, parentPath, item);
         this.postInitialData();
     }
 
@@ -469,7 +495,7 @@ export class PredefinedDataPanel {
                     rootTag: 'PredefinedData'
                 });
                 if (!structureResult.valid && structureResult.errors?.length) {
-                    const errorMessage = structureResult.errors.slice(0, 3).join('; ');
+                    const errorMessage = summarizeStructureValidationErrors(structureResult.errors);
                     throw new Error(`Ошибка структуры XML: ${errorMessage}`);
                 }
             }

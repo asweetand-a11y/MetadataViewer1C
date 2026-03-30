@@ -1,0 +1,465 @@
+/**
+ * Стили для редактора прав роли 1С
+ * Имитирует интерфейс конфигуратора 1С:Предприятие
+ */
+
+#root:has(.role-editor-wrapper) {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.role-editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background-color: var(--vscode-editor-background);
+}
+
+/* Заголовок с кнопками */
+.role-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background-color: var(--vscode-editor-background);
+  flex-shrink: 0;
+}
+
+.role-editor-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.role-editor-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Опции роли (чекбоксы) */
+.role-options {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background-color: var(--vscode-sideBar-background);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.role-option-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  user-select: none;
+}
+
+.role-option-label input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--vscode-checkbox-background);
+}
+
+/* Основная область — два столбца */
+.role-editor-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Левая панель — дерево объектов */
+.role-objects-panel {
+  width: 300px;
+  min-width: 180px;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--vscode-panel-border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.role-objects-panel-header {
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vscode-sideBarTitle-foreground);
+  background-color: var(--vscode-sideBar-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  flex-shrink: 0;
+}
+
+.role-objects-search {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  flex-shrink: 0;
+}
+
+.role-objects-search input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 2px;
+  font-size: 12px;
+  outline: none;
+}
+
+.role-objects-search input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+.role-objects-tree {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Группа типов объектов */
+.role-object-group {
+  user-select: none;
+}
+
+.role-object-group-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-sideBarSectionHeader-foreground);
+  background-color: var(--vscode-sideBar-background);
+  cursor: pointer;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.role-object-group-header:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.role-object-group-icon {
+  font-size: 10px;
+  width: 12px;
+  text-align: center;
+  color: var(--vscode-icon-foreground);
+}
+
+/* Элемент объекта */
+.role-object-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 22px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--vscode-foreground);
+  border-bottom: 1px solid transparent;
+}
+
+.role-object-item:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.role-object-item.selected {
+  background-color: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.role-object-item.has-rights {
+  font-weight: 600;
+}
+
+.role-object-item-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.role-object-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-object-item-badge {
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 8px;
+  background-color: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  flex-shrink: 0;
+}
+
+/* Правая панель — таблица прав */
+.role-rights-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.role-rights-panel-header {
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vscode-sideBarTitle-foreground);
+  background-color: var(--vscode-sideBar-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  flex-shrink: 0;
+}
+
+.role-rights-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--vscode-descriptionForeground);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Таблица прав */
+.role-rights-table-wrapper {
+  flex: 1;
+  overflow: auto;
+}
+
+.role-rights-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.role-rights-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 6px 10px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  background-color: var(--vscode-editorGroupHeader-tabsBackground);
+  border-bottom: 2px solid var(--vscode-panel-border);
+  color: var(--vscode-foreground);
+  white-space: nowrap;
+}
+
+.role-rights-table thead th.col-right-name {
+  min-width: 200px;
+}
+
+.role-rights-table thead th.col-value {
+  width: 80px;
+  text-align: center;
+}
+
+.role-rights-table tbody tr {
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.role-rights-table tbody tr:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.role-rights-table tbody tr.has-restriction {
+  background-color: var(--vscode-diffEditor-insertedLineBackground);
+}
+
+.role-rights-table tbody tr.has-restriction:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.role-rights-table td {
+  padding: 4px 10px;
+  vertical-align: middle;
+}
+
+.role-rights-table td.col-value {
+  text-align: center;
+}
+
+.role-rights-table input[type="checkbox"] {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  accent-color: var(--vscode-checkbox-background);
+}
+
+.right-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.right-name-label {
+  flex: 1;
+}
+
+.right-rls-badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background-color: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.right-rls-badge:hover {
+  opacity: 0.8;
+}
+
+/* Описание права */
+.role-rights-description {
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  border-top: 1px solid var(--vscode-panel-border);
+  background-color: var(--vscode-sideBar-background);
+  min-height: 28px;
+  flex-shrink: 0;
+}
+
+/* Кнопки */
+.btn {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--vscode-font-family);
+  transition: opacity 0.15s;
+}
+
+.btn:hover {
+  opacity: 0.85;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.btn-secondary {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+/* Строка быстрых действий над таблицей прав */
+.role-rights-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background-color: var(--vscode-editor-background);
+  flex-shrink: 0;
+}
+
+.role-rights-toolbar-label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  margin-right: 4px;
+}
+
+/* Модальное окно RLS */
+.rls-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.rls-modal {
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  padding: 16px;
+  min-width: 480px;
+  max-width: 700px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.rls-modal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding-bottom: 8px;
+}
+
+.rls-modal label {
+  font-size: 12px;
+  color: var(--vscode-foreground);
+  display: block;
+  margin-bottom: 3px;
+}
+
+.rls-modal textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 80px;
+  padding: 6px 8px;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 2px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 12px;
+  resize: vertical;
+  outline: none;
+}
+
+.rls-modal textarea:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+.rls-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Спиннер загрузки */
+.role-editor-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  font-size: 13px;
+  color: var(--vscode-descriptionForeground);
+}

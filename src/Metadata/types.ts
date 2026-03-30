@@ -37,15 +37,28 @@ export interface SaveFormMessage {
     payload: any; // ParsedFormFull
 }
 
+/** Независимый непериодический регистр сведений: измерения и ресурсы для графика регистра расчёта. */
+export interface InformationRegisterScheduleEntry {
+    /** InformationRegister.Имя */
+    ref: string;
+    displayName: string;
+    dimensions: string[];
+    /** Имена измерений с типом Дата/ДатаВремя/Время — для выбора «Дата графика». */
+    dateDimensions: string[];
+    resources: string[];
+}
+
 // Типы сообщений от extension к webview
 export interface InitMessage {
     type: "init";
     payload: ParsedMetadataObject[];
     metadata?: {
         /** Список всех регистров для редактора RegisterRecords */
-        registers: string[];
+        registers?: string[];
         /** Список всех объектов метаданных для редактора типов (CatalogRef.Номенклатура, DocumentRef.Продажа и т.д.) */
         referenceTypes: string[];
+        /** Регистры сведений (WriteMode=Independent) для выбора графика регистра расчёта */
+        informationRegistersSchedule?: InformationRegisterScheduleEntry[];
     };
 }
 

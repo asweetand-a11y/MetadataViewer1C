@@ -21,15 +21,22 @@ import { EnumValueEditorModal } from './FormEditor/EnumValueEditorModal';
 import { SimpleMultilingualEditor } from './FormEditor/SimpleMultilingualEditor';
 import { CharacteristicTypeEditorModal } from './FormEditor/CharacteristicTypeEditorModal';
 import { AccountingFlagEditorModal } from './FormEditor/AccountingFlagEditorModal';
-import { getFieldLabel, getEnumValueLabel, getFieldValues } from '../../metadata/field-values';
+import {
+  getFieldLabel,
+  getEnumValueLabel,
+  getFieldValues,
+  normalizeAccumulationRegisterTypeValue
+} from '../../metadata/field-values';
+import type { InformationRegisterScheduleEntry } from '../../metadata/types';
 
 interface FormEditorProps {
   objectType: string;
   formData: any;
   onChange: (data: any) => void;
   metadata: {
-    registers: string[];
+    registers?: string[];
     referenceTypes: string[];
+    informationRegistersSchedule?: InformationRegisterScheduleEntry[];
   };
   activeTab?: string;
   selectedObject?: any;
@@ -40,6 +47,236 @@ const widgets = {
   TypeWidget: TypeWidget,
   MultilingualWidget: MultilingualWidget
 };
+
+/**
+ * Свойства вкладки «Данные» плана счетов в конфигураторе 1С (порядок отображения).
+ */
+const CHART_OF_ACCOUNTS_DATA_PROPERTY_KEYS: readonly string[] = [
+  'CodeLength',
+  'DescriptionLength',
+  'CodeMask',
+  'AutoOrderByCode',
+  'OrderLength',
+  'DefaultPresentation',
+];
+
+/** Свойства вкладки «Расчёт» конфигуратора для плана видов расчёта */
+const CHART_OF_CALCULATION_TYPES_DATA_PROPERTY_KEYS: readonly string[] = [
+  'DependenceOnCalculationTypes',
+  'BaseCalculationTypes',
+  'ActionPeriodUse',
+  'ScheduleValue',
+];
+
+/** Свойства регистра сведений (порядок как в конфигураторе, «Основные») */
+const INFORMATION_REGISTER_PROPERTY_KEYS: readonly string[] = [
+  'InformationRegisterPeriodicity',
+  'WriteMode',
+  'MainFilterOnPeriod',
+  'EnableTotalsSliceFirst',
+  'EnableTotalsSliceLast',
+  'RecordPresentation',
+  'ExtendedRecordPresentation',
+  'DefaultRecordForm',
+  'AuxiliaryRecordForm',
+  'UseStandardCommands',
+  'IncludeHelpInContents',
+  'DataLockControlMode',
+  'FullTextSearch',
+  'DataHistory',
+  'UpdateDataHistoryImmediatelyAfterWrite',
+  'ExecuteAfterWriteDataHistoryVersionProcessing',
+  'ListPresentation',
+  'ExtendedListPresentation',
+  'Explanation',
+  'EditType',
+];
+
+/** Свойства регистра накопления */
+const ACCUMULATION_REGISTER_PROPERTY_KEYS: readonly string[] = [
+  'RegisterType',
+  'EnableTotalsSplitting',
+  'UseStandardCommands',
+  'IncludeHelpInContents',
+  'DataLockControlMode',
+  'FullTextSearch',
+  'ListPresentation',
+  'ExtendedListPresentation',
+  'Explanation',
+  'DefaultListForm',
+  'AuxiliaryListForm',
+];
+
+/** Свойства регистра бухгалтерии */
+const ACCOUNTING_REGISTER_PROPERTY_KEYS: readonly string[] = [
+  'ChartOfAccounts',
+  'Correspondence',
+  'PeriodAdjustmentLength',
+  'UseStandardCommands',
+  'IncludeHelpInContents',
+  'DataLockControlMode',
+  'FullTextSearch',
+  'RecordPresentation',
+  'ExtendedRecordPresentation',
+  'ListPresentation',
+  'ExtendedListPresentation',
+  'Explanation',
+  'DefaultRecordForm',
+  'AuxiliaryRecordForm',
+  'DefaultListForm',
+  'AuxiliaryListForm',
+];
+
+/** Свойства регистра расчёта */
+const CALCULATION_REGISTER_PROPERTY_KEYS: readonly string[] = [
+  'Periodicity',
+  'ActionPeriod',
+  'BasePeriod',
+  'Schedule',
+  'ScheduleValue',
+  'ScheduleDate',
+  'ChartOfCalculationTypes',
+  'UseStandardCommands',
+  'IncludeHelpInContents',
+  'DataLockControlMode',
+  'FullTextSearch',
+  'ListPresentation',
+  'ExtendedListPresentation',
+  'Explanation',
+  'DefaultListForm',
+  'AuxiliaryListForm',
+];
+
+/** Извлекает ссылки ChartOfCalculationTypes.<Имя> из свойства BaseCalculationTypes (formData). */
+function extractBaseCalculationTypeRefs(raw: unknown): string[] {
+  if (!raw || typeof raw !== 'object') {
+    return [];
+  }
+  const obj = raw as Record<string, unknown>;
+  const items = obj['xr:Item'] ?? obj['Item'];
+  if (items === undefined || items === null) {
+    return [];
+  }
+  const list = Array.isArray(items) ? items : [items];
+  const refs: string[] = [];
+  for (const it of list) {
+    if (typeof it === 'string') {
+      const s = it.trim();
+      if (s) {
+        refs.push(s);
+      }
+    } else if (it && typeof it === 'object') {
+      const t = (it as { '#text'?: unknown; text?: unknown })['#text'] ?? (it as { text?: unknown }).text;
+      const s = String(t ?? '').trim();
+      if (s) {
+        refs.push(s);
+      }
+    }
+  }
+  return refs;
+}
+
+/** Значение BaseCalculationTypes для formData (сохранение через xmlDomUtils). */
+function buildBaseCalculationTypesFormValue(
+  refs: string[]
+): { 'xr:Item': Array<{ type: string; '#text': string }> } {
+  if (refs.length === 0) {
+    return { 'xr:Item': [] };
+  }
+  return {
+    'xr:Item': refs.map((text) => ({
+      type: 'xr:MDObjectRef',
+      '#text': text
+    }))
+  };
+}
+
+/** Пары [ChartOfCalculationTypes.Имя, отображаемое имя] из метаданных webview. */
+function collectChartOfCalculationPlanOptions(referenceTypes: string[] | undefined): Array<[string, string]> {
+  const map = new Map<string, string>();
+  for (const rt of referenceTypes || []) {
+    if (typeof rt !== 'string') {
+      continue;
+    }
+    const trimmed = rt.trim();
+    const p = trimmed.startsWith('cfg:') ? trimmed.slice(4).trim() : trimmed;
+    if (p.startsWith('ChartOfCalculationTypesRef.')) {
+      const name = p.slice('ChartOfCalculationTypesRef.'.length);
+      if (name) {
+        map.set(`ChartOfCalculationTypes.${name}`, name);
+      }
+      continue;
+    }
+    if (p.startsWith('ChartOfCalculationTypes.') && !p.startsWith('ChartOfCalculationTypesRef.')) {
+      const rest = p.slice('ChartOfCalculationTypes.'.length);
+      if (rest && !rest.includes('.')) {
+        map.set(`ChartOfCalculationTypes.${rest}`, rest);
+      }
+    }
+  }
+  return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+}
+
+function collectChartOfCalculationPlanOptionsFromRegisters(registers: string[] | undefined): Array<[string, string]> {
+  const map = new Map<string, string>();
+  for (const r of registers || []) {
+    if (typeof r !== 'string') continue;
+    const p = r.startsWith('cfg:') ? r.slice(4) : r.trim();
+    if (!p.startsWith('ChartOfCalculationTypes.')) continue;
+    const rest = p.slice('ChartOfCalculationTypes.'.length);
+    if (rest && !rest.includes('.')) map.set(`ChartOfCalculationTypes.${rest}`, rest);
+  }
+  return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+}
+function mergeChartOfCalculationPlanOptionLists(a: Array<[string, string]>, b: Array<[string, string]>): Array<[string, string]> {
+  const map = new Map<string, string>();
+  for (const [ref, label] of [...a, ...b]) map.set(ref, label);
+  return [...map.entries()].sort((x, y) => x[1].localeCompare(y[1], 'ru'));
+}
+
+function calculationScheduleResourceRef(irRef: string, resourceName: string): string {
+  return `${irRef}.Resource.${resourceName}`;
+}
+
+function calculationScheduleDimensionRef(irRef: string, dimensionName: string): string {
+  return `${irRef}.Dimension.${dimensionName}`;
+}
+
+/** Пары [ChartOfAccounts.Имя, отображаемое имя] из метаданных webview. */
+function collectChartOfAccountsPlanOptions(referenceTypes: string[]): Array<[string, string]> {
+  const map = new Map<string, string>();
+  for (const rt of referenceTypes || []) {
+    if (typeof rt !== 'string') {
+      continue;
+    }
+    const p = rt.startsWith('cfg:') ? rt.slice(4) : rt;
+    if (!p.startsWith('ChartOfAccountsRef.')) {
+      continue;
+    }
+    const name = p.slice('ChartOfAccountsRef.'.length);
+    map.set(`ChartOfAccounts.${name}`, name);
+  }
+  return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+}
+
+/** Пары [имя документа, подпись] из DocumentRef в метаданных webview. */
+function collectDocumentSelectOptions(referenceTypes: string[]): Array<[string, string]> {
+  const map = new Map<string, string>();
+  for (const rt of referenceTypes || []) {
+    if (typeof rt !== 'string') {
+      continue;
+    }
+    const p = rt.startsWith('cfg:') ? rt.slice(4) : rt;
+    if (!p.startsWith('DocumentRef.')) {
+      continue;
+    }
+    const name = p.slice('DocumentRef.'.length);
+    if (name) {
+      map.set(name, name);
+    }
+  }
+  return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+}
 
 /** Генерирует UUID через Web Crypto API или простой fallback (webview/браузер). */
 function getRandomUUID(): string {
@@ -91,7 +328,35 @@ export const FormEditor: React.FC<FormEditorProps> = ({
 
   // Подтверждение опасных действий (удаление) — делаем модалкой, т.к. window.confirm в webview часто неудобен/неочевиден
   const [confirmModal, setConfirmModal] = useState<null | { message: string; onConfirm: () => void }>(null);
-  
+
+  const calculationTypePlanOptions = useMemo(
+    () =>
+      mergeChartOfCalculationPlanOptionLists(
+        collectChartOfCalculationPlanOptions(metadata.referenceTypes),
+        collectChartOfCalculationPlanOptionsFromRegisters(metadata.registers)
+      ),
+    [metadata.referenceTypes, metadata.registers]
+  );
+
+  const chartOfAccountsPlanOptions = useMemo(
+    () => collectChartOfAccountsPlanOptions(metadata.referenceTypes),
+    [metadata.referenceTypes]
+  );
+
+  const documentSelectOptions = useMemo(
+    () => collectDocumentSelectOptions(metadata.referenceTypes),
+    [metadata.referenceTypes]
+  );
+
+  /** Модалки ожидают обязательный `registers`; init может прислать только referenceTypes. */
+  const metadataWithRegisters = useMemo(
+    () => ({
+      ...metadata,
+      registers: metadata.registers ?? [],
+    }),
+    [metadata]
+  );
+
   // Состояния для формы добавления табличной части
   const [newTabularName, setNewTabularName] = useState('');
   const [newTabularSynonym, setNewTabularSynonym] = useState<any>(null);
@@ -1628,6 +1893,38 @@ export const FormEditor: React.FC<FormEditorProps> = ({
     const isDocument =
       String(objectType || '').toLowerCase() === 'документ' ||
       String(objectType || '').toLowerCase() === 'document';
+
+    const isChartOfAccountsProps =
+      objectType === 'ChartOfAccounts' ||
+      objectType === 'План счетов' ||
+      (selectedObject?.sourcePath &&
+        String(selectedObject.sourcePath).replace(/\\/g, '/').includes('ChartsOfAccounts'));
+
+    const isChartOfCalculationTypesProps =
+      objectType === 'ChartOfCalculationTypes' ||
+      objectType === 'План видов расчета' ||
+      (selectedObject?.sourcePath &&
+        String(selectedObject.sourcePath).replace(/\\/g, '/').includes('ChartsOfCalculationTypes'));
+
+    const pathNorm = selectedObject?.sourcePath
+      ? String(selectedObject.sourcePath).replace(/\\/g, '/')
+      : '';
+    const isInformationRegister =
+      objectType === 'InformationRegister' ||
+      objectType === 'Регистр сведений' ||
+      pathNorm.includes('InformationRegisters');
+    const isAccumulationRegister =
+      objectType === 'AccumulationRegister' ||
+      objectType === 'Регистр накопления' ||
+      pathNorm.includes('AccumulationRegisters');
+    const isAccountingRegister =
+      objectType === 'AccountingRegister' ||
+      objectType === 'Регистр бухгалтерии' ||
+      pathNorm.includes('AccountingRegisters');
+    const isCalculationRegister =
+      objectType === 'CalculationRegister' ||
+      objectType === 'Регистр расчета' ||
+      pathNorm.includes('CalculationRegisters');
     
     // Все остальные поля
     const additionalFields = Object.keys(formData).filter(key => 
@@ -1637,8 +1934,66 @@ export const FormEditor: React.FC<FormEditorProps> = ({
       key !== 'attributes' &&
       key !== 'tabularSections' &&
       key !== 'forms' &&
-      key !== 'commands'
+      key !== 'commands' &&
+      !(isChartOfAccountsProps && CHART_OF_ACCOUNTS_DATA_PROPERTY_KEYS.includes(key)) &&
+      !(isChartOfCalculationTypesProps && CHART_OF_CALCULATION_TYPES_DATA_PROPERTY_KEYS.includes(key)) &&
+      !(isInformationRegister && INFORMATION_REGISTER_PROPERTY_KEYS.includes(key)) &&
+      !(isAccumulationRegister && ACCUMULATION_REGISTER_PROPERTY_KEYS.includes(key)) &&
+      !(isAccountingRegister && ACCOUNTING_REGISTER_PROPERTY_KEYS.includes(key)) &&
+      !(isCalculationRegister && CALCULATION_REGISTER_PROPERTY_KEYS.includes(key))
     );
+
+    /** Карточка свойства регистра (скаляр или JSON-объект из XML). */
+    const renderRegisterScalarField = (field: string, scheduleHint?: string) => {
+      const raw = formData[field];
+      const value =
+        raw === undefined || raw === null ? '' : typeof raw === 'object' ? raw : raw;
+      return (
+        <div key={field} className="property-card">
+          <div className="property-header">
+            <h4>{getFieldLabel(field)}</h4>
+          </div>
+          <div className="property-value">
+            {scheduleHint ? (
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--vscode-descriptionForeground)',
+                  marginBottom: '6px'
+                }}
+              >
+                {scheduleHint}
+              </div>
+            ) : null}
+            {typeof value === 'object' && value !== null ? (
+              <textarea
+                value={JSON.stringify(value, null, 2)}
+                onChange={(e) => {
+                  try {
+                    const parsed = JSON.parse(e.target.value);
+                    handleChange({ formData: { ...formData, [field]: parsed } });
+                  } catch {
+                    /* не JSON */
+                  }
+                }}
+                className="property-textarea"
+                rows={4}
+              />
+            ) : (
+              <FieldInput
+                field={field}
+                value={value}
+                onChange={(newValue) => {
+                  handleChange({ formData: { ...formData, [field]: newValue } });
+                }}
+                objectType={objectType}
+                label={getFieldLabel(field)}
+              />
+            )}
+          </div>
+        </div>
+      );
+    };
 
     content = (
       <div className="form-editor">
@@ -1682,6 +2037,740 @@ export const FormEditor: React.FC<FormEditorProps> = ({
             })}
           </div>
         </div>
+
+        {/* Вкладка «Данные» конфигуратора: длина кода, маска, автопорядок и т.д. */}
+        {isChartOfCalculationTypesProps && (
+          <div className="properties-group chart-of-calculation-types-calc">
+            <div className="section-header">
+              <h3>Расчёт</h3>
+            </div>
+            <div className="properties-cards">
+              {CHART_OF_CALCULATION_TYPES_DATA_PROPERTY_KEYS.map(field => {
+                if (field === 'BaseCalculationTypes') {
+                  const selectedRefs = extractBaseCalculationTypeRefs(formData.BaseCalculationTypes);
+                  const knownRefSet = new Set(calculationTypePlanOptions.map(([r]) => r));
+                  const orphanRefs = selectedRefs.filter((r) => !knownRefSet.has(r));
+                  return (
+                    <div key={field} className="property-card">
+                      <div className="property-header">
+                        <h4>{getFieldLabel(field)}</h4>
+                      </div>
+                      <div className="property-value chart-calc-base-plans">
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                            maxHeight: '280px',
+                            overflowY: 'auto'
+                          }}
+                        >
+                          {calculationTypePlanOptions.map(([ref, label]) => (
+                            <label
+                              key={ref}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                cursor: 'pointer',
+                                fontSize: '13px'
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedRefs.includes(ref)}
+                                onChange={() => {
+                                  const next = selectedRefs.includes(ref)
+                                    ? selectedRefs.filter((x) => x !== ref)
+                                    : [...selectedRefs, ref];
+                                  handleChange({
+                                    formData: {
+                                      ...formData,
+                                      BaseCalculationTypes: buildBaseCalculationTypesFormValue(next)
+                                    }
+                                  });
+                                }}
+                              />
+                              <span title={ref}>{label}</span>
+                            </label>
+                          ))}
+                          {orphanRefs.map((ref) => {
+                            const short = ref.includes('.') ? ref.split('.').pop() || ref : ref;
+                            return (
+                              <label
+                                key={`orphan-${ref}`}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  opacity: 0.9
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked
+                                  onChange={() => {
+                                    const next = selectedRefs.filter((x) => x !== ref);
+                                    handleChange({
+                                      formData: {
+                                        ...formData,
+                                        BaseCalculationTypes: buildBaseCalculationTypesFormValue(next)
+                                      }
+                                    });
+                                  }}
+                                />
+                                <span title={ref}>
+                                  {short}{' '}
+                                  <span style={{ color: 'var(--vscode-descriptionForeground)', fontSize: '11px' }}>
+                                    (нет в списке конфигурации)
+                                  </span>
+                                </span>
+                              </label>
+                            );
+                          })}
+                          {calculationTypePlanOptions.length === 0 && orphanRefs.length === 0 && (
+                            <span
+                              style={{
+                                fontSize: '12px',
+                                color: 'var(--vscode-descriptionForeground)'
+                              }}
+                            >
+                              Планы видов расчёта не найдены в метаданных. Проверьте корень конфигурации или откройте объект
+                              из выгрузки CF.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                const raw = formData[field];
+                const value =
+                  raw === undefined || raw === null
+                    ? ''
+                    : typeof raw === 'object'
+                      ? raw
+                      : raw;
+                return (
+                  <div key={field} className="property-card">
+                    <div className="property-header">
+                      <h4>{getFieldLabel(field)}</h4>
+                    </div>
+                    <div className="property-value">
+                      {typeof value === 'object' && value !== null ? (
+                        <textarea
+                          value={JSON.stringify(value, null, 2)}
+                          onChange={e => {
+                            try {
+                              const parsed = JSON.parse(e.target.value);
+                              handleChange({ formData: { ...formData, [field]: parsed } });
+                            } catch {
+                              /* не JSON */
+                            }
+                          }}
+                          className="property-textarea"
+                          rows={4}
+                        />
+                      ) : (
+                        <FieldInput
+                          field={field}
+                          value={value}
+                          onChange={newValue => {
+                            handleChange({ formData: { ...formData, [field]: newValue } });
+                          }}
+                          objectType={objectType}
+                          label={getFieldLabel(field)}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {isChartOfAccountsProps && (
+          <div className="properties-group chart-of-accounts-data">
+            <div className="section-header">
+              <h3>Данные</h3>
+            </div>
+            <div className="properties-cards">
+              {CHART_OF_ACCOUNTS_DATA_PROPERTY_KEYS.map(field => {
+                const raw = formData[field];
+                const value =
+                  raw === undefined || raw === null
+                    ? ''
+                    : typeof raw === 'object'
+                      ? raw
+                      : raw;
+                return (
+                  <div key={field} className="property-card">
+                    <div className="property-header">
+                      <h4>{getFieldLabel(field)}</h4>
+                    </div>
+                    <div className="property-value">
+                      {typeof value === 'object' && value !== null ? (
+                        <textarea
+                          value={JSON.stringify(value, null, 2)}
+                          onChange={e => {
+                            try {
+                              const parsed = JSON.parse(e.target.value);
+                              handleChange({ formData: { ...formData, [field]: parsed } });
+                            } catch {
+                              /* не JSON */
+                            }
+                          }}
+                          className="property-textarea"
+                          rows={4}
+                        />
+                      ) : (
+                        <FieldInput
+                          field={field}
+                          value={value}
+                          onChange={newValue => {
+                            handleChange({ formData: { ...formData, [field]: newValue } });
+                          }}
+                          objectType={objectType}
+                          label={getFieldLabel(field)}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {isInformationRegister && (
+          <div className="properties-group information-register-props">
+            <div className="section-header">
+              <h3>Регистр сведений</h3>
+            </div>
+            <div className="properties-cards">
+              {INFORMATION_REGISTER_PROPERTY_KEYS.map((field) => renderRegisterScalarField(field))}
+            </div>
+          </div>
+        )}
+
+        {isAccumulationRegister && (
+          <div className="properties-group accumulation-register-props">
+            <div className="section-header">
+              <h3>Регистр накопления</h3>
+            </div>
+            <div className="properties-cards">
+              {ACCUMULATION_REGISTER_PROPERTY_KEYS.map((field) => renderRegisterScalarField(field))}
+            </div>
+          </div>
+        )}
+
+        {isAccountingRegister && (
+          <div className="properties-group accounting-register-props">
+            <div className="section-header">
+              <h3>Регистр бухгалтерии</h3>
+            </div>
+            <div className="properties-cards">
+              {ACCOUNTING_REGISTER_PROPERTY_KEYS.map((field) => {
+                if (field === 'ChartOfAccounts') {
+                  const currentValue = typeof formData.ChartOfAccounts === 'string' ? formData.ChartOfAccounts : '';
+                  const inList = chartOfAccountsPlanOptions.some(([ref]) => ref === currentValue);
+                  const orphanRef =
+                    currentValue && !inList ? currentValue : '';
+                  const hasPlans = chartOfAccountsPlanOptions.length > 0;
+                  return (
+                    <div key={field} className="property-card">
+                      <div className="property-header">
+                        <h4>{getFieldLabel(field)}</h4>
+                      </div>
+                      <div className="property-value">
+                        {hasPlans ? (
+                          <select
+                            value={currentValue}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              handleChange({
+                                formData: {
+                                  ...formData,
+                                  ChartOfAccounts: v
+                                }
+                              });
+                            }}
+                            className="property-select"
+                            style={{ width: '100%', padding: '8px' }}
+                          >
+                            <option value="">-- Выберите план счетов --</option>
+                            {chartOfAccountsPlanOptions.map(([ref, label]) => (
+                              <option key={ref} value={ref}>
+                                {label}
+                              </option>
+                            ))}
+                            {orphanRef ? (
+                              <option value={orphanRef}>
+                                {orphanRef.includes('.') ? orphanRef.split('.').pop() : orphanRef}{' '}
+                                (нет в списке метаданных)
+                              </option>
+                            ) : null}
+                          </select>
+                        ) : (
+                          <>
+                            <input
+                              type="text"
+                              value={currentValue}
+                              onChange={(e) => {
+                                handleChange({
+                                  formData: { ...formData, ChartOfAccounts: e.target.value }
+                                });
+                              }}
+                              placeholder="ChartOfAccounts.ИмяПлана"
+                              className="property-input"
+                              style={{ width: '100%', padding: '8px' }}
+                            />
+                            <div
+                              style={{
+                                marginTop: '6px',
+                                fontSize: '12px',
+                                color: 'var(--vscode-descriptionForeground)'
+                              }}
+                            >
+                              Планы счетов не найдены в метаданных — укажите ссылку вручную.
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                return renderRegisterScalarField(field);
+              })}
+            </div>
+          </div>
+        )}
+
+        {isCalculationRegister && (
+          <div className="properties-group calculation-register-props">
+            <div className="section-header">
+              <h3>Регистр расчёта</h3>
+            </div>
+            <div className="properties-cards">
+              {CALCULATION_REGISTER_PROPERTY_KEYS.map((field) => {
+                if (field === 'ChartOfCalculationTypes') {
+                  const currentValue =
+                    typeof formData.ChartOfCalculationTypes === 'string'
+                      ? formData.ChartOfCalculationTypes
+                      : '';
+                  const inList = calculationTypePlanOptions.some(([ref]) => ref === currentValue);
+                  const orphanRef = currentValue && !inList ? currentValue : '';
+                  const hasPlans = calculationTypePlanOptions.length > 0;
+                  return (
+                    <div key={field} className="property-card">
+                      <div className="property-header">
+                        <h4>{getFieldLabel(field)}</h4>
+                      </div>
+                      <div className="property-value">
+                        {hasPlans ? (
+                          <select
+                            value={currentValue}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              handleChange({
+                                formData: {
+                                  ...formData,
+                                  ChartOfCalculationTypes: v
+                                }
+                              });
+                            }}
+                            className="property-select"
+                            style={{ width: '100%', padding: '8px' }}
+                          >
+                            <option value="">-- Выберите план видов расчёта --</option>
+                            {calculationTypePlanOptions.map(([ref, label]) => (
+                              <option key={ref} value={ref}>
+                                {label}
+                              </option>
+                            ))}
+                            {orphanRef ? (
+                              <option value={orphanRef}>
+                                {orphanRef.includes('.') ? orphanRef.split('.').pop() : orphanRef}{' '}
+                                (нет в списке метаданных)
+                              </option>
+                            ) : null}
+                          </select>
+                        ) : (
+                          <>
+                            <input
+                              type="text"
+                              value={currentValue}
+                              onChange={(e) => {
+                                handleChange({
+                                  formData: {
+                                    ...formData,
+                                    ChartOfCalculationTypes: e.target.value
+                                  }
+                                });
+                              }}
+                              placeholder="ChartOfCalculationTypes.ИмяПлана"
+                              className="property-input"
+                              style={{ width: '100%', padding: '8px' }}
+                            />
+                            <div
+                              style={{
+                                marginTop: '6px',
+                                fontSize: '12px',
+                                color: 'var(--vscode-descriptionForeground)'
+                              }}
+                            >
+                              Планы видов расчёта не найдены в метаданных — укажите ссылку вручную.
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                if (field === 'Schedule') {
+                  const calcRegStubName =
+                    (typeof formData?.Name === 'string' && formData.Name.trim()) ||
+                    (selectedObject?.name ? String(selectedObject.name).trim() : '') ||
+                    '…';
+                  const entries = metadata.informationRegistersSchedule ?? [];
+                  const scheduleRef =
+                    typeof formData.Schedule === 'string' ? formData.Schedule.trim() : '';
+                  const selectedEntry = entries.find((e) => e.ref === scheduleRef);
+                  const scheduleOrphan = scheduleRef && !selectedEntry ? scheduleRef : '';
+                  const valueStr =
+                    typeof formData.ScheduleValue === 'string' ? formData.ScheduleValue.trim() : '';
+                  const dateStr =
+                    typeof formData.ScheduleDate === 'string' ? formData.ScheduleDate.trim() : '';
+                  const resourceOpts =
+                    selectedEntry && scheduleRef
+                      ? selectedEntry.resources.map((r) => ({
+                          ref: calculationScheduleResourceRef(scheduleRef, r),
+                          short: r
+                        }))
+                      : [];
+                  const dateDimNamesForPicker =
+                    selectedEntry && scheduleRef
+                      ? (selectedEntry.dateDimensions?.length ?? 0) > 0
+                        ? selectedEntry.dateDimensions!
+                        : selectedEntry.dimensions
+                      : [];
+                  const dimensionOpts =
+                    selectedEntry && scheduleRef
+                      ? dateDimNamesForPicker.map((d) => ({
+                          ref: calculationScheduleDimensionRef(scheduleRef, d),
+                          short: d
+                        }))
+                      : [];
+                  const scheduleDateOnlyDateTypes =
+                    Boolean(selectedEntry?.dateDimensions && selectedEntry.dateDimensions.length > 0);
+                  const valueInList = resourceOpts.some((x) => x.ref === valueStr);
+                  const valueOrphan = valueStr && !valueInList ? valueStr : '';
+                  const dateInList = dimensionOpts.some((x) => x.ref === dateStr);
+                  const dateOrphan = dateStr && !dateInList ? dateStr : '';
+                  const hasIrCatalog = entries.length > 0;
+                  const patchSchedule = (patch: Record<string, string>) => {
+                    handleChange({ formData: { ...formData, ...patch } });
+                  };
+                  return (
+                    <React.Fragment key="calc-schedule-trio">
+                      <div className="property-card">
+                        <div className="property-header">
+                          <h4>{getFieldLabel('Schedule')}</h4>
+                        </div>
+                        <div className="property-value">
+                          {hasIrCatalog ? (
+                            <select
+                              className="property-select"
+                              style={{ width: '100%', padding: '8px' }}
+                              value={scheduleRef}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                patchSchedule({ Schedule: v, ScheduleValue: '', ScheduleDate: '' });
+                              }}
+                            >
+                              <option value="">-- Независимый регистр сведений (график) --</option>
+                              {entries.map((e) => (
+                                <option key={e.ref} value={e.ref}>
+                                  {e.displayName}
+                                </option>
+                              ))}
+                              {scheduleOrphan ? (
+                                <option value={scheduleOrphan}>
+                                  {scheduleOrphan} (нет в списке метаданных)
+                                </option>
+                              ) : null}
+                            </select>
+                          ) : (
+                            <>
+                              <input
+                                type="text"
+                                className="property-input"
+                                style={{ width: '100%', padding: '8px' }}
+                                value={scheduleRef}
+                                placeholder="InformationRegister.ИмяГрафика"
+                                onChange={(e) => patchSchedule({ Schedule: e.target.value })}
+                              />
+                              <div
+                                style={{
+                                  marginTop: '6px',
+                                  fontSize: '12px',
+                                  color: 'var(--vscode-descriptionForeground)'
+                                }}
+                              >
+                                Независимые регистры сведений не найдены — укажите ссылку вручную.
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="property-card">
+                        <div className="property-header">
+                          <h4>{getFieldLabel('ScheduleValue')}</h4>
+                        </div>
+                        <div className="property-value">
+                          {hasIrCatalog && selectedEntry && scheduleRef && resourceOpts.length > 0 ? (
+                            <select
+                              className="property-select"
+                              style={{ width: '100%', padding: '8px' }}
+                              value={valueStr}
+                              onChange={(e) => patchSchedule({ ScheduleValue: e.target.value })}
+                            >
+                              <option value="">-- Ресурс регистра (значение графика) --</option>
+                              {resourceOpts.map((x) => (
+                                <option key={x.ref} value={x.ref}>
+                                  {x.short}
+                                </option>
+                              ))}
+                              {valueOrphan ? (
+                                <option value={valueOrphan}>
+                                  {valueOrphan} (нет в списке метаданных)
+                                </option>
+                              ) : null}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              className="property-input"
+                              style={{ width: '100%', padding: '8px' }}
+                              value={valueStr}
+                              disabled={Boolean(hasIrCatalog && !scheduleRef)}
+                              placeholder="InformationRegister.Имя.Resource.ИмяРесурса"
+                              onChange={(e) => patchSchedule({ ScheduleValue: e.target.value })}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div className="property-card">
+                        <div className="property-header">
+                          <h4>{getFieldLabel('ScheduleDate')}</h4>
+                        </div>
+                        <div className="property-value">
+                          {hasIrCatalog && selectedEntry && scheduleRef && dimensionOpts.length > 0 ? (
+                            <select
+                              className="property-select"
+                              style={{ width: '100%', padding: '8px' }}
+                              value={dateStr}
+                              onChange={(e) => patchSchedule({ ScheduleDate: e.target.value })}
+                            >
+                              <option value="">
+                                {scheduleDateOnlyDateTypes
+                                  ? '-- Измерение типа «Дата» (дата графика) --'
+                                  : '-- Измерение регистра (дата графика) --'}
+                              </option>
+                              {dimensionOpts.map((x) => (
+                                <option key={x.ref} value={x.ref}>
+                                  {x.short}
+                                </option>
+                              ))}
+                              {dateOrphan ? (
+                                <option value={dateOrphan}>
+                                  {dateOrphan} (нет в списке метаданных)
+                                </option>
+                              ) : null}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              className="property-input"
+                              style={{ width: '100%', padding: '8px' }}
+                              value={dateStr}
+                              disabled={Boolean(hasIrCatalog && !scheduleRef)}
+                              placeholder="InformationRegister.Имя.Dimension.ИмяИзмерения"
+                              onChange={(e) => patchSchedule({ ScheduleDate: e.target.value })}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div className="property-card" style={{ borderStyle: 'dashed' }}>
+                        <div
+                          className="property-value"
+                          style={{
+                            fontSize: '12px',
+                            lineHeight: 1.5,
+                            color: 'var(--vscode-descriptionForeground)'
+                          }}
+                        >
+                          <div>
+                            РегистрРасчета.{calcRegStubName}: В качестве графика должен быть назначен
+                            непериодический регистр сведений.
+                          </div>
+                          <div style={{ marginTop: '8px' }}>
+                            РегистрРасчета.{calcRegStubName}: В качестве даты графика должно быть назначено
+                            измерение типа «Дата».
+                          </div>
+                        </div>
+                      </div>
+                    </React.Fragment>
+                  );
+                }
+                if (field === 'ScheduleValue' || field === 'ScheduleDate') {
+                  return null;
+                }
+                return renderRegisterScalarField(field);
+              })}
+            </div>
+          </div>
+        )}
+
+        {(isInformationRegister ||
+          isAccumulationRegister ||
+          isAccountingRegister ||
+          isCalculationRegister) && (
+          <div className="properties-group register-recorder-documents">
+            <div className="section-header">
+              <h3>Документы (RegisterRecords)</h3>
+            </div>
+            <div className="properties-cards">
+              <div className="property-card">
+                <div className="property-header">
+                  <h4>Регистраторы</h4>
+                </div>
+                <div className="property-value">
+                  {isInformationRegister && formData?.WriteMode !== 'RecorderSubordinate' ? (
+                    <div style={{ fontSize: '13px' }}>
+                      {(selectedObject?.recorderDocumentNames?.length ?? 0) === 0 ? (
+                        <span style={{ color: 'var(--vscode-descriptionForeground)' }}>
+                          Документов с движениями по этому регистру не найдено (или каталог Documents недоступен).
+                        </span>
+                      ) : (
+                        <ul style={{ margin: 0, paddingLeft: '1.2em' }}>
+                          {(selectedObject?.recorderDocumentNames || []).map((n: string) => (
+                            <li key={n}>{n}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        maxHeight: '280px',
+                        overflowY: 'auto'
+                      }}
+                    >
+                      {documentSelectOptions.map(([docName]) => {
+                        const selected = Array.isArray(selectedObject?.recorderDocumentNames)
+                          ? selectedObject!.recorderDocumentNames!.includes(docName)
+                          : false;
+                        return (
+                          <label
+                            key={docName}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              cursor: 'pointer',
+                              fontSize: '13px'
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => {
+                                if (!selectedObject || !onSelectedObjectChange) return;
+                                const cur = Array.isArray(selectedObject.recorderDocumentNames)
+                                  ? [...selectedObject.recorderDocumentNames]
+                                  : [];
+                                const next = selected
+                                  ? cur.filter((x) => x !== docName)
+                                  : [...cur, docName];
+                                onSelectedObjectChange({
+                                  ...selectedObject,
+                                  recorderDocumentNames: next
+                                });
+                                onChange(formData);
+                              }}
+                            />
+                            <span title={`Document.${docName}`}>{docName}</span>
+                          </label>
+                        );
+                      })}
+                      {(Array.isArray(selectedObject?.recorderDocumentNames)
+                        ? selectedObject!.recorderDocumentNames!
+                        : []
+                      )
+                        .filter((n: string) => !documentSelectOptions.some(([d]) => d === n))
+                        .map((n: string) => (
+                          <label
+                            key={`orphan-${n}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              opacity: 0.9
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked
+                              onChange={() => {
+                                if (!selectedObject || !onSelectedObjectChange) return;
+                                const cur = [...(selectedObject.recorderDocumentNames || [])];
+                                onSelectedObjectChange({
+                                  ...selectedObject,
+                                  recorderDocumentNames: cur.filter((x) => x !== n)
+                                });
+                                onChange(formData);
+                              }}
+                            />
+                            <span title={n}>
+                              {n}{' '}
+                              <span
+                                style={{
+                                  color: 'var(--vscode-descriptionForeground)',
+                                  fontSize: '11px'
+                                }}
+                              >
+                                (нет в списке метаданных)
+                              </span>
+                            </span>
+                          </label>
+                        ))}
+                      {documentSelectOptions.length === 0 &&
+                        !(selectedObject?.recorderDocumentNames?.length ?? 0) && (
+                          <span
+                            style={{
+                              fontSize: '12px',
+                              color: 'var(--vscode-descriptionForeground)'
+                            }}
+                          >
+                            Документы не найдены в метаданных. Проверьте корень конфигурации.
+                          </span>
+                        )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Группа "Стандартные реквизиты" */}
         {standardAttributes && (
@@ -2583,7 +3672,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
           const attributes = Array.isArray(baseAttrs) ? baseAttrs : [];
           return attributes[editingAttributeType]?.type || null;
       })()}
-        metadata={metadata}
+        metadata={metadataWithRegisters}
         onClose={() => setEditingAttributeType(null)}
         onSave={handleSaveAttributeTypeForAttribute}
       />
@@ -2594,7 +3683,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
         synonym={newAttrSynonym}
         comment={newAttrComment}
         type={newAttrType}
-        metadata={metadata}
+        metadata={metadataWithRegisters}
         onClose={() => setShowAddAttributeToObjectModal(false)}
         onSave={handleAddAttributeToObject}
         onNameChange={setNewAttrName}
@@ -2621,7 +3710,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
         synonym={newAttrSynonym}
         comment={newAttrComment}
         type={newAttrType}
-        metadata={metadata}
+        metadata={metadataWithRegisters}
         onClose={() => setShowAddAttributeModal(null)}
         onSave={() => showAddAttributeModal !== null && handleAddAttribute(showAddAttributeModal)}
         onNameChange={setNewAttrName}
@@ -2641,7 +3730,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
           if (!section?.attributes) return null;
           return section.attributes[editingAttribute.attrIndex]?.type || null;
                 })()}
-        metadata={metadata}
+        metadata={metadataWithRegisters}
         onClose={() => setEditingAttribute(null)}
         onSave={handleSaveAttributeType}
       />
@@ -2656,7 +3745,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
           const attributes = Array.isArray(baseAttrs) ? baseAttrs : [];
           return attributes[editingAttributeType]?.type || null;
         })()}
-        metadata={metadata}
+        metadata={metadataWithRegisters}
         onClose={() => setEditingAttributeType(null)}
         onSave={handleSaveAttributeTypeForAttribute}
       />
@@ -2674,7 +3763,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
       <CharacteristicTypeEditorModal
         isOpen={activeTab === 'characteristicTypes' && showCharacteristicTypeModal}
         typeValue={editingCharacteristicTypeIndex !== null ? getCharacteristicTypes()[editingCharacteristicTypeIndex] : null}
-        metadata={metadata}
+        metadata={metadataWithRegisters}
         onClose={() => {
           setShowCharacteristicTypeModal(false);
           setEditingCharacteristicTypeIndex(null);
@@ -2723,16 +3812,29 @@ export const FormEditor: React.FC<FormEditorProps> = ({
 
 // Функция для определения типа поля и получения вариантов значений
 function getFieldTypeAndOptions(field: string, objectType: string): { type: 'boolean' | 'enum' | 'string' | 'number'; options?: any[] } {
+  if (field === 'PeriodAdjustmentLength') {
+    return { type: 'number' };
+  }
+
   // Boolean поля
   const booleanFields: Record<string, boolean> = {
     'UseStandardCommands': true,
     'IncludeHelpInContents': true,
+    'AutoOrderByCode': true,
     'PostInPrivilegedMode': true,
     'UnpostInPrivilegedMode': true,
     'CheckUnique': true,
     'Autonumbering': true,
     'UpdateDataHistoryImmediatelyAfterWrite': true,
     'ExecuteAfterWriteDataHistoryVersionProcessing': true,
+    'ActionPeriodUse': true,
+    'MainFilterOnPeriod': true,
+    'EnableTotalsSliceFirst': true,
+    'EnableTotalsSliceLast': true,
+    'EnableTotalsSplitting': true,
+    'Correspondence': true,
+    'ActionPeriod': true,
+    'BasePeriod': true,
     // Реквизиты
     'PasswordMode': true,
     'MarkNegatives': true,
@@ -2812,7 +3914,19 @@ function getFieldTypeAndOptions(field: string, objectType: string): { type: 'boo
     'TaskNumberAutoPrefix': ['BusinessProcessNumber', 'DontUse'],
     'Representation': ['Picture', 'Auto', 'PictureAndText'],
     'Category': ['FormCommandBar', 'FormNavigationPanel', 'ActionsPanel', 'NavigationPanel'],
-    'TemplateType': ['BinaryData', 'SpreadsheetDocument', 'TextDocument', 'DataCompositionSchema']
+    'TemplateType': ['BinaryData', 'SpreadsheetDocument', 'TextDocument', 'DataCompositionSchema'],
+    'DependenceOnCalculationTypes': ['DontDepend', 'OnActionPeriod', 'OnRegistrationPeriod'],
+    'RegisterType': ['Turnovers', 'Balances'],
+    'InformationRegisterPeriodicity': [
+      'Nonperiodical',
+      'Second',
+      'Day',
+      'Month',
+      'Quarter',
+      'Year',
+      'RecorderPosition'
+    ],
+    'Periodicity': ['Nonperiodical', 'Second', 'Day', 'Month', 'Quarter', 'Year']
   };
 
   if (enumFields[field]) {
@@ -2843,6 +3957,21 @@ const FieldInput: React.FC<{
 }> = ({ field, value, onChange, objectType, label }) => {
   const fieldInfo = getFieldTypeAndOptions(field, objectType);
 
+  // Числовое поле
+  if (fieldInfo.type === 'number') {
+    const strVal = value === null || value === undefined ? '' : String(value);
+    return (
+      <input
+        type="number"
+        min={0}
+        value={strVal}
+        onChange={(e) => onChange(e.target.value)}
+        className="property-input"
+        placeholder="0"
+      />
+    );
+  }
+
   // Boolean поле
   if (fieldInfo.type === 'boolean') {
     const boolValue = value === true || value === 'true' || value === 'True';
@@ -2861,16 +3990,31 @@ const FieldInput: React.FC<{
   // Enum поле
   if (fieldInfo.type === 'enum' && fieldInfo.options) {
     const stringValue = value !== null && value !== undefined ? String(value) : '';
+    const isAccumulationRegisterRegisterType =
+      field === 'RegisterType' &&
+      (objectType === 'AccumulationRegister' || objectType === 'Регистр накопления');
+    const opts = [...fieldInfo.options];
+    if (!isAccumulationRegisterRegisterType) {
+      if (stringValue && !opts.includes(stringValue)) {
+        opts.push(stringValue);
+      }
+    }
+    const selectValue = isAccumulationRegisterRegisterType
+      ? (() => {
+          const c = normalizeAccumulationRegisterTypeValue(stringValue);
+          return c === 'Turnovers' || c === 'Balances' ? c : '';
+        })()
+      : stringValue;
     return (
       <select
-        value={stringValue}
+        value={selectValue}
         onChange={(e) => onChange(e.target.value)}
         className="property-select"
       >
         <option value="">-- Выберите значение --</option>
-        {fieldInfo.options.map((option) => (
+        {opts.map((option) => (
           <option key={option} value={option}>
-            {getEnumValueLabel(option)}
+            {getEnumValueLabel(option, field)}
           </option>
         ))}
       </select>

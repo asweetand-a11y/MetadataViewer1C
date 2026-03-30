@@ -1,15 +1,14 @@
 /**
  * Редактор предопределенных элементов
- * Использует карточки для отображения элементов и TypeWidget для редактирования типов
+ * Отображает иерархию плоской таблицей с отступами; редактирование — в модальном окне.
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { PredefinedDataItem } from '../../../predefinedDataInterfaces';
+import { insertItemUnderParent } from '../../../utils/predefinedTreeMutations';
 import { PredefinedTypeEditorModal } from './PredefinedTypeEditorModal';
 import { AccountingFlagsTable } from './AccountingFlagsTable';
 import { ExtDimensionTypesTable } from './ExtDimensionTypesTable';
-import { AccountingFlagsView } from './AccountingFlagsView';
-import { ExtDimensionTypesView } from './ExtDimensionTypesView';
 import '../../styles/editor.css';
 import './PredefinedEditorApp.css';
 
@@ -27,6 +26,12 @@ interface ChartOfAccountsData {
   }>;
 }
 
+/** Контекст ссылок для предопределённых видов расчёта (все планы в конфигурации). */
+interface ChartOfCalculationTypesData {
+  currentPlanName: string;
+  groups: Array<{ chartName: string; refs: string[] }>;
+}
+
 interface InitMessage {
   type: 'init';
   payload: PredefinedDataItem[];
@@ -36,11 +41,354 @@ interface InitMessage {
     referenceTypes: string[];
   };
   chartOfAccountsData?: ChartOfAccountsData;
+  chartOfCalculationTypesData?: ChartOfCalculationTypesData;
 }
+
+/** Плоская строка дерева для таблицы предопределённых элементов */
+interface FlatPredefinedRow {
+  item: PredefinedDataItem;
+  path: number[];
+  depth: number;
+}
+
+/** Рекурсивно разворачивает дерево Item в плоский список с путём и глубиной */
+function pathsEqual(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
+interface ParentPathComboboxProps {
+  value: number[];
+  flatRows: FlatPredefinedRow[];
+  onChange: (path: number[]) => void;
+}
+
+/** Кастомный выбор родителя: нативный select в webview на Windows даёт белый список опций. */
+function ParentPathCombobox({ value, flatRows, onChange }: ParentPathComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocMouseDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocMouseDown);
+    return () => document.removeEventListener('mousedown', onDocMouseDown);
+  }, [open]);
+
+  const currentLabel =
+    value.length === 0
+      ? '(Верхний уровень)'
+      : (() => {
+          const row = flatRows.find((r) => pathsEqual(r.path, value));
+          return row ? `${row.item.Code} ${row.item.Name}` : value.join('.');
+        })();
+
+  return (
+    <div className="predefined-combobox" ref={wrapRef}>
+      <button
+        type="button"
+        className="predefined-combobox-trigger"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <span className="predefined-combobox-value">{currentLabel}</span>
+        <span className="predefined-combobox-chevron" aria-hidden>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <ul className="predefined-combobox-list" role="listbox">
+          <li
+            role="option"
+            aria-selected={value.length === 0}
+            className={value.length === 0 ? 'is-selected' : undefined}
+            onClick={() => {
+              onChange([]);
+              setOpen(false);
+            }}
+          >
+            (Верхний уровень)
+          </li>
+          {flatRows.map(({ item: pItem, path: pPath, depth: pDepth }) => {
+            const selected = pathsEqual(pPath, value);
+            return (
+              <li
+                key={pPath.join('-')}
+                role="option"
+                aria-selected={selected}
+                className={selected ? 'is-selected' : undefined}
+                style={{ paddingLeft: `${10 + pDepth * 14}px` }}
+                onClick={() => {
+                  onChange(pPath);
+                  setOpen(false);
+                }}
+              >
+                {`${'\u2014 '.repeat(pDepth)}${pItem.Code} ${pItem.Name}`}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function flattenPredefinedItems(items: PredefinedDataItem[]): FlatPredefinedRow[] {
+  const out: FlatPredefinedRow[] = [];
+  function walk(list: PredefinedDataItem[], prefixPath: number[], depth: number): void {
+    list.forEach((item, i) => {
+      const path = [...prefixPath, i];
+      out.push({ item, path, depth });
+      const children = item.ChildItems?.Item;
+      if (children && children.length > 0) {
+        walk(children, path, depth + 1);
+      }
+    });
+  }
+  walk(items, [], 0);
+  return out;
+}
+
+/** Глубокая копия элемента для редактирования (признаки учёта и виды субконто) */
+function copyPredefinedItemForEdit(source: PredefinedDataItem): PredefinedDataItem {
+  return {
+    ...source,
+    Displaced: source.Displaced ? [...source.Displaced] : source.Displaced,
+    Leading: source.Leading ? [...source.Leading] : source.Leading,
+    Base: source.Base ? [...source.Base] : source.Base,
+    AccountingFlags:
+      source.AccountingFlags && source.AccountingFlags.length > 0
+        ? source.AccountingFlags.map((flag) => ({
+            flagName: flag.flagName,
+            enabled: flag.enabled,
+            ref: flag.ref
+          }))
+        : source.AccountingFlags,
+    ExtDimensionTypes:
+      source.ExtDimensionTypes && source.ExtDimensionTypes.length > 0
+        ? source.ExtDimensionTypes.map((dimType) => {
+            const copiedFlags: Record<string, boolean | { enabled: boolean; ref?: string }> = {};
+            if (dimType.flags) {
+              Object.entries(dimType.flags).forEach(([key, value]) => {
+                if (typeof value === 'boolean') {
+                  copiedFlags[key] = value;
+                } else if (value && typeof value === 'object' && 'enabled' in value) {
+                  copiedFlags[key] = { enabled: value.enabled, ref: value.ref };
+                }
+              });
+            }
+            return {
+              dimensionType: dimType.dimensionType,
+              turnoverOnly: dimType.turnoverOnly,
+              flags: copiedFlags,
+              name: dimType.name
+            };
+          })
+        : source.ExtDimensionTypes
+  };
+}
+
+function accountTypeLabel(v: string | undefined): string {
+  if (!v) return '—';
+  if (v === 'Active') return 'Активный';
+  if (v === 'Passive') return 'Пассивный';
+  if (v === 'ActivePassive') return 'Активно-пассивный';
+  return v;
+}
+
+/** Чекбоксы полных ссылок ChartOfCalculationTypes.<План>.<Имя> по группам планов. */
+function CalculationTypeRefsPane(props: {
+  groups: Array<{ chartName: string; refs: string[] }>;
+  value: string[];
+  excludeRef?: string;
+  onChange: (refs: string[]) => void;
+}): React.ReactElement {
+  const { groups, value, excludeRef, onChange } = props;
+  const selected = new Set(value);
+  const toggle = (ref: string) => {
+    const next = new Set(selected);
+    if (next.has(ref)) {
+      next.delete(ref);
+    } else {
+      next.add(ref);
+    }
+    onChange([...next]);
+  };
+  if (!groups.length) {
+    return (
+      <div style={{ padding: '8px', color: 'var(--vscode-descriptionForeground)', fontSize: '12px' }}>
+        Нет данных о планах видов расчёта (каталог ChartsOfCalculationTypes недоступен или пуст).
+      </div>
+    );
+  }
+  return (
+    <div style={{ maxHeight: '320px', overflowY: 'auto', fontSize: '12px' }}>
+      {groups.map((g) => (
+        <div key={g.chartName} style={{ marginBottom: '12px' }}>
+          <div style={{ fontWeight: 600, marginBottom: '6px' }}>{g.chartName}</div>
+          {g.refs
+            .filter((r) => !excludeRef || r !== excludeRef)
+            .map((r) => {
+              const short = r.split('.').pop() || r;
+              return (
+                <label
+                  key={r}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px', marginBottom: '4px', cursor: 'pointer' }}
+                >
+                  <input type="checkbox" checked={selected.has(r)} onChange={() => toggle(r)} />
+                  <span title={r}>{short}</span>
+                </label>
+              );
+            })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface PredefinedTableProps {
+  rows: FlatPredefinedRow[];
+  isChartOfAccounts: boolean;
+  isChartOfCharacteristicTypes: boolean;
+  collapsedPathKeys: Set<string>;
+  onToggleBranch: (path: number[]) => void;
+  onEditPath: (path: number[]) => void;
+  onDeletePath: (path: number[]) => void;
+}
+
+function rowHasChildren(item: PredefinedDataItem): boolean {
+  return !!(item.ChildItems?.Item && item.ChildItems.Item.length > 0);
+}
+
+/** Таблица предопределённых элементов с иерархией по отступам и сворачиванием веток */
+const PredefinedTable: React.FC<PredefinedTableProps> = ({
+  rows,
+  isChartOfAccounts,
+  isChartOfCharacteristicTypes,
+  collapsedPathKeys,
+  onToggleBranch,
+  onEditPath,
+  onDeletePath
+}) => {
+  const visibleRows = useMemo(() => {
+    return rows.filter(({ path }) => {
+      for (let d = 0; d < path.length - 1; d++) {
+        const prefixKey = path.slice(0, d + 1).join(',');
+        if (collapsedPathKeys.has(prefixKey)) return false;
+      }
+      return true;
+    });
+  }, [rows, collapsedPathKeys]);
+
+  return (
+    <div className="predefined-table-wrap">
+      <table className="predefined-flat-table">
+        <thead>
+          <tr>
+            <th className="col-code">Код</th>
+            <th className="col-name">Наименование</th>
+            {isChartOfCharacteristicTypes && <th className="col-type">Тип</th>}
+            {isChartOfAccounts && (
+              <>
+                <th className="col-account-type">Вид</th>
+                <th className="col-off">Забалансовый</th>
+                <th className="col-order">Порядок</th>
+              </>
+            )}
+            <th className="col-folder">Папка</th>
+            <th className="col-actions">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {visibleRows.map(({ item, path, depth }) => {
+            const rowKey = item.id
+              ? `${path.join('-')}-${item.id}`
+              : `${path.join('-')}-${item.Code}-${item.Name}`;
+            const pathKey = path.join(',');
+            const hasKids = rowHasChildren(item);
+            const branchCollapsed = collapsedPathKeys.has(pathKey);
+            const typePreview =
+              item.Type && item.Type.length > 48 ? `${item.Type.slice(0, 48)}…` : item.Type || '';
+            return (
+              <tr key={rowKey}>
+                <td className="col-code">{item.Code}</td>
+                <td className="col-name">
+                  <span
+                    className="predefined-name-cell"
+                    style={{ paddingLeft: depth * 20 }}
+                    title={item.Description || item.Name}
+                  >
+                    {hasKids ? (
+                      <button
+                        type="button"
+                        className="predefined-tree-toggle"
+                        aria-expanded={!branchCollapsed}
+                        aria-label={branchCollapsed ? 'Развернуть дочерние элементы' : 'Свернуть дочерние элементы'}
+                        title={branchCollapsed ? 'Развернуть' : 'Свернуть'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleBranch(path);
+                        }}
+                      >
+                        {branchCollapsed ? '▶' : '▼'}
+                      </button>
+                    ) : (
+                      <span className="predefined-tree-toggle-placeholder" aria-hidden />
+                    )}
+                    <span className="predefined-icon" aria-hidden>
+                      {item.IsFolder ? '📁' : '📄'}
+                    </span>
+                    <span className="predefined-name-text">{item.Name}</span>
+                  </span>
+                </td>
+                {isChartOfCharacteristicTypes && (
+                  <td className="col-type predefined-type-cell" title={item.Type || ''}>
+                    {typePreview || '—'}
+                  </td>
+                )}
+                {isChartOfAccounts && (
+                  <>
+                    <td className="col-account-type">{accountTypeLabel(item.AccountType)}</td>
+                    <td className="col-off">{item.OffBalance === undefined ? '—' : item.OffBalance ? 'Да' : 'Нет'}</td>
+                    <td className="col-order">{item.Order || '—'}</td>
+                  </>
+                )}
+                <td className="col-folder">{item.IsFolder ? 'Да' : 'Нет'}</td>
+                <td className="col-actions">
+                  <button
+                    type="button"
+                    className="btn-edit-type predefined-table-action"
+                    onClick={() => onEditPath(path)}
+                    title="Редактировать"
+                    aria-label="Редактировать"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-edit-type predefined-table-action predefined-table-action-delete"
+                    onClick={() => onDeletePath(path)}
+                    title="Удалить"
+                    aria-label="Удалить"
+                  >
+                    ×
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
 export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode }) => {
   const [items, setItems] = useState<PredefinedDataItem[]>([]);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingItem, setEditingItem] = useState<PredefinedDataItem | null>(null);
   const [editingChild, setEditingChild] = useState<{ path: number[] } | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -53,6 +401,9 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
     referenceTypes: []
   });
   const [chartOfAccountsData, setChartOfAccountsData] = useState<ChartOfAccountsData | undefined>(undefined);
+  const [chartOfCalculationTypesData, setChartOfCalculationTypesData] = useState<
+    ChartOfCalculationTypesData | undefined
+  >(undefined);
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [typeModalContext, setTypeModalContext] = useState<{ mode: 'add' | 'edit'; currentType: string }>({ 
     mode: 'add', 
@@ -65,6 +416,32 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
     Type: '',
     IsFolder: false
   });
+  /** Путь к родителю при добавлении ([] — корень, как в XML) */
+  const [addParentPath, setAddParentPath] = useState<number[]>([]);
+  /** Ключи path.join(',') свёрнутых узлов (дочерние строки скрыты) */
+  const [collapsedPathKeys, setCollapsedPathKeys] = useState<Set<string>>(() => new Set());
+
+  const toggleBranchCollapsed = useCallback((path: number[]) => {
+    const k = path.join(',');
+    setCollapsedPathKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  }, []);
+
+  /** Раскрыть все предки пути (после добавления в свёрнутую ветку новый элемент виден) */
+  const expandAncestorsOfPath = useCallback((parentPath: number[]) => {
+    if (parentPath.length === 0) return;
+    setCollapsedPathKeys((prev) => {
+      const next = new Set(prev);
+      for (let d = 0; d < parentPath.length; d++) {
+        next.delete(parentPath.slice(0, d + 1).join(','));
+      }
+      return next;
+    });
+  }, []);
 
   // Проверка, является ли объект планом видов характеристик
   const isChartOfCharacteristicTypes = useMemo(() => {
@@ -79,6 +456,16 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
            objectType === 'План счетов' ||
            objectType.includes('ChartOfAccounts');
   }, [objectType]);
+
+  const isChartOfCalculationTypes = useMemo(() => {
+    return (
+      objectType === 'ChartOfCalculationTypes' ||
+      objectType === 'План видов расчета' ||
+      objectType.includes('ChartOfCalculationTypes')
+    );
+  }, [objectType]);
+
+  const flatRows = useMemo(() => flattenPredefinedItems(items), [items]);
 
   // Обработка сообщений от extension
   useEffect(() => {
@@ -113,10 +500,15 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
         } else {
           console.warn('[PredefinedEditorApp] Данные плана счетов не получены');
         }
+        if (initMsg.chartOfCalculationTypesData) {
+          setChartOfCalculationTypesData(initMsg.chartOfCalculationTypesData);
+        } else {
+          setChartOfCalculationTypesData(undefined);
+        }
       } else if (message.type === 'saved') {
         if (message.payload?.success) {
-          setEditingIndex(null);
           setEditingItem(null);
+          setEditingChild(null);
           setShowAddModal(false);
           setShowTypeModal(false);
           setShowDeleteConfirm(false);
@@ -144,7 +536,11 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
   };
 
   const handleAdd = () => {
-    if (!newItem.Name || !newItem.Code) {
+    if (!newItem.Name) {
+      alert('Заполните обязательное поле: Имя');
+      return;
+    }
+    if (!isChartOfCalculationTypes && !newItem.Code) {
       alert('Заполните обязательные поля: Имя и Код');
       return;
     }
@@ -152,7 +548,7 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
     // Убираем поля плана счетов если это не план счетов
     const itemToAdd: PredefinedDataItem = {
       Name: newItem.Name,
-      Code: newItem.Code,
+      Code: newItem.Code ?? '',
       Description: newItem.Description || '',
       Type: isChartOfCharacteristicTypes ? (newItem.Type || '') : '',
       IsFolder: newItem.IsFolder || false,
@@ -161,12 +557,33 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
       OffBalance: isChartOfAccounts ? newItem.OffBalance : undefined,
       Order: isChartOfAccounts ? newItem.Order : undefined,
       AccountingFlags: isChartOfAccounts && newItem.AccountingFlags ? newItem.AccountingFlags : undefined,
-      ExtDimensionTypes: isChartOfAccounts && newItem.ExtDimensionTypes ? newItem.ExtDimensionTypes : undefined
+      ExtDimensionTypes: isChartOfAccounts && newItem.ExtDimensionTypes ? newItem.ExtDimensionTypes : undefined,
+      ActionPeriodIsBase: isChartOfCalculationTypes ? Boolean(newItem.ActionPeriodIsBase) : undefined,
+      Displaced:
+        isChartOfCalculationTypes && newItem.Displaced?.length
+          ? [...newItem.Displaced]
+          : isChartOfCalculationTypes
+            ? []
+            : undefined,
+      Leading:
+        isChartOfCalculationTypes && newItem.Leading?.length
+          ? [...newItem.Leading]
+          : isChartOfCalculationTypes
+            ? []
+            : undefined,
+      Base:
+        isChartOfCalculationTypes && newItem.Base?.length
+          ? [...newItem.Base]
+          : isChartOfCalculationTypes
+            ? []
+            : undefined
     };
-    const updatedItems = [...items, itemToAdd];
+    const updatedItems = insertItemUnderParent(items, addParentPath, itemToAdd);
     setItems(updatedItems);
-    vscode.postMessage({ type: 'addItem', payload: itemToAdd });
+    expandAncestorsOfPath(addParentPath);
+    vscode.postMessage({ type: 'addItem', payload: { item: itemToAdd, parentPath: addParentPath } });
     setNewItem({ Name: '', Code: '', Description: '', Type: '', IsFolder: false });
+    setAddParentPath([]);
     setShowAddModal(false);
   };
 
@@ -222,53 +639,21 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
     return { ...item, ChildItems: { Item: updatedChildren } };
   };
 
-  const handleEdit = (index: number) => {
-    setEditingIndex(index);
-    setEditingItem({ ...items[index] });
-    setEditingChild(null);
-  };
-
-  const handleEditChild = (path: number[]) => {
-    if (path.length < 2) return;
-    const childItem = getItemByPath(items, path);
-    if (!childItem) return;
-    const copiedItem: PredefinedDataItem = {
-      ...childItem,
-      AccountingFlags: childItem.AccountingFlags && childItem.AccountingFlags.length > 0
-        ? childItem.AccountingFlags.map(flag => ({
-            flagName: flag.flagName,
-            enabled: flag.enabled,
-            ref: flag.ref
-          }))
-        : childItem.AccountingFlags,
-      ExtDimensionTypes: childItem.ExtDimensionTypes && childItem.ExtDimensionTypes.length > 0
-        ? childItem.ExtDimensionTypes.map(dimType => {
-            const copiedFlags: Record<string, boolean | { enabled: boolean; ref?: string }> = {};
-            if (dimType.flags) {
-              Object.entries(dimType.flags).forEach(([key, value]) => {
-                if (typeof value === 'boolean') {
-                  copiedFlags[key] = value;
-                } else if (value && typeof value === 'object' && 'enabled' in value) {
-                  copiedFlags[key] = { enabled: value.enabled, ref: value.ref };
-                }
-              });
-            }
-            return {
-              dimensionType: dimType.dimensionType,
-              turnoverOnly: dimType.turnoverOnly,
-              flags: copiedFlags,
-              name: dimType.name
-            };
-          })
-        : childItem.ExtDimensionTypes
-    };
+  /** Открыть редактирование элемента по пути (корень или вложенный) */
+  const handleEditByPath = (path: number[]) => {
+    if (path.length < 1) return;
+    const target = getItemByPath(items, path);
+    if (!target) return;
     setEditingChild({ path });
-    setEditingItem(copiedItem);
-    setEditingIndex(null);
+    setEditingItem(copyPredefinedItemForEdit(target));
   };
 
   const handleUpdate = (updatedItem: PredefinedDataItem) => {
-    if (!updatedItem.Name || !updatedItem.Code) {
+    if (!updatedItem.Name) {
+      alert('Заполните обязательное поле: Имя');
+      return;
+    }
+    if (!isChartOfCalculationTypes && !updatedItem.Code) {
       alert('Заполните обязательные поля: Имя и Код');
       return;
     }
@@ -284,47 +669,58 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
       updatedItem.AccountingFlags = undefined;
       updatedItem.ExtDimensionTypes = undefined;
     }
+    if (!isChartOfCalculationTypes) {
+      updatedItem.Displaced = undefined;
+      updatedItem.Leading = undefined;
+      updatedItem.Base = undefined;
+      updatedItem.ActionPeriodIsBase = undefined;
+    }
     
-    if (editingChild && editingChild.path.length >= 2) {
-      // Обновление вложенного элемента по пути
+    if (editingChild) {
       const path = editingChild.path;
-      const rootIndex = path[0];
       const updatedChildItem: PredefinedDataItem = {
         ...updatedItem,
+        Displaced: updatedItem.Displaced ? [...updatedItem.Displaced] : undefined,
+        Leading: updatedItem.Leading ? [...updatedItem.Leading] : undefined,
+        Base: updatedItem.Base ? [...updatedItem.Base] : undefined,
         AccountingFlags: updatedItem.AccountingFlags
-          ? updatedItem.AccountingFlags.map(flag => ({ ...flag }))
+          ? updatedItem.AccountingFlags.map((flag) => ({ ...flag }))
           : undefined,
         ExtDimensionTypes: updatedItem.ExtDimensionTypes
-          ? updatedItem.ExtDimensionTypes.map(dimType => ({
+          ? updatedItem.ExtDimensionTypes.map((dimType) => ({
               ...dimType,
               flags: dimType.flags ? { ...dimType.flags } : {}
             }))
           : undefined
       };
-      const updatedRootItem = updateItemAtPath(items[rootIndex], path.slice(1), updatedChildItem);
-      if (updatedRootItem) {
+      if (path.length === 1) {
+        const rootIndex = path[0];
         const updatedItems = [...items];
-        updatedItems[rootIndex] = updatedRootItem;
+        updatedItems[rootIndex] = updatedChildItem;
         setItems(updatedItems);
         vscode.postMessage({
           type: 'updateItem',
-          payload: { index: rootIndex, item: updatedRootItem }
+          payload: { index: rootIndex, item: updatedChildItem }
         });
+      } else {
+        const rootIndex = path[0];
+        const updatedRootItem = updateItemAtPath(items[rootIndex], path.slice(1), updatedChildItem);
+        if (updatedRootItem) {
+          const updatedItems = [...items];
+          updatedItems[rootIndex] = updatedRootItem;
+          setItems(updatedItems);
+          vscode.postMessage({
+            type: 'updateItem',
+            payload: { index: rootIndex, item: updatedRootItem }
+          });
+        }
       }
       setEditingChild(null);
-    } else {
-      // Обновление обычного элемента
-      const updatedItems = [...items];
-      updatedItems[editingIndex!] = updatedItem;
-      setItems(updatedItems);
-      vscode.postMessage({ type: 'updateItem', payload: { index: editingIndex!, item: updatedItem } });
-      setEditingIndex(null);
     }
     setEditingItem(null);
   };
 
   const handleCancelEdit = () => {
-    setEditingIndex(null);
     setEditingItem(null);
     setEditingChild(null);
   };
@@ -340,6 +736,15 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
     setDeleteChild({ path });
     setDeleteIndex(null);
     setShowDeleteConfirm(true);
+  };
+
+  /** Удаление по пути: корень или вложенный элемент */
+  const handleDeleteByPath = (path: number[]) => {
+    if (path.length === 1) {
+      handleDelete(path[0]);
+    } else {
+      handleDeleteChild(path);
+    }
   };
 
   const handleConfirmDelete = () => {
@@ -408,6 +813,7 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
         {showAddModal && (
           <div className="modal-overlay" onClick={() => { 
             setShowAddModal(false); 
+            setAddParentPath([]);
             setNewItem({ 
               Name: '', 
               Code: '', 
@@ -418,12 +824,20 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
               OffBalance: undefined,
               Order: undefined,
               AccountingFlags: undefined,
-              ExtDimensionTypes: undefined
+              ExtDimensionTypes: undefined,
+              ActionPeriodIsBase: undefined,
+              Displaced: undefined,
+              Leading: undefined,
+              Base: undefined
             }); 
           }}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>
               <h3>Добавить элемент</h3>
               <div className="modal-content">
+                <label className="predefined-combobox-label">
+                  Родитель:
+                  <ParentPathCombobox value={addParentPath} flatRows={flatRows} onChange={setAddParentPath} />
+                </label>
                 <label>
                   Имя: *
                   <input 
@@ -433,7 +847,7 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
                   />
                 </label>
                 <label>
-                  Код: *
+                  Код:{!isChartOfCalculationTypes ? ' *' : ''}
                   <input 
                     type="text" 
                     value={newItem.Code || ''} 
@@ -479,6 +893,21 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
                     </div>
                   </label>
                 )}
+                {isChartOfCalculationTypes && (
+                  <>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={newItem.ActionPeriodIsBase === true}
+                        onChange={(e) => setNewItem({ ...newItem, ActionPeriodIsBase: e.target.checked })}
+                      />
+                      Базовый период действия
+                    </label>
+                    <p style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', margin: '4px 0 0' }}>
+                      Связи вытесняющих, ведущих и базовых видов задайте после добавления через «Редактировать».
+                    </p>
+                  </>
+                )}
                 {isChartOfAccounts && (
                   <>
                     <label>
@@ -486,15 +915,6 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
                       <select
                         value={newItem.AccountType || ''}
                         onChange={(e) => setNewItem({...newItem, AccountType: e.target.value as 'Active' | 'Passive' | 'ActivePassive' | undefined})}
-                        style={{
-                          width: '100%',
-                          padding: '6px 12px',
-                          border: '1px solid var(--vscode-input-border)',
-                          background: 'var(--vscode-input-background)',
-                          color: 'var(--vscode-input-foreground)',
-                          borderRadius: '3px',
-                          fontSize: '12px'
-                        }}
                       >
                         <option value="">Не указан</option>
                         <option value="Active">Активный</option>
@@ -557,6 +977,7 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
                   className="btn-secondary" 
                   onClick={() => { 
                     setShowAddModal(false); 
+                    setAddParentPath([]);
                     setNewItem({ 
                       Name: '', 
                       Code: '', 
@@ -567,7 +988,11 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
                       OffBalance: undefined,
                       Order: undefined,
                       AccountingFlags: undefined,
-                      ExtDimensionTypes: undefined
+                      ExtDimensionTypes: undefined,
+                      ActionPeriodIsBase: undefined,
+                      Displaced: undefined,
+                      Leading: undefined,
+                      Base: undefined
                     }); 
                   }}
                 >
@@ -583,49 +1008,15 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
             Для данного объекта предопределенные элементы не созданы
           </div>
         ) : (
-          <div className="attributes-list">
-            {items.map((item, index) => {
-              const itemKey = item.id ? item.id : `${item.Code}-${item.Name}-${index}`;
-              return editingIndex === index ? (
-                <EditItemCard 
-                  key={itemKey} 
-                  item={editingItem} 
-                  index={index}
-                  parentPath={[index]}
-                  isChartOfCharacteristicTypes={isChartOfCharacteristicTypes}
-                  isChartOfAccounts={isChartOfAccounts}
-                  chartOfAccountsData={chartOfAccountsData}
-                  onSave={handleUpdate} 
-                  onCancel={handleCancelEdit}
-                  onChange={setEditingItem}
-                  onOpenTypeModal={handleOpenTypeModal}
-                  onEditChild={handleEditChild}
-                  onDeleteChild={handleDeleteChild}
-                  editingChild={editingChild}
-                  editingItem={editingItem}
-                />
-              ) : (
-                <PredefinedItemCard
-                  key={itemKey}
-                  item={item}
-                  index={index}
-                  isChartOfAccounts={isChartOfAccounts}
-                  isChartOfCharacteristicTypes={isChartOfCharacteristicTypes}
-                  chartOfAccountsData={chartOfAccountsData}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onEditChild={handleEditChild}
-                  onDeleteChild={handleDeleteChild}
-                  editingChild={editingChild}
-                  editingItem={editingItem}
-                  onSave={handleUpdate}
-                  onCancel={handleCancelEdit}
-                  onChange={setEditingItem}
-                  onOpenTypeModal={handleOpenTypeModal}
-                />
-              );
-            })}
-          </div>
+          <PredefinedTable
+            rows={flatRows}
+            isChartOfAccounts={isChartOfAccounts}
+            isChartOfCharacteristicTypes={isChartOfCharacteristicTypes}
+            collapsedPathKeys={collapsedPathKeys}
+            onToggleBranch={toggleBranchCollapsed}
+            onEditPath={handleEditByPath}
+            onDeletePath={handleDeleteByPath}
+          />
         )}
 
         {showTypeModal && (
@@ -643,25 +1034,27 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
             <div 
               className="modal edit-item-modal" 
               onClick={(e) => e.stopPropagation()}
-              style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', overflowX: 'hidden' }}
+              style={{
+                maxWidth: isChartOfCalculationTypes ? '680px' : '600px',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                overflowX: 'hidden'
+              }}
             >
               <h3 style={{ marginBottom: '16px' }}>
                 Редактирование: {editingItem.Name || 'Элемент'}
               </h3>
               <EditItemCard
                 item={editingItem}
-                parentPath={editingChild.path}
                 isChartOfCharacteristicTypes={isChartOfCharacteristicTypes}
                 isChartOfAccounts={isChartOfAccounts}
+                isChartOfCalculationTypes={isChartOfCalculationTypes}
                 chartOfAccountsData={chartOfAccountsData}
+                chartOfCalculationTypesData={chartOfCalculationTypesData}
                 onSave={handleUpdate}
                 onCancel={handleCancelEdit}
                 onChange={setEditingItem}
                 onOpenTypeModal={handleOpenTypeModal}
-                onEditChild={handleEditChild}
-                onDeleteChild={handleDeleteChild}
-                editingChild={editingChild}
-                editingItem={editingItem}
                 showInModal
               />
             </div>
@@ -694,267 +1087,65 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
   );
 };
 
-interface PredefinedItemCardProps {
-  item: PredefinedDataItem;
-  index: number;
-  parentPath?: number[];
-  isChartOfAccounts: boolean;
-  isChartOfCharacteristicTypes: boolean;
-  chartOfAccountsData?: ChartOfAccountsData;
-  onEdit: (index: number) => void;
-  onDelete: (index: number) => void;
-  onEditChild?: (path: number[]) => void;
-  onDeleteChild?: (path: number[]) => void;
-  editingChild?: { path: number[] } | null;
-  editingItem?: PredefinedDataItem | null;
-  onSave?: (item: PredefinedDataItem) => void;
-  onCancel?: () => void;
-  onChange?: (item: PredefinedDataItem) => void;
-  onOpenTypeModal?: (mode: 'add' | 'edit', currentType?: string) => void;
-  isBeingEdited?: boolean;
-}
-
-const PredefinedItemCard: React.FC<PredefinedItemCardProps> = ({
-  item,
-  index,
-  parentPath,
-  isChartOfAccounts,
-  isChartOfCharacteristicTypes,
-  chartOfAccountsData,
-  onEdit,
-  onDelete,
-  onEditChild,
-  onDeleteChild,
-  editingChild,
-  editingItem,
-  onSave,
-  onCancel,
-  onChange,
-  onOpenTypeModal,
-  isBeingEdited = false
-}) => {
-  const childPath = parentPath !== undefined ? [...parentPath, index] : [index];
-  const isChildCard = parentPath !== undefined;
-  return (
-    <div 
-      className="attribute-card" 
-      style={isBeingEdited ? { border: '2px solid var(--vscode-focusBorder)', boxShadow: '0 0 0 1px var(--vscode-focusBorder)' } : undefined}
-    >
-      <div className="attribute-header">
-        <h4>
-          <span style={{ marginRight: '8px' }}>{item.IsFolder ? '📁' : '📄'}</span>
-          {item.Name}
-        </h4>
-        {(index >= 0 || isChildCard) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button
-              className="btn-edit-type"
-              type="button"
-              onClick={() => {
-                if (isChildCard && onEditChild && childPath.length >= 2) {
-                  onEditChild(childPath);
-                } else if (!isChildCard) {
-                  onEdit(index);
-                }
-              }}
-              title="Редактировать"
-              aria-label="Редактировать"
-              style={{ 
-                padding: '4px 8px', 
-                fontSize: '16px',
-                background: 'var(--vscode-button-secondaryBackground)',
-                color: 'var(--vscode-button-secondaryForeground)',
-                border: '1px solid var(--vscode-button-border)',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                lineHeight: '1'
-              }}
-            >
-              ✎
-            </button>
-            <button
-              className="btn-edit-type"
-              type="button"
-              onClick={() => {
-                if (isChildCard && onDeleteChild && childPath.length >= 2) {
-                  onDeleteChild(childPath);
-                } else if (!isChildCard) {
-                  onDelete(index);
-                }
-              }}
-              title="Удалить"
-              aria-label="Удалить"
-              style={{
-                padding: '4px 8px',
-                fontSize: '16px',
-                background: 'var(--vscode-errorForeground)',
-                color: 'var(--vscode-button-foreground)',
-                border: '1px solid var(--vscode-button-border)',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                lineHeight: '1'
-              }}
-            >
-              ×
-            </button>
-          </div>
-        )}
-      </div>
-      <div className="attribute-properties">
-        <div className="property-row">
-          <span className="property-name">Код:</span>
-          <span className="property-value">{item.Code}</span>
-        </div>
-        {item.Description && (
-          <div className="property-row">
-            <span className="property-name">Наименование:</span>
-            <span className="property-value">{item.Description}</span>
-          </div>
-        )}
-        {isChartOfCharacteristicTypes && item.Type && (
-          <div className="property-row">
-            <span className="property-name">Тип:</span>
-            <span className="property-value" style={{ fontFamily: 'monospace', fontSize: '11px' }}>
-              {item.Type.includes('|') 
-                ? item.Type.split('|').map((t, idx) => (
-                    <span key={idx}>
-                      {t.trim()}
-                      {idx < item.Type!.split('|').length - 1 && <span style={{ color: 'var(--vscode-descriptionForeground)' }}> | </span>}
-                    </span>
-                  ))
-                : item.Type
-              }
-            </span>
-          </div>
-        )}
-        {isChartOfAccounts && (
-          <>
-            {item.Parent && (
-              <div className="property-row">
-                <span className="property-name">Родитель:</span>
-                <span className="property-value">{item.Parent}</span>
-              </div>
-            )}
-            {item.AccountType && (
-              <div className="property-row">
-                <span className="property-name">Вид:</span>
-                <span className="property-value">{item.AccountType}</span>
-              </div>
-            )}
-            {item.OffBalance !== undefined && (
-              <div className="property-row">
-                <span className="property-name">Забалансовый:</span>
-                <span className="property-value">{item.OffBalance ? 'Да' : 'Нет'}</span>
-              </div>
-            )}
-            {item.Order && (
-              <div className="property-row">
-                <span className="property-name">Порядок:</span>
-                <span className="property-value">{item.Order}</span>
-              </div>
-            )}
-            <AccountingFlagsView item={item} />
-            <ExtDimensionTypesView item={item} />
-          </>
-        )}
-        <div className="property-row">
-          <span className="property-name">Папка:</span>
-          <span className="property-value">{item.IsFolder ? 'Да' : 'Нет'}</span>
-        </div>
-        {/* Отображение дочерних элементов */}
-        {item.ChildItems && item.ChildItems.Item && item.ChildItems.Item.length > 0 && (
-          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--vscode-panel-border)' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '8px' }}>
-              Дочерние элементы ({item.ChildItems.Item.length}):
-            </div>
-            <div 
-              className="child-items-container"
-              style={{ 
-                marginLeft: '16px', 
-                maxHeight: '400px', 
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                paddingRight: '8px'
-              }}>
-              {item.ChildItems.Item.map((childItem, childIndex) => {
-                const childPath: number[] = parentPath !== undefined ? [...parentPath, index, childIndex] : [index, childIndex];
-                const isEditing: boolean = !!(editingChild && editingChild.path.length === childPath.length &&
-                  editingChild.path.every((p, i) => p === childPath[i]));
-                const childKey = childItem.id || `${childItem.Code}-${childItem.Name}-${childIndex}`;
-                return (
-                  <PredefinedItemCard
-                    key={childKey}
-                    item={childItem}
-                    index={childIndex}
-                    parentPath={parentPath !== undefined ? [...parentPath, index] : [index]}
-                    isChartOfAccounts={isChartOfAccounts}
-                    isChartOfCharacteristicTypes={isChartOfCharacteristicTypes}
-                    chartOfAccountsData={chartOfAccountsData}
-                    onEdit={() => {}}
-                    onDelete={() => {}}
-                    onEditChild={onEditChild}
-                    onDeleteChild={onDeleteChild}
-                    editingChild={editingChild}
-                    editingItem={editingItem}
-                    onSave={onSave}
-                    onCancel={onCancel}
-                    onChange={onChange}
-                    onOpenTypeModal={onOpenTypeModal}
-                    isBeingEdited={isEditing}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+type CalcPredefinedEditorTab = 'main' | 'displaced' | 'leading' | 'base';
 
 interface EditItemCardProps {
   item: PredefinedDataItem | null;
-  index?: number;
-  parentPath?: number[];
   isChartOfCharacteristicTypes: boolean;
   isChartOfAccounts: boolean;
+  isChartOfCalculationTypes?: boolean;
   chartOfAccountsData?: ChartOfAccountsData;
+  chartOfCalculationTypesData?: ChartOfCalculationTypesData;
   onSave: (item: PredefinedDataItem) => void;
   onCancel: () => void;
   onChange: (item: PredefinedDataItem) => void;
   onOpenTypeModal: (mode: 'add' | 'edit', currentType?: string) => void;
-  onEditChild?: (path: number[]) => void;
-  onDeleteChild?: (path: number[]) => void;
-  editingChild?: { path: number[] } | null;
-  editingItem?: PredefinedDataItem | null;
   showInModal?: boolean;
 }
 
 const EditItemCard: React.FC<EditItemCardProps> = ({ 
   item, 
-  index = 0,
-  parentPath,
   isChartOfCharacteristicTypes,
   isChartOfAccounts,
+  isChartOfCalculationTypes = false,
   chartOfAccountsData,
+  chartOfCalculationTypesData,
   onSave, 
   onCancel, 
   onChange,
   onOpenTypeModal,
-  onEditChild,
-  onDeleteChild,
-  editingChild,
-  editingItem,
   showInModal = false
 }) => {
+  const [calcTab, setCalcTab] = useState<CalcPredefinedEditorTab>('main');
+
+  useEffect(() => {
+    setCalcTab('main');
+  }, [item?.id, item?.Name]);
+
   if (!item) return null;
 
   const handleSave = () => {
-    if (!item.Name || !item.Code) {
+    if (!item.Name) {
+      alert('Заполните обязательное поле: Имя');
+      return;
+    }
+    if (!isChartOfCalculationTypes && !item.Code) {
       alert('Заполните обязательные поля: Имя и Код');
       return;
     }
     onSave(item);
+  };
+
+  const selfCalcRef =
+    isChartOfCalculationTypes && chartOfCalculationTypesData?.currentPlanName && item.Name
+      ? `ChartOfCalculationTypes.${chartOfCalculationTypesData.currentPlanName}.${item.Name}`
+      : undefined;
+
+  const calcTabLabels: Record<CalcPredefinedEditorTab, string> = {
+    main: 'Основное',
+    displaced: 'Вытесняющие',
+    leading: 'Ведущие',
+    base: 'Базовые'
   };
 
   return (
@@ -1026,7 +1217,7 @@ const EditItemCard: React.FC<EditItemCardProps> = ({
           />
         </div>
         <div className="property-row">
-          <span className="property-name">Код: *</span>
+          <span className="property-name">Код:{!isChartOfCalculationTypes ? ' *' : ''}</span>
           <input 
             type="text" 
             value={item.Code || ''} 
@@ -1061,6 +1252,78 @@ const EditItemCard: React.FC<EditItemCardProps> = ({
             }}
           />
         </div>
+        {isChartOfCalculationTypes && (
+          <>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '6px',
+                marginTop: '8px',
+                marginBottom: '8px'
+              }}
+            >
+              {(Object.keys(calcTabLabels) as CalcPredefinedEditorTab[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setCalcTab(t)}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '12px',
+                    borderRadius: '3px',
+                    border:
+                      calcTab === t
+                        ? '1px solid var(--vscode-focusBorder)'
+                        : '1px solid var(--vscode-button-border)',
+                    background: calcTab === t ? 'var(--vscode-button-background)' : 'var(--vscode-button-secondaryBackground)',
+                    color: calcTab === t ? 'var(--vscode-button-foreground)' : 'var(--vscode-button-secondaryForeground)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {calcTabLabels[t]}
+                </button>
+              ))}
+            </div>
+            {calcTab === 'main' && (
+              <div className="property-row">
+                <span className="property-name">Базовый период:</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={item.ActionPeriodIsBase === true}
+                    onChange={(e) => onChange({ ...item, ActionPeriodIsBase: e.target.checked })}
+                  />
+                  <span>{item.ActionPeriodIsBase ? 'Да' : 'Нет'}</span>
+                </label>
+              </div>
+            )}
+            {calcTab === 'displaced' && (
+              <CalculationTypeRefsPane
+                groups={chartOfCalculationTypesData?.groups ?? []}
+                value={item.Displaced || []}
+                excludeRef={selfCalcRef}
+                onChange={(refs) => onChange({ ...item, Displaced: refs })}
+              />
+            )}
+            {calcTab === 'leading' && (
+              <CalculationTypeRefsPane
+                groups={chartOfCalculationTypesData?.groups ?? []}
+                value={item.Leading || []}
+                excludeRef={selfCalcRef}
+                onChange={(refs) => onChange({ ...item, Leading: refs })}
+              />
+            )}
+            {calcTab === 'base' && (
+              <CalculationTypeRefsPane
+                groups={chartOfCalculationTypesData?.groups ?? []}
+                value={item.Base || []}
+                excludeRef={selfCalcRef}
+                onChange={(refs) => onChange({ ...item, Base: refs })}
+              />
+            )}
+          </>
+        )}
         {isChartOfCharacteristicTypes && (
           <div className="property-row">
             <span className="property-name">Тип:</span>
@@ -1130,15 +1393,7 @@ const EditItemCard: React.FC<EditItemCardProps> = ({
               <select
                 value={item.AccountType || ''}
                 onChange={(e) => onChange({...item, AccountType: e.target.value as 'Active' | 'Passive' | 'ActivePassive' | undefined})}
-                style={{
-                  padding: '4px 8px',
-                  border: '1px solid var(--vscode-input-border)',
-                  background: 'var(--vscode-input-background)',
-                  color: 'var(--vscode-input-foreground)',
-                  borderRadius: '3px',
-                  fontSize: '12px',
-                  flex: 1
-                }}
+                className="predefined-select-inline"
               >
                 <option value="">Не указан</option>
                 <option value="Active">Активный</option>
@@ -1205,54 +1460,6 @@ const EditItemCard: React.FC<EditItemCardProps> = ({
             <span>{item.IsFolder ? 'Да' : 'Нет'}</span>
           </label>
         </div>
-        {/* Список вложенных элементов при редактировании группы */}
-        {item.ChildItems && item.ChildItems.Item && item.ChildItems.Item.length > 0 && onEditChild && onDeleteChild && editingItem && onSave && onCancel && onChange && onOpenTypeModal && (
-          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--vscode-panel-border)' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '8px' }}>
-              Вложенные элементы ({item.ChildItems.Item.length}):
-            </div>
-            <div 
-              className="child-items-container"
-              style={{ 
-                marginLeft: '16px', 
-                maxHeight: '400px', 
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                paddingRight: '8px'
-              }}
-            >
-              {item.ChildItems.Item.map((childItem, childIndex) => {
-                const itemPath: number[] = parentPath ?? [index];
-                const childPath: number[] = [...itemPath, childIndex];
-                const isEditing: boolean = !!(editingChild && editingChild.path.length === childPath.length &&
-                  editingChild.path.every((p, i) => p === childPath[i]));
-                const childKey = childItem.id || `${childItem.Code}-${childItem.Name}-${childIndex}`;
-                return (
-                  <PredefinedItemCard
-                    key={childKey}
-                    item={childItem}
-                    index={childIndex}
-                    parentPath={itemPath}
-                    isChartOfAccounts={isChartOfAccounts}
-                    isChartOfCharacteristicTypes={isChartOfCharacteristicTypes}
-                    chartOfAccountsData={chartOfAccountsData}
-                    onEdit={() => {}}
-                    onDelete={() => {}}
-                    onEditChild={onEditChild}
-                    onDeleteChild={onDeleteChild}
-                    editingChild={editingChild}
-                    editingItem={editingItem}
-                    onSave={onSave}
-                    onCancel={onCancel}
-                    onChange={onChange}
-                    onOpenTypeModal={onOpenTypeModal}
-                    isBeingEdited={isEditing}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

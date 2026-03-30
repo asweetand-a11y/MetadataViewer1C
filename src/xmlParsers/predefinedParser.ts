@@ -161,6 +161,27 @@ function stripNamespacePrefix(typeText: string): string {
 }
 
 /**
+ * Список ссылок из контейнера вида <Displaced|Leading|Base><CalculationType>...</CalculationType>
+ */
+function parseCalculationTypeRefList(container: Element): string[] {
+    const out: string[] = [];
+    const childNodes = container.childNodes;
+    for (let i = 0; i < childNodes.length; i++) {
+        const node = childNodes[i];
+        if (node.nodeType !== 1) continue;
+        const el = node as Element;
+        const localName = (el as any).localName || el.nodeName.split(':').pop() || el.nodeName;
+        if (localName === 'CalculationType') {
+            const t = (el.textContent || '').trim();
+            if (t) {
+                out.push(t);
+            }
+        }
+    }
+    return out;
+}
+
+/**
  * Рекурсивный парсинг элемента Item
  * @param itemElement - элемент Item для парсинга
  * @param parentName - имя родительского элемента (для вычисления Parent)
@@ -291,6 +312,18 @@ function parseItemElement(itemElement: Element, parentName?: string): Predefined
                 break;
             case 'IsFolder':
                 item.IsFolder = textContent.toLowerCase() === 'true' || textContent === '1';
+                break;
+            case 'ActionPeriodIsBase':
+                item.ActionPeriodIsBase = textContent.toLowerCase() === 'true' || textContent === '1';
+                break;
+            case 'Displaced':
+                item.Displaced = parseCalculationTypeRefList(child);
+                break;
+            case 'Leading':
+                item.Leading = parseCalculationTypeRefList(child);
+                break;
+            case 'Base':
+                item.Base = parseCalculationTypeRefList(child);
                 break;
             case 'ChildItems':
                 // Рекурсивно парсим вложенные элементы, передавая имя текущего элемента как родителя

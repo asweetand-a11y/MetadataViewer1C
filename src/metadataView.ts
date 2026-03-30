@@ -2625,7 +2625,11 @@ function CreateTreeElements(rootPath: vscode.Uri, element: TreeItem, metadataFil
         previous.sessionParameter.push(GetTreeItem(treeItemId, current.$_name, { icon: 'sessionParameter' }));
         break;
       case current.$_name.startsWith('Role.'):
-        previous.role.push(GetTreeItem(treeItemId, current.$_name, { icon: 'role' }));
+        previous.role.push(GetTreeItem(treeItemId, current.$_name, {
+          icon: 'role',
+          context: 'role',
+          path: treeItemPath,
+        }));
         break;
       case current.$_name.startsWith('CommonAttribute.'):
         previous.commonAttribute.push(GetTreeItem(treeItemId, current.$_name, { icon: 'attribute' }));

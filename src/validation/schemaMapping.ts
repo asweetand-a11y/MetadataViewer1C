@@ -67,7 +67,8 @@ function isMetadataType(type: string): boolean {
     const metadataTypes = [
         'Document', 'Catalog', 'Report', 'DataProcessor', 'Enum', 'Constant',
         'InformationRegister', 'AccumulationRegister', 'AccountingRegister', 'CalculationRegister',
-        'CommonModule', 'Subsystem', 'Role', 'SessionParameter', 'CommonForm', 'CommonTemplate'
+        'CommonModule', 'Subsystem', 'Role', 'SessionParameter', 'CommonForm', 'CommonTemplate',
+        'ChartOfCalculationTypes', 'ChartOfCharacteristicTypes', 'ChartOfAccounts'
     ];
     return metadataTypes.includes(type);
 }

@@ -8,6 +8,7 @@ import { FormEditor } from './FormEditor';
 import { XmlEditor } from './XmlEditor';
 import { ParsedMetadataObject } from '../../xmlParsers/metadataParser';
 import { createXMLBuilder } from '../../utils/xmlUtils';
+import type { InformationRegisterScheduleEntry } from '../../metadata/types';
 
 interface MetadataEditorProps {
   vscode: any;
@@ -17,21 +18,27 @@ interface InitMessage {
   type: 'init';
   payload: ParsedMetadataObject[];
   metadata?: {
-    registers: string[];
+    registers?: string[];
     referenceTypes: string[];
+    informationRegistersSchedule?: InformationRegisterScheduleEntry[];
   };
 }
 
-type TabType = 'properties' | 'attributes' | 'tabular' | 'enumValues' | 'forms' | 'commands' | 'characteristicTypes' | 'accountingFlags' | 'xml';
+type TabType = 'properties' | 'attributes' | 'tabular' | 'enumValues' | 'forms' | 'commands' | 'characteristicTypes' | 'accountingFlags' | 'subsystems' | 'xml';
 
 export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
   const [objects, setObjects] = useState<ParsedMetadataObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<ParsedMetadataObject | null>(null);
   const [formData, setFormData] = useState<any>(null);
   const [xmlContent, setXmlContent] = useState<string>('');
-  const [metadata, setMetadata] = useState<{ registers: string[]; referenceTypes: string[] }>({
+  const [metadata, setMetadata] = useState<{
+    registers: string[];
+    referenceTypes: string[];
+    informationRegistersSchedule?: InformationRegisterScheduleEntry[];
+  }>({
     registers: [],
-    referenceTypes: []
+    referenceTypes: [],
+    informationRegistersSchedule: []
   });
   const [isDirty, setIsDirty] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('properties');
@@ -46,7 +53,11 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
         const initMsg = message as InitMessage;
         setObjects(initMsg.payload || []);
         if (initMsg.metadata) {
-          setMetadata(initMsg.metadata);
+          setMetadata({
+            referenceTypes: initMsg.metadata.referenceTypes,
+            registers: initMsg.metadata.registers ?? [],
+            informationRegistersSchedule: initMsg.metadata.informationRegistersSchedule ?? []
+          });
         }
         
         // Выбираем первый объект по умолчанию
@@ -147,6 +158,21 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
     // TODO: Парсить XML и обновить форму
   }, []);
 
+  const handleSubsystemToggle = useCallback((relPath: string) => {
+    setSelectedObject(prev => {
+      if (!prev?.subsystems?.length) {
+        return prev;
+      }
+      return {
+        ...prev,
+        subsystems: prev.subsystems.map(row =>
+          row.relPath === relPath ? { ...row, included: !row.included } : row
+        ),
+      };
+    });
+    setIsDirty(true);
+  }, []);
+
   // Сохранение изменений
   const handleSave = useCallback(() => {
     if (!selectedObject) return;
@@ -226,6 +252,15 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
     if (isChartOfAccounts) {
       result.push({ id: 'accountingFlags', label: 'Признаки учета', count: accountingFlagsCount });
     }
+
+    if (selectedObject.subsystems !== undefined) {
+      const n = selectedObject.subsystems.filter(s => s.included).length;
+      result.push({
+        id: 'subsystems',
+        label: 'Подсистемы',
+        count: selectedObject.subsystems.length > 0 ? n : undefined,
+      });
+    }
     
     result.push({ id: 'xml', label: 'XML' });
     return result;
@@ -290,6 +325,31 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
               onChange={handleXmlChange}
               language="xml"
             />
+          </div>
+        ) : activeTab === 'subsystems' && selectedObject.subsystems !== undefined ? (
+          <div className="editor-pane editor-form subsystem-membership-pane">
+            <div className="section-header">
+              <h3>Подсистемы, в которых участвует объект</h3>
+            </div>
+            {selectedObject.subsystems.length === 0 ? (
+              <p className="subsystem-membership-empty">В каталоге Subsystems нет XML-файлов подсистем.</p>
+            ) : (
+              <ul className="subsystem-membership-list">
+                {selectedObject.subsystems.map(row => (
+                  <li key={row.relPath} className="subsystem-membership-item">
+                    <label className="subsystem-membership-label">
+                      <input
+                        type="checkbox"
+                        checked={row.included}
+                        onChange={() => handleSubsystemToggle(row.relPath)}
+                      />
+                      <span className="subsystem-membership-title">{row.label}</span>
+                      <span className="subsystem-membership-path">{row.relPath.replace(/^Subsystems\//, '')}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         ) : (
           <>

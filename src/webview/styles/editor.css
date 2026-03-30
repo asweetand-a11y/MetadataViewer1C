@@ -148,6 +148,59 @@
   background-color: var(--vscode-editor-background);
 }
 
+.subsystem-membership-pane {
+  max-width: 720px;
+}
+
+.subsystem-membership-empty {
+  margin: 0;
+  opacity: 0.8;
+  font-size: 13px;
+}
+
+.subsystem-membership-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  background-color: var(--vscode-editor-background);
+}
+
+.subsystem-membership-item {
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.subsystem-membership-item:last-child {
+  border-bottom: none;
+}
+
+.subsystem-membership-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.subsystem-membership-label:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.subsystem-membership-title {
+  font-weight: 500;
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+
+.subsystem-membership-path {
+  font-size: 11px;
+  opacity: 0.65;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
 .editor-xml {
   padding: 0;
   min-width: 400px;

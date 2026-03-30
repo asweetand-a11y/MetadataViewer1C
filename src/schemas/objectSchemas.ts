@@ -362,7 +362,15 @@ export const informationRegisterSchema: JSONSchema7 = {
     InformationRegisterPeriodicity: {
       type: 'string',
       title: 'InformationRegisterPeriodicity',
-      enum: ["Nonperiodical","Month","Second","Day","Year","Quarter","RecorderPosition"]
+      enum: [
+        'Nonperiodical',
+        'Second',
+        'Day',
+        'Month',
+        'Quarter',
+        'Year',
+        'RecorderPosition'
+      ]
     },
     WriteMode: {
       type: 'string',

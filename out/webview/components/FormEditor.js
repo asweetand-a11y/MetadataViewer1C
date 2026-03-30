@@ -53,6 +53,225 @@ const widgets = {
     TypeWidget: TypeWidget_1.TypeWidget,
     MultilingualWidget: MultilingualWidget_1.MultilingualWidget
 };
+/**
+ * Свойства вкладки «Данные» плана счетов в конфигураторе 1С (порядок отображения).
+ */
+const CHART_OF_ACCOUNTS_DATA_PROPERTY_KEYS = [
+    'CodeLength',
+    'DescriptionLength',
+    'CodeMask',
+    'AutoOrderByCode',
+    'OrderLength',
+    'DefaultPresentation',
+];
+/** Свойства вкладки «Расчёт» конфигуратора для плана видов расчёта */
+const CHART_OF_CALCULATION_TYPES_DATA_PROPERTY_KEYS = [
+    'DependenceOnCalculationTypes',
+    'BaseCalculationTypes',
+    'ActionPeriodUse',
+    'ScheduleValue',
+];
+/** Свойства регистра сведений (порядок как в конфигураторе, «Основные») */
+const INFORMATION_REGISTER_PROPERTY_KEYS = [
+    'InformationRegisterPeriodicity',
+    'WriteMode',
+    'MainFilterOnPeriod',
+    'EnableTotalsSliceFirst',
+    'EnableTotalsSliceLast',
+    'RecordPresentation',
+    'ExtendedRecordPresentation',
+    'DefaultRecordForm',
+    'AuxiliaryRecordForm',
+    'UseStandardCommands',
+    'IncludeHelpInContents',
+    'DataLockControlMode',
+    'FullTextSearch',
+    'DataHistory',
+    'UpdateDataHistoryImmediatelyAfterWrite',
+    'ExecuteAfterWriteDataHistoryVersionProcessing',
+    'ListPresentation',
+    'ExtendedListPresentation',
+    'Explanation',
+    'EditType',
+];
+/** Свойства регистра накопления */
+const ACCUMULATION_REGISTER_PROPERTY_KEYS = [
+    'RegisterType',
+    'EnableTotalsSplitting',
+    'UseStandardCommands',
+    'IncludeHelpInContents',
+    'DataLockControlMode',
+    'FullTextSearch',
+    'ListPresentation',
+    'ExtendedListPresentation',
+    'Explanation',
+    'DefaultListForm',
+    'AuxiliaryListForm',
+];
+/** Свойства регистра бухгалтерии */
+const ACCOUNTING_REGISTER_PROPERTY_KEYS = [
+    'ChartOfAccounts',
+    'Correspondence',
+    'PeriodAdjustmentLength',
+    'UseStandardCommands',
+    'IncludeHelpInContents',
+    'DataLockControlMode',
+    'FullTextSearch',
+    'RecordPresentation',
+    'ExtendedRecordPresentation',
+    'ListPresentation',
+    'ExtendedListPresentation',
+    'Explanation',
+    'DefaultRecordForm',
+    'AuxiliaryRecordForm',
+    'DefaultListForm',
+    'AuxiliaryListForm',
+];
+/** Свойства регистра расчёта */
+const CALCULATION_REGISTER_PROPERTY_KEYS = [
+    'Periodicity',
+    'ActionPeriod',
+    'BasePeriod',
+    'Schedule',
+    'ScheduleValue',
+    'ScheduleDate',
+    'ChartOfCalculationTypes',
+    'UseStandardCommands',
+    'IncludeHelpInContents',
+    'DataLockControlMode',
+    'FullTextSearch',
+    'ListPresentation',
+    'ExtendedListPresentation',
+    'Explanation',
+    'DefaultListForm',
+    'AuxiliaryListForm',
+];
+/** Извлекает ссылки ChartOfCalculationTypes.<Имя> из свойства BaseCalculationTypes (formData). */
+function extractBaseCalculationTypeRefs(raw) {
+    if (!raw || typeof raw !== 'object') {
+        return [];
+    }
+    const obj = raw;
+    const items = obj['xr:Item'] ?? obj['Item'];
+    if (items === undefined || items === null) {
+        return [];
+    }
+    const list = Array.isArray(items) ? items : [items];
+    const refs = [];
+    for (const it of list) {
+        if (typeof it === 'string') {
+            const s = it.trim();
+            if (s) {
+                refs.push(s);
+            }
+        }
+        else if (it && typeof it === 'object') {
+            const t = it['#text'] ?? it.text;
+            const s = String(t ?? '').trim();
+            if (s) {
+                refs.push(s);
+            }
+        }
+    }
+    return refs;
+}
+/** Значение BaseCalculationTypes для formData (сохранение через xmlDomUtils). */
+function buildBaseCalculationTypesFormValue(refs) {
+    if (refs.length === 0) {
+        return { 'xr:Item': [] };
+    }
+    return {
+        'xr:Item': refs.map((text) => ({
+            type: 'xr:MDObjectRef',
+            '#text': text
+        }))
+    };
+}
+/** Пары [ChartOfCalculationTypes.Имя, отображаемое имя] из метаданных webview. */
+function collectChartOfCalculationPlanOptions(referenceTypes) {
+    const map = new Map();
+    for (const rt of referenceTypes || []) {
+        if (typeof rt !== 'string') {
+            continue;
+        }
+        const trimmed = rt.trim();
+        const p = trimmed.startsWith('cfg:') ? trimmed.slice(4).trim() : trimmed;
+        if (p.startsWith('ChartOfCalculationTypesRef.')) {
+            const name = p.slice('ChartOfCalculationTypesRef.'.length);
+            if (name) {
+                map.set(`ChartOfCalculationTypes.${name}`, name);
+            }
+            continue;
+        }
+        if (p.startsWith('ChartOfCalculationTypes.') && !p.startsWith('ChartOfCalculationTypesRef.')) {
+            const rest = p.slice('ChartOfCalculationTypes.'.length);
+            if (rest && !rest.includes('.')) {
+                map.set(`ChartOfCalculationTypes.${rest}`, rest);
+            }
+        }
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+}
+function collectChartOfCalculationPlanOptionsFromRegisters(registers) {
+    const map = new Map();
+    for (const r of registers || []) {
+        if (typeof r !== 'string')
+            continue;
+        const p = r.startsWith('cfg:') ? r.slice(4) : r.trim();
+        if (!p.startsWith('ChartOfCalculationTypes.'))
+            continue;
+        const rest = p.slice('ChartOfCalculationTypes.'.length);
+        if (rest && !rest.includes('.'))
+            map.set(`ChartOfCalculationTypes.${rest}`, rest);
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+}
+function mergeChartOfCalculationPlanOptionLists(a, b) {
+    const map = new Map();
+    for (const [ref, label] of [...a, ...b])
+        map.set(ref, label);
+    return [...map.entries()].sort((x, y) => x[1].localeCompare(y[1], 'ru'));
+}
+function calculationScheduleResourceRef(irRef, resourceName) {
+    return `${irRef}.Resource.${resourceName}`;
+}
+function calculationScheduleDimensionRef(irRef, dimensionName) {
+    return `${irRef}.Dimension.${dimensionName}`;
+}
+/** Пары [ChartOfAccounts.Имя, отображаемое имя] из метаданных webview. */
+function collectChartOfAccountsPlanOptions(referenceTypes) {
+    const map = new Map();
+    for (const rt of referenceTypes || []) {
+        if (typeof rt !== 'string') {
+            continue;
+        }
+        const p = rt.startsWith('cfg:') ? rt.slice(4) : rt;
+        if (!p.startsWith('ChartOfAccountsRef.')) {
+            continue;
+        }
+        const name = p.slice('ChartOfAccountsRef.'.length);
+        map.set(`ChartOfAccounts.${name}`, name);
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+}
+/** Пары [имя документа, подпись] из DocumentRef в метаданных webview. */
+function collectDocumentSelectOptions(referenceTypes) {
+    const map = new Map();
+    for (const rt of referenceTypes || []) {
+        if (typeof rt !== 'string') {
+            continue;
+        }
+        const p = rt.startsWith('cfg:') ? rt.slice(4) : rt;
+        if (!p.startsWith('DocumentRef.')) {
+            continue;
+        }
+        const name = p.slice('DocumentRef.'.length);
+        if (name) {
+            map.set(name, name);
+        }
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+}
 /** Генерирует UUID через Web Crypto API или простой fallback (webview/браузер). */
 function getRandomUUID() {
     const c = globalThis?.crypto;
@@ -91,6 +310,14 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
     const [newEnumValueComment, setNewEnumValueComment] = (0, react_1.useState)(null);
     // Подтверждение опасных действий (удаление) — делаем модалкой, т.к. window.confirm в webview часто неудобен/неочевиден
     const [confirmModal, setConfirmModal] = (0, react_1.useState)(null);
+    const calculationTypePlanOptions = (0, react_1.useMemo)(() => mergeChartOfCalculationPlanOptionLists(collectChartOfCalculationPlanOptions(metadata.referenceTypes), collectChartOfCalculationPlanOptionsFromRegisters(metadata.registers)), [metadata.referenceTypes, metadata.registers]);
+    const chartOfAccountsPlanOptions = (0, react_1.useMemo)(() => collectChartOfAccountsPlanOptions(metadata.referenceTypes), [metadata.referenceTypes]);
+    const documentSelectOptions = (0, react_1.useMemo)(() => collectDocumentSelectOptions(metadata.referenceTypes), [metadata.referenceTypes]);
+    /** Модалки ожидают обязательный `registers`; init может прислать только referenceTypes. */
+    const metadataWithRegisters = (0, react_1.useMemo)(() => ({
+        ...metadata,
+        registers: metadata.registers ?? [],
+    }), [metadata]);
     // Состояния для формы добавления табличной части
     const [newTabularName, setNewTabularName] = (0, react_1.useState)('');
     const [newTabularSynonym, setNewTabularSynonym] = (0, react_1.useState)(null);
@@ -1342,6 +1569,29 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
         const registerRecords = formData.RegisterRecords;
         const isDocument = String(objectType || '').toLowerCase() === 'документ' ||
             String(objectType || '').toLowerCase() === 'document';
+        const isChartOfAccountsProps = objectType === 'ChartOfAccounts' ||
+            objectType === 'План счетов' ||
+            (selectedObject?.sourcePath &&
+                String(selectedObject.sourcePath).replace(/\\/g, '/').includes('ChartsOfAccounts'));
+        const isChartOfCalculationTypesProps = objectType === 'ChartOfCalculationTypes' ||
+            objectType === 'План видов расчета' ||
+            (selectedObject?.sourcePath &&
+                String(selectedObject.sourcePath).replace(/\\/g, '/').includes('ChartsOfCalculationTypes'));
+        const pathNorm = selectedObject?.sourcePath
+            ? String(selectedObject.sourcePath).replace(/\\/g, '/')
+            : '';
+        const isInformationRegister = objectType === 'InformationRegister' ||
+            objectType === 'Регистр сведений' ||
+            pathNorm.includes('InformationRegisters');
+        const isAccumulationRegister = objectType === 'AccumulationRegister' ||
+            objectType === 'Регистр накопления' ||
+            pathNorm.includes('AccumulationRegisters');
+        const isAccountingRegister = objectType === 'AccountingRegister' ||
+            objectType === 'Регистр бухгалтерии' ||
+            pathNorm.includes('AccountingRegisters');
+        const isCalculationRegister = objectType === 'CalculationRegister' ||
+            objectType === 'Регистр расчета' ||
+            pathNorm.includes('CalculationRegisters');
         // Все остальные поля
         const additionalFields = Object.keys(formData).filter(key => !basicFields.includes(key) &&
             key !== 'StandardAttributes' &&
@@ -1349,7 +1599,38 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
             key !== 'attributes' &&
             key !== 'tabularSections' &&
             key !== 'forms' &&
-            key !== 'commands');
+            key !== 'commands' &&
+            !(isChartOfAccountsProps && CHART_OF_ACCOUNTS_DATA_PROPERTY_KEYS.includes(key)) &&
+            !(isChartOfCalculationTypesProps && CHART_OF_CALCULATION_TYPES_DATA_PROPERTY_KEYS.includes(key)) &&
+            !(isInformationRegister && INFORMATION_REGISTER_PROPERTY_KEYS.includes(key)) &&
+            !(isAccumulationRegister && ACCUMULATION_REGISTER_PROPERTY_KEYS.includes(key)) &&
+            !(isAccountingRegister && ACCOUNTING_REGISTER_PROPERTY_KEYS.includes(key)) &&
+            !(isCalculationRegister && CALCULATION_REGISTER_PROPERTY_KEYS.includes(key)));
+        /** Карточка свойства регистра (скаляр или JSON-объект из XML). */
+        const renderRegisterScalarField = (field, scheduleHint) => {
+            const raw = formData[field];
+            const value = raw === undefined || raw === null ? '' : typeof raw === 'object' ? raw : raw;
+            return (react_1.default.createElement("div", { key: field, className: "property-card" },
+                react_1.default.createElement("div", { className: "property-header" },
+                    react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                react_1.default.createElement("div", { className: "property-value" },
+                    scheduleHint ? (react_1.default.createElement("div", { style: {
+                            fontSize: '12px',
+                            color: 'var(--vscode-descriptionForeground)',
+                            marginBottom: '6px'
+                        } }, scheduleHint)) : null,
+                    typeof value === 'object' && value !== null ? (react_1.default.createElement("textarea", { value: JSON.stringify(value, null, 2), onChange: (e) => {
+                            try {
+                                const parsed = JSON.parse(e.target.value);
+                                handleChange({ formData: { ...formData, [field]: parsed } });
+                            }
+                            catch {
+                                /* не JSON */
+                            }
+                        }, className: "property-textarea", rows: 4 })) : (react_1.default.createElement(FieldInput, { field: field, value: value, onChange: (newValue) => {
+                            handleChange({ formData: { ...formData, [field]: newValue } });
+                        }, objectType: objectType, label: (0, field_values_1.getFieldLabel)(field) })))));
+        };
         content = (react_1.default.createElement("div", { className: "form-editor" },
             react_1.default.createElement("div", { className: "properties-group" },
                 react_1.default.createElement("div", { className: "section-header" },
@@ -1366,6 +1647,384 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                                 handleChange({ formData: { ...formData, [field]: newValue } });
                             }, objectType: objectType, label: (0, field_values_1.getFieldLabel)(field) })))));
                 }))),
+            isChartOfCalculationTypesProps && (react_1.default.createElement("div", { className: "properties-group chart-of-calculation-types-calc" },
+                react_1.default.createElement("div", { className: "section-header" },
+                    react_1.default.createElement("h3", null, "\u0420\u0430\u0441\u0447\u0451\u0442")),
+                react_1.default.createElement("div", { className: "properties-cards" }, CHART_OF_CALCULATION_TYPES_DATA_PROPERTY_KEYS.map(field => {
+                    if (field === 'BaseCalculationTypes') {
+                        const selectedRefs = extractBaseCalculationTypeRefs(formData.BaseCalculationTypes);
+                        const knownRefSet = new Set(calculationTypePlanOptions.map(([r]) => r));
+                        const orphanRefs = selectedRefs.filter((r) => !knownRefSet.has(r));
+                        return (react_1.default.createElement("div", { key: field, className: "property-card" },
+                            react_1.default.createElement("div", { className: "property-header" },
+                                react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                            react_1.default.createElement("div", { className: "property-value chart-calc-base-plans" },
+                                react_1.default.createElement("div", { style: {
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '8px',
+                                        maxHeight: '280px',
+                                        overflowY: 'auto'
+                                    } },
+                                    calculationTypePlanOptions.map(([ref, label]) => (react_1.default.createElement("label", { key: ref, style: {
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            cursor: 'pointer',
+                                            fontSize: '13px'
+                                        } },
+                                        react_1.default.createElement("input", { type: "checkbox", checked: selectedRefs.includes(ref), onChange: () => {
+                                                const next = selectedRefs.includes(ref)
+                                                    ? selectedRefs.filter((x) => x !== ref)
+                                                    : [...selectedRefs, ref];
+                                                handleChange({
+                                                    formData: {
+                                                        ...formData,
+                                                        BaseCalculationTypes: buildBaseCalculationTypesFormValue(next)
+                                                    }
+                                                });
+                                            } }),
+                                        react_1.default.createElement("span", { title: ref }, label)))),
+                                    orphanRefs.map((ref) => {
+                                        const short = ref.includes('.') ? ref.split('.').pop() || ref : ref;
+                                        return (react_1.default.createElement("label", { key: `orphan-${ref}`, style: {
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                cursor: 'pointer',
+                                                fontSize: '13px',
+                                                opacity: 0.9
+                                            } },
+                                            react_1.default.createElement("input", { type: "checkbox", checked: true, onChange: () => {
+                                                    const next = selectedRefs.filter((x) => x !== ref);
+                                                    handleChange({
+                                                        formData: {
+                                                            ...formData,
+                                                            BaseCalculationTypes: buildBaseCalculationTypesFormValue(next)
+                                                        }
+                                                    });
+                                                } }),
+                                            react_1.default.createElement("span", { title: ref },
+                                                short,
+                                                ' ',
+                                                react_1.default.createElement("span", { style: { color: 'var(--vscode-descriptionForeground)', fontSize: '11px' } }, "(\u043D\u0435\u0442 \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 \u043A\u043E\u043D\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u0438)"))));
+                                    }),
+                                    calculationTypePlanOptions.length === 0 && orphanRefs.length === 0 && (react_1.default.createElement("span", { style: {
+                                            fontSize: '12px',
+                                            color: 'var(--vscode-descriptionForeground)'
+                                        } }, "\u041F\u043B\u0430\u043D\u044B \u0432\u0438\u0434\u043E\u0432 \u0440\u0430\u0441\u0447\u0451\u0442\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u0432 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043A\u043E\u0440\u0435\u043D\u044C \u043A\u043E\u043D\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u0438 \u0438\u043B\u0438 \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043E\u0431\u044A\u0435\u043A\u0442 \u0438\u0437 \u0432\u044B\u0433\u0440\u0443\u0437\u043A\u0438 CF."))))));
+                    }
+                    const raw = formData[field];
+                    const value = raw === undefined || raw === null
+                        ? ''
+                        : typeof raw === 'object'
+                            ? raw
+                            : raw;
+                    return (react_1.default.createElement("div", { key: field, className: "property-card" },
+                        react_1.default.createElement("div", { className: "property-header" },
+                            react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                        react_1.default.createElement("div", { className: "property-value" }, typeof value === 'object' && value !== null ? (react_1.default.createElement("textarea", { value: JSON.stringify(value, null, 2), onChange: e => {
+                                try {
+                                    const parsed = JSON.parse(e.target.value);
+                                    handleChange({ formData: { ...formData, [field]: parsed } });
+                                }
+                                catch {
+                                    /* не JSON */
+                                }
+                            }, className: "property-textarea", rows: 4 })) : (react_1.default.createElement(FieldInput, { field: field, value: value, onChange: newValue => {
+                                handleChange({ formData: { ...formData, [field]: newValue } });
+                            }, objectType: objectType, label: (0, field_values_1.getFieldLabel)(field) })))));
+                })))),
+            isChartOfAccountsProps && (react_1.default.createElement("div", { className: "properties-group chart-of-accounts-data" },
+                react_1.default.createElement("div", { className: "section-header" },
+                    react_1.default.createElement("h3", null, "\u0414\u0430\u043D\u043D\u044B\u0435")),
+                react_1.default.createElement("div", { className: "properties-cards" }, CHART_OF_ACCOUNTS_DATA_PROPERTY_KEYS.map(field => {
+                    const raw = formData[field];
+                    const value = raw === undefined || raw === null
+                        ? ''
+                        : typeof raw === 'object'
+                            ? raw
+                            : raw;
+                    return (react_1.default.createElement("div", { key: field, className: "property-card" },
+                        react_1.default.createElement("div", { className: "property-header" },
+                            react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                        react_1.default.createElement("div", { className: "property-value" }, typeof value === 'object' && value !== null ? (react_1.default.createElement("textarea", { value: JSON.stringify(value, null, 2), onChange: e => {
+                                try {
+                                    const parsed = JSON.parse(e.target.value);
+                                    handleChange({ formData: { ...formData, [field]: parsed } });
+                                }
+                                catch {
+                                    /* не JSON */
+                                }
+                            }, className: "property-textarea", rows: 4 })) : (react_1.default.createElement(FieldInput, { field: field, value: value, onChange: newValue => {
+                                handleChange({ formData: { ...formData, [field]: newValue } });
+                            }, objectType: objectType, label: (0, field_values_1.getFieldLabel)(field) })))));
+                })))),
+            isInformationRegister && (react_1.default.createElement("div", { className: "properties-group information-register-props" },
+                react_1.default.createElement("div", { className: "section-header" },
+                    react_1.default.createElement("h3", null, "\u0420\u0435\u0433\u0438\u0441\u0442\u0440 \u0441\u0432\u0435\u0434\u0435\u043D\u0438\u0439")),
+                react_1.default.createElement("div", { className: "properties-cards" }, INFORMATION_REGISTER_PROPERTY_KEYS.map((field) => renderRegisterScalarField(field))))),
+            isAccumulationRegister && (react_1.default.createElement("div", { className: "properties-group accumulation-register-props" },
+                react_1.default.createElement("div", { className: "section-header" },
+                    react_1.default.createElement("h3", null, "\u0420\u0435\u0433\u0438\u0441\u0442\u0440 \u043D\u0430\u043A\u043E\u043F\u043B\u0435\u043D\u0438\u044F")),
+                react_1.default.createElement("div", { className: "properties-cards" }, ACCUMULATION_REGISTER_PROPERTY_KEYS.map((field) => renderRegisterScalarField(field))))),
+            isAccountingRegister && (react_1.default.createElement("div", { className: "properties-group accounting-register-props" },
+                react_1.default.createElement("div", { className: "section-header" },
+                    react_1.default.createElement("h3", null, "\u0420\u0435\u0433\u0438\u0441\u0442\u0440 \u0431\u0443\u0445\u0433\u0430\u043B\u0442\u0435\u0440\u0438\u0438")),
+                react_1.default.createElement("div", { className: "properties-cards" }, ACCOUNTING_REGISTER_PROPERTY_KEYS.map((field) => {
+                    if (field === 'ChartOfAccounts') {
+                        const currentValue = typeof formData.ChartOfAccounts === 'string' ? formData.ChartOfAccounts : '';
+                        const inList = chartOfAccountsPlanOptions.some(([ref]) => ref === currentValue);
+                        const orphanRef = currentValue && !inList ? currentValue : '';
+                        const hasPlans = chartOfAccountsPlanOptions.length > 0;
+                        return (react_1.default.createElement("div", { key: field, className: "property-card" },
+                            react_1.default.createElement("div", { className: "property-header" },
+                                react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                            react_1.default.createElement("div", { className: "property-value" }, hasPlans ? (react_1.default.createElement("select", { value: currentValue, onChange: (e) => {
+                                    const v = e.target.value;
+                                    handleChange({
+                                        formData: {
+                                            ...formData,
+                                            ChartOfAccounts: v
+                                        }
+                                    });
+                                }, className: "property-select", style: { width: '100%', padding: '8px' } },
+                                react_1.default.createElement("option", { value: "" }, "-- \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043F\u043B\u0430\u043D \u0441\u0447\u0435\u0442\u043E\u0432 --"),
+                                chartOfAccountsPlanOptions.map(([ref, label]) => (react_1.default.createElement("option", { key: ref, value: ref }, label))),
+                                orphanRef ? (react_1.default.createElement("option", { value: orphanRef },
+                                    orphanRef.includes('.') ? orphanRef.split('.').pop() : orphanRef,
+                                    ' ',
+                                    "(\u043D\u0435\u0442 \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445)")) : null)) : (react_1.default.createElement(react_1.default.Fragment, null,
+                                react_1.default.createElement("input", { type: "text", value: currentValue, onChange: (e) => {
+                                        handleChange({
+                                            formData: { ...formData, ChartOfAccounts: e.target.value }
+                                        });
+                                    }, placeholder: "ChartOfAccounts.\u0418\u043C\u044F\u041F\u043B\u0430\u043D\u0430", className: "property-input", style: { width: '100%', padding: '8px' } }),
+                                react_1.default.createElement("div", { style: {
+                                        marginTop: '6px',
+                                        fontSize: '12px',
+                                        color: 'var(--vscode-descriptionForeground)'
+                                    } }, "\u041F\u043B\u0430\u043D\u044B \u0441\u0447\u0435\u0442\u043E\u0432 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u0432 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445 \u2014 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0443 \u0432\u0440\u0443\u0447\u043D\u0443\u044E."))))));
+                    }
+                    return renderRegisterScalarField(field);
+                })))),
+            isCalculationRegister && (react_1.default.createElement("div", { className: "properties-group calculation-register-props" },
+                react_1.default.createElement("div", { className: "section-header" },
+                    react_1.default.createElement("h3", null, "\u0420\u0435\u0433\u0438\u0441\u0442\u0440 \u0440\u0430\u0441\u0447\u0451\u0442\u0430")),
+                react_1.default.createElement("div", { className: "properties-cards" }, CALCULATION_REGISTER_PROPERTY_KEYS.map((field) => {
+                    if (field === 'ChartOfCalculationTypes') {
+                        const currentValue = typeof formData.ChartOfCalculationTypes === 'string'
+                            ? formData.ChartOfCalculationTypes
+                            : '';
+                        const inList = calculationTypePlanOptions.some(([ref]) => ref === currentValue);
+                        const orphanRef = currentValue && !inList ? currentValue : '';
+                        const hasPlans = calculationTypePlanOptions.length > 0;
+                        return (react_1.default.createElement("div", { key: field, className: "property-card" },
+                            react_1.default.createElement("div", { className: "property-header" },
+                                react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                            react_1.default.createElement("div", { className: "property-value" }, hasPlans ? (react_1.default.createElement("select", { value: currentValue, onChange: (e) => {
+                                    const v = e.target.value;
+                                    handleChange({
+                                        formData: {
+                                            ...formData,
+                                            ChartOfCalculationTypes: v
+                                        }
+                                    });
+                                }, className: "property-select", style: { width: '100%', padding: '8px' } },
+                                react_1.default.createElement("option", { value: "" }, "-- \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043F\u043B\u0430\u043D \u0432\u0438\u0434\u043E\u0432 \u0440\u0430\u0441\u0447\u0451\u0442\u0430 --"),
+                                calculationTypePlanOptions.map(([ref, label]) => (react_1.default.createElement("option", { key: ref, value: ref }, label))),
+                                orphanRef ? (react_1.default.createElement("option", { value: orphanRef },
+                                    orphanRef.includes('.') ? orphanRef.split('.').pop() : orphanRef,
+                                    ' ',
+                                    "(\u043D\u0435\u0442 \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445)")) : null)) : (react_1.default.createElement(react_1.default.Fragment, null,
+                                react_1.default.createElement("input", { type: "text", value: currentValue, onChange: (e) => {
+                                        handleChange({
+                                            formData: {
+                                                ...formData,
+                                                ChartOfCalculationTypes: e.target.value
+                                            }
+                                        });
+                                    }, placeholder: "ChartOfCalculationTypes.\u0418\u043C\u044F\u041F\u043B\u0430\u043D\u0430", className: "property-input", style: { width: '100%', padding: '8px' } }),
+                                react_1.default.createElement("div", { style: {
+                                        marginTop: '6px',
+                                        fontSize: '12px',
+                                        color: 'var(--vscode-descriptionForeground)'
+                                    } }, "\u041F\u043B\u0430\u043D\u044B \u0432\u0438\u0434\u043E\u0432 \u0440\u0430\u0441\u0447\u0451\u0442\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u0432 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445 \u2014 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0443 \u0432\u0440\u0443\u0447\u043D\u0443\u044E."))))));
+                    }
+                    if (field === 'Schedule') {
+                        const calcRegStubName = (typeof formData?.Name === 'string' && formData.Name.trim()) ||
+                            (selectedObject?.name ? String(selectedObject.name).trim() : '') ||
+                            '…';
+                        const entries = metadata.informationRegistersSchedule ?? [];
+                        const scheduleRef = typeof formData.Schedule === 'string' ? formData.Schedule.trim() : '';
+                        const selectedEntry = entries.find((e) => e.ref === scheduleRef);
+                        const scheduleOrphan = scheduleRef && !selectedEntry ? scheduleRef : '';
+                        const valueStr = typeof formData.ScheduleValue === 'string' ? formData.ScheduleValue.trim() : '';
+                        const dateStr = typeof formData.ScheduleDate === 'string' ? formData.ScheduleDate.trim() : '';
+                        const resourceOpts = selectedEntry && scheduleRef
+                            ? selectedEntry.resources.map((r) => ({
+                                ref: calculationScheduleResourceRef(scheduleRef, r),
+                                short: r
+                            }))
+                            : [];
+                        const dateDimNamesForPicker = selectedEntry && scheduleRef
+                            ? (selectedEntry.dateDimensions?.length ?? 0) > 0
+                                ? selectedEntry.dateDimensions
+                                : selectedEntry.dimensions
+                            : [];
+                        const dimensionOpts = selectedEntry && scheduleRef
+                            ? dateDimNamesForPicker.map((d) => ({
+                                ref: calculationScheduleDimensionRef(scheduleRef, d),
+                                short: d
+                            }))
+                            : [];
+                        const scheduleDateOnlyDateTypes = Boolean(selectedEntry?.dateDimensions && selectedEntry.dateDimensions.length > 0);
+                        const valueInList = resourceOpts.some((x) => x.ref === valueStr);
+                        const valueOrphan = valueStr && !valueInList ? valueStr : '';
+                        const dateInList = dimensionOpts.some((x) => x.ref === dateStr);
+                        const dateOrphan = dateStr && !dateInList ? dateStr : '';
+                        const hasIrCatalog = entries.length > 0;
+                        const patchSchedule = (patch) => {
+                            handleChange({ formData: { ...formData, ...patch } });
+                        };
+                        return (react_1.default.createElement(react_1.default.Fragment, { key: "calc-schedule-trio" },
+                            react_1.default.createElement("div", { className: "property-card" },
+                                react_1.default.createElement("div", { className: "property-header" },
+                                    react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)('Schedule'))),
+                                react_1.default.createElement("div", { className: "property-value" }, hasIrCatalog ? (react_1.default.createElement("select", { className: "property-select", style: { width: '100%', padding: '8px' }, value: scheduleRef, onChange: (e) => {
+                                        const v = e.target.value;
+                                        patchSchedule({ Schedule: v, ScheduleValue: '', ScheduleDate: '' });
+                                    } },
+                                    react_1.default.createElement("option", { value: "" }, "-- \u041D\u0435\u0437\u0430\u0432\u0438\u0441\u0438\u043C\u044B\u0439 \u0440\u0435\u0433\u0438\u0441\u0442\u0440 \u0441\u0432\u0435\u0434\u0435\u043D\u0438\u0439 (\u0433\u0440\u0430\u0444\u0438\u043A) --"),
+                                    entries.map((e) => (react_1.default.createElement("option", { key: e.ref, value: e.ref }, e.displayName))),
+                                    scheduleOrphan ? (react_1.default.createElement("option", { value: scheduleOrphan },
+                                        scheduleOrphan,
+                                        " (\u043D\u0435\u0442 \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445)")) : null)) : (react_1.default.createElement(react_1.default.Fragment, null,
+                                    react_1.default.createElement("input", { type: "text", className: "property-input", style: { width: '100%', padding: '8px' }, value: scheduleRef, placeholder: "InformationRegister.\u0418\u043C\u044F\u0413\u0440\u0430\u0444\u0438\u043A\u0430", onChange: (e) => patchSchedule({ Schedule: e.target.value }) }),
+                                    react_1.default.createElement("div", { style: {
+                                            marginTop: '6px',
+                                            fontSize: '12px',
+                                            color: 'var(--vscode-descriptionForeground)'
+                                        } }, "\u041D\u0435\u0437\u0430\u0432\u0438\u0441\u0438\u043C\u044B\u0435 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u044B \u0441\u0432\u0435\u0434\u0435\u043D\u0438\u0439 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u2014 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0443 \u0432\u0440\u0443\u0447\u043D\u0443\u044E."))))),
+                            react_1.default.createElement("div", { className: "property-card" },
+                                react_1.default.createElement("div", { className: "property-header" },
+                                    react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)('ScheduleValue'))),
+                                react_1.default.createElement("div", { className: "property-value" }, hasIrCatalog && selectedEntry && scheduleRef && resourceOpts.length > 0 ? (react_1.default.createElement("select", { className: "property-select", style: { width: '100%', padding: '8px' }, value: valueStr, onChange: (e) => patchSchedule({ ScheduleValue: e.target.value }) },
+                                    react_1.default.createElement("option", { value: "" }, "-- \u0420\u0435\u0441\u0443\u0440\u0441 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430 (\u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435 \u0433\u0440\u0430\u0444\u0438\u043A\u0430) --"),
+                                    resourceOpts.map((x) => (react_1.default.createElement("option", { key: x.ref, value: x.ref }, x.short))),
+                                    valueOrphan ? (react_1.default.createElement("option", { value: valueOrphan },
+                                        valueOrphan,
+                                        " (\u043D\u0435\u0442 \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445)")) : null)) : (react_1.default.createElement("input", { type: "text", className: "property-input", style: { width: '100%', padding: '8px' }, value: valueStr, disabled: Boolean(hasIrCatalog && !scheduleRef), placeholder: "InformationRegister.\u0418\u043C\u044F.Resource.\u0418\u043C\u044F\u0420\u0435\u0441\u0443\u0440\u0441\u0430", onChange: (e) => patchSchedule({ ScheduleValue: e.target.value }) })))),
+                            react_1.default.createElement("div", { className: "property-card" },
+                                react_1.default.createElement("div", { className: "property-header" },
+                                    react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)('ScheduleDate'))),
+                                react_1.default.createElement("div", { className: "property-value" }, hasIrCatalog && selectedEntry && scheduleRef && dimensionOpts.length > 0 ? (react_1.default.createElement("select", { className: "property-select", style: { width: '100%', padding: '8px' }, value: dateStr, onChange: (e) => patchSchedule({ ScheduleDate: e.target.value }) },
+                                    react_1.default.createElement("option", { value: "" }, scheduleDateOnlyDateTypes
+                                        ? '-- Измерение типа «Дата» (дата графика) --'
+                                        : '-- Измерение регистра (дата графика) --'),
+                                    dimensionOpts.map((x) => (react_1.default.createElement("option", { key: x.ref, value: x.ref }, x.short))),
+                                    dateOrphan ? (react_1.default.createElement("option", { value: dateOrphan },
+                                        dateOrphan,
+                                        " (\u043D\u0435\u0442 \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445)")) : null)) : (react_1.default.createElement("input", { type: "text", className: "property-input", style: { width: '100%', padding: '8px' }, value: dateStr, disabled: Boolean(hasIrCatalog && !scheduleRef), placeholder: "InformationRegister.\u0418\u043C\u044F.Dimension.\u0418\u043C\u044F\u0418\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u044F", onChange: (e) => patchSchedule({ ScheduleDate: e.target.value }) })))),
+                            react_1.default.createElement("div", { className: "property-card", style: { borderStyle: 'dashed' } },
+                                react_1.default.createElement("div", { className: "property-value", style: {
+                                        fontSize: '12px',
+                                        lineHeight: 1.5,
+                                        color: 'var(--vscode-descriptionForeground)'
+                                    } },
+                                    react_1.default.createElement("div", null,
+                                        "\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0420\u0430\u0441\u0447\u0435\u0442\u0430.",
+                                        calcRegStubName,
+                                        ": \u0412 \u043A\u0430\u0447\u0435\u0441\u0442\u0432\u0435 \u0433\u0440\u0430\u0444\u0438\u043A\u0430 \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043D\u0430\u0437\u043D\u0430\u0447\u0435\u043D \u043D\u0435\u043F\u0435\u0440\u0438\u043E\u0434\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u0440\u0435\u0433\u0438\u0441\u0442\u0440 \u0441\u0432\u0435\u0434\u0435\u043D\u0438\u0439."),
+                                    react_1.default.createElement("div", { style: { marginTop: '8px' } },
+                                        "\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0420\u0430\u0441\u0447\u0435\u0442\u0430.",
+                                        calcRegStubName,
+                                        ": \u0412 \u043A\u0430\u0447\u0435\u0441\u0442\u0432\u0435 \u0434\u0430\u0442\u044B \u0433\u0440\u0430\u0444\u0438\u043A\u0430 \u0434\u043E\u043B\u0436\u043D\u043E \u0431\u044B\u0442\u044C \u043D\u0430\u0437\u043D\u0430\u0447\u0435\u043D\u043E \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u0435 \u0442\u0438\u043F\u0430 \u00AB\u0414\u0430\u0442\u0430\u00BB.")))));
+                    }
+                    if (field === 'ScheduleValue' || field === 'ScheduleDate') {
+                        return null;
+                    }
+                    return renderRegisterScalarField(field);
+                })))),
+            (isInformationRegister ||
+                isAccumulationRegister ||
+                isAccountingRegister ||
+                isCalculationRegister) && (react_1.default.createElement("div", { className: "properties-group register-recorder-documents" },
+                react_1.default.createElement("div", { className: "section-header" },
+                    react_1.default.createElement("h3", null, "\u0414\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u044B (RegisterRecords)")),
+                react_1.default.createElement("div", { className: "properties-cards" },
+                    react_1.default.createElement("div", { className: "property-card" },
+                        react_1.default.createElement("div", { className: "property-header" },
+                            react_1.default.createElement("h4", null, "\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u044B")),
+                        react_1.default.createElement("div", { className: "property-value" }, isInformationRegister && formData?.WriteMode !== 'RecorderSubordinate' ? (react_1.default.createElement("div", { style: { fontSize: '13px' } }, (selectedObject?.recorderDocumentNames?.length ?? 0) === 0 ? (react_1.default.createElement("span", { style: { color: 'var(--vscode-descriptionForeground)' } }, "\u0414\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u043E\u0432 \u0441 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u044F\u043C\u0438 \u043F\u043E \u044D\u0442\u043E\u043C\u0443 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0443 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E (\u0438\u043B\u0438 \u043A\u0430\u0442\u0430\u043B\u043E\u0433 Documents \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D).")) : (react_1.default.createElement("ul", { style: { margin: 0, paddingLeft: '1.2em' } }, (selectedObject?.recorderDocumentNames || []).map((n) => (react_1.default.createElement("li", { key: n }, n))))))) : (react_1.default.createElement("div", { style: {
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                maxHeight: '280px',
+                                overflowY: 'auto'
+                            } },
+                            documentSelectOptions.map(([docName]) => {
+                                const selected = Array.isArray(selectedObject?.recorderDocumentNames)
+                                    ? selectedObject.recorderDocumentNames.includes(docName)
+                                    : false;
+                                return (react_1.default.createElement("label", { key: docName, style: {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        cursor: 'pointer',
+                                        fontSize: '13px'
+                                    } },
+                                    react_1.default.createElement("input", { type: "checkbox", checked: selected, onChange: () => {
+                                            if (!selectedObject || !onSelectedObjectChange)
+                                                return;
+                                            const cur = Array.isArray(selectedObject.recorderDocumentNames)
+                                                ? [...selectedObject.recorderDocumentNames]
+                                                : [];
+                                            const next = selected
+                                                ? cur.filter((x) => x !== docName)
+                                                : [...cur, docName];
+                                            onSelectedObjectChange({
+                                                ...selectedObject,
+                                                recorderDocumentNames: next
+                                            });
+                                            onChange(formData);
+                                        } }),
+                                    react_1.default.createElement("span", { title: `Document.${docName}` }, docName)));
+                            }),
+                            (Array.isArray(selectedObject?.recorderDocumentNames)
+                                ? selectedObject.recorderDocumentNames
+                                : [])
+                                .filter((n) => !documentSelectOptions.some(([d]) => d === n))
+                                .map((n) => (react_1.default.createElement("label", { key: `orphan-${n}`, style: {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    opacity: 0.9
+                                } },
+                                react_1.default.createElement("input", { type: "checkbox", checked: true, onChange: () => {
+                                        if (!selectedObject || !onSelectedObjectChange)
+                                            return;
+                                        const cur = [...(selectedObject.recorderDocumentNames || [])];
+                                        onSelectedObjectChange({
+                                            ...selectedObject,
+                                            recorderDocumentNames: cur.filter((x) => x !== n)
+                                        });
+                                        onChange(formData);
+                                    } }),
+                                react_1.default.createElement("span", { title: n },
+                                    n,
+                                    ' ',
+                                    react_1.default.createElement("span", { style: {
+                                            color: 'var(--vscode-descriptionForeground)',
+                                            fontSize: '11px'
+                                        } }, "(\u043D\u0435\u0442 \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445)"))))),
+                            documentSelectOptions.length === 0 &&
+                                !(selectedObject?.recorderDocumentNames?.length ?? 0) && (react_1.default.createElement("span", { style: {
+                                    fontSize: '12px',
+                                    color: 'var(--vscode-descriptionForeground)'
+                                } }, "\u0414\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u044B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u0432 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043A\u043E\u0440\u0435\u043D\u044C \u043A\u043E\u043D\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u0438."))))))))),
             standardAttributes && (react_1.default.createElement("div", { className: "properties-group" },
                 react_1.default.createElement("div", { className: "section-header" },
                     react_1.default.createElement("h3", null, "\u0421\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u044B\u0435 \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442\u044B"),
@@ -1928,10 +2587,10 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                 const baseAttrs = (formData?.attributes ?? selectedObject?.attributes);
                 const attributes = Array.isArray(baseAttrs) ? baseAttrs : [];
                 return attributes[editingAttributeType]?.type || null;
-            })(), metadata: metadata, onClose: () => setEditingAttributeType(null), onSave: handleSaveAttributeTypeForAttribute }),
-        react_1.default.createElement(AddAttributeToObjectModal_1.AddAttributeToObjectModal, { isOpen: activeTab === 'attributes' && showAddAttributeToObjectModal, kind: newObjectChildKind, name: newAttrName, synonym: newAttrSynonym, comment: newAttrComment, type: newAttrType, metadata: metadata, onClose: () => setShowAddAttributeToObjectModal(false), onSave: handleAddAttributeToObject, onNameChange: setNewAttrName, onSynonymChange: setNewAttrSynonym, onCommentChange: setNewAttrComment, onTypeChange: setNewAttrType }),
+            })(), metadata: metadataWithRegisters, onClose: () => setEditingAttributeType(null), onSave: handleSaveAttributeTypeForAttribute }),
+        react_1.default.createElement(AddAttributeToObjectModal_1.AddAttributeToObjectModal, { isOpen: activeTab === 'attributes' && showAddAttributeToObjectModal, kind: newObjectChildKind, name: newAttrName, synonym: newAttrSynonym, comment: newAttrComment, type: newAttrType, metadata: metadataWithRegisters, onClose: () => setShowAddAttributeToObjectModal(false), onSave: handleAddAttributeToObject, onNameChange: setNewAttrName, onSynonymChange: setNewAttrSynonym, onCommentChange: setNewAttrComment, onTypeChange: setNewAttrType }),
         react_1.default.createElement(AddTabularSectionModal_1.AddTabularSectionModal, { isOpen: activeTab === 'tabular' && showAddTabularModal, name: newTabularName, synonym: newTabularSynonym, comment: newTabularComment, onClose: () => setShowAddTabularModal(false), onSave: handleAddTabularSection, onNameChange: setNewTabularName, onSynonymChange: setNewTabularSynonym, onCommentChange: setNewTabularComment }),
-        react_1.default.createElement(AddTabularAttributeModal_1.AddTabularAttributeModal, { isOpen: activeTab === 'tabular' && showAddAttributeModal !== null, name: newAttrName, synonym: newAttrSynonym, comment: newAttrComment, type: newAttrType, metadata: metadata, onClose: () => setShowAddAttributeModal(null), onSave: () => showAddAttributeModal !== null && handleAddAttribute(showAddAttributeModal), onNameChange: setNewAttrName, onSynonymChange: setNewAttrSynonym, onCommentChange: setNewAttrComment, onTypeChange: setNewAttrType }),
+        react_1.default.createElement(AddTabularAttributeModal_1.AddTabularAttributeModal, { isOpen: activeTab === 'tabular' && showAddAttributeModal !== null, name: newAttrName, synonym: newAttrSynonym, comment: newAttrComment, type: newAttrType, metadata: metadataWithRegisters, onClose: () => setShowAddAttributeModal(null), onSave: () => showAddAttributeModal !== null && handleAddAttribute(showAddAttributeModal), onNameChange: setNewAttrName, onSynonymChange: setNewAttrSynonym, onCommentChange: setNewAttrComment, onTypeChange: setNewAttrType }),
         react_1.default.createElement(EditTabularAttributeTypeModal_1.EditTabularAttributeTypeModal, { isOpen: activeTab === 'tabular' && editingAttribute !== null, tsIndex: editingAttribute?.tsIndex ?? -1, attrIndex: editingAttribute?.attrIndex ?? -1, attributeType: (() => {
                 if (!editingAttribute || editingAttribute.tsIndex === undefined || editingAttribute.attrIndex === undefined)
                     return null;
@@ -1941,16 +2600,16 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                 if (!section?.attributes)
                     return null;
                 return section.attributes[editingAttribute.attrIndex]?.type || null;
-            })(), metadata: metadata, onClose: () => setEditingAttribute(null), onSave: handleSaveAttributeType }),
+            })(), metadata: metadataWithRegisters, onClose: () => setEditingAttribute(null), onSave: handleSaveAttributeType }),
         react_1.default.createElement(AttributeTypeEditorModal_1.AttributeTypeEditorModal, { isOpen: activeTab === 'properties' && editingAttributeType !== null, attributeIndex: editingAttributeType, attributeType: (() => {
                 if (editingAttributeType === null)
                     return null;
                 const baseAttrs = (formData?.attributes ?? selectedObject?.attributes);
                 const attributes = Array.isArray(baseAttrs) ? baseAttrs : [];
                 return attributes[editingAttributeType]?.type || null;
-            })(), metadata: metadata, onClose: () => setEditingAttributeType(null), onSave: handleSaveAttributeTypeForAttribute }),
+            })(), metadata: metadataWithRegisters, onClose: () => setEditingAttributeType(null), onSave: handleSaveAttributeTypeForAttribute }),
         react_1.default.createElement(RegisterRecordsEditorModal_1.RegisterRecordsEditorModal, { isOpen: activeTab === 'properties' && showRegisterRecordsEditor, registerRecord: newRegisterRecord, isEditing: editingRegisterRecordIndex !== null, registers: metadata?.registers || [], onClose: handleCloseRegisterRecordsEditor, onSave: handleSaveRegisterRecord, onRegisterChange: setNewRegisterRecord }),
-        react_1.default.createElement(CharacteristicTypeEditorModal_1.CharacteristicTypeEditorModal, { isOpen: activeTab === 'characteristicTypes' && showCharacteristicTypeModal, typeValue: editingCharacteristicTypeIndex !== null ? getCharacteristicTypes()[editingCharacteristicTypeIndex] : null, metadata: metadata, onClose: () => {
+        react_1.default.createElement(CharacteristicTypeEditorModal_1.CharacteristicTypeEditorModal, { isOpen: activeTab === 'characteristicTypes' && showCharacteristicTypeModal, typeValue: editingCharacteristicTypeIndex !== null ? getCharacteristicTypes()[editingCharacteristicTypeIndex] : null, metadata: metadataWithRegisters, onClose: () => {
                 setShowCharacteristicTypeModal(false);
                 setEditingCharacteristicTypeIndex(null);
             }, onSave: handleSaveCharacteristicType }),
@@ -1980,16 +2639,28 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
 exports.FormEditor = FormEditor;
 // Функция для определения типа поля и получения вариантов значений
 function getFieldTypeAndOptions(field, objectType) {
+    if (field === 'PeriodAdjustmentLength') {
+        return { type: 'number' };
+    }
     // Boolean поля
     const booleanFields = {
         'UseStandardCommands': true,
         'IncludeHelpInContents': true,
+        'AutoOrderByCode': true,
         'PostInPrivilegedMode': true,
         'UnpostInPrivilegedMode': true,
         'CheckUnique': true,
         'Autonumbering': true,
         'UpdateDataHistoryImmediatelyAfterWrite': true,
         'ExecuteAfterWriteDataHistoryVersionProcessing': true,
+        'ActionPeriodUse': true,
+        'MainFilterOnPeriod': true,
+        'EnableTotalsSliceFirst': true,
+        'EnableTotalsSliceLast': true,
+        'EnableTotalsSplitting': true,
+        'Correspondence': true,
+        'ActionPeriod': true,
+        'BasePeriod': true,
         // Реквизиты
         'PasswordMode': true,
         'MarkNegatives': true,
@@ -2067,7 +2738,19 @@ function getFieldTypeAndOptions(field, objectType) {
         'TaskNumberAutoPrefix': ['BusinessProcessNumber', 'DontUse'],
         'Representation': ['Picture', 'Auto', 'PictureAndText'],
         'Category': ['FormCommandBar', 'FormNavigationPanel', 'ActionsPanel', 'NavigationPanel'],
-        'TemplateType': ['BinaryData', 'SpreadsheetDocument', 'TextDocument', 'DataCompositionSchema']
+        'TemplateType': ['BinaryData', 'SpreadsheetDocument', 'TextDocument', 'DataCompositionSchema'],
+        'DependenceOnCalculationTypes': ['DontDepend', 'OnActionPeriod', 'OnRegistrationPeriod'],
+        'RegisterType': ['Turnovers', 'Balances'],
+        'InformationRegisterPeriodicity': [
+            'Nonperiodical',
+            'Second',
+            'Day',
+            'Month',
+            'Quarter',
+            'Year',
+            'RecorderPosition'
+        ],
+        'Periodicity': ['Nonperiodical', 'Second', 'Day', 'Month', 'Quarter', 'Year']
     };
     if (enumFields[field]) {
         return { type: 'enum', options: enumFields[field] };
@@ -2087,6 +2770,11 @@ function getFieldTypeAndOptions(field, objectType) {
 // Компонент для отображения поля с выбором значения
 const FieldInput = ({ field, value, onChange, objectType, label }) => {
     const fieldInfo = getFieldTypeAndOptions(field, objectType);
+    // Числовое поле
+    if (fieldInfo.type === 'number') {
+        const strVal = value === null || value === undefined ? '' : String(value);
+        return (react_1.default.createElement("input", { type: "number", min: 0, value: strVal, onChange: (e) => onChange(e.target.value), className: "property-input", placeholder: "0" }));
+    }
     // Boolean поле
     if (fieldInfo.type === 'boolean') {
         const boolValue = value === true || value === 'true' || value === 'True';
@@ -2097,9 +2785,23 @@ const FieldInput = ({ field, value, onChange, objectType, label }) => {
     // Enum поле
     if (fieldInfo.type === 'enum' && fieldInfo.options) {
         const stringValue = value !== null && value !== undefined ? String(value) : '';
-        return (react_1.default.createElement("select", { value: stringValue, onChange: (e) => onChange(e.target.value), className: "property-select" },
+        const isAccumulationRegisterRegisterType = field === 'RegisterType' &&
+            (objectType === 'AccumulationRegister' || objectType === 'Регистр накопления');
+        const opts = [...fieldInfo.options];
+        if (!isAccumulationRegisterRegisterType) {
+            if (stringValue && !opts.includes(stringValue)) {
+                opts.push(stringValue);
+            }
+        }
+        const selectValue = isAccumulationRegisterRegisterType
+            ? (() => {
+                const c = (0, field_values_1.normalizeAccumulationRegisterTypeValue)(stringValue);
+                return c === 'Turnovers' || c === 'Balances' ? c : '';
+            })()
+            : stringValue;
+        return (react_1.default.createElement("select", { value: selectValue, onChange: (e) => onChange(e.target.value), className: "property-select" },
             react_1.default.createElement("option", { value: "" }, "-- \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435 --"),
-            fieldInfo.options.map((option) => (react_1.default.createElement("option", { key: option, value: option }, (0, field_values_1.getEnumValueLabel)(option))))));
+            opts.map((option) => (react_1.default.createElement("option", { key: option, value: option }, (0, field_values_1.getEnumValueLabel)(option, field))))));
     }
     // Строковое поле (по умолчанию)
     return (react_1.default.createElement("input", { type: "text", value: typeof value === 'string' ? value : '', onChange: (e) => onChange(e.target.value), className: "property-input", placeholder: `Введите ${label.toLowerCase()}...` }));

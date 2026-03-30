@@ -1,7 +1,7 @@
 "use strict";
 /**
  * Редактор предопределенных элементов
- * Использует карточки для отображения элементов и TypeWidget для редактирования типов
+ * Отображает иерархию плоской таблицей с отступами; редактирование — в модальном окне.
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -29,16 +29,204 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PredefinedEditorApp = void 0;
 const react_1 = __importStar(require("react"));
+const predefinedTreeMutations_1 = require("../../../utils/predefinedTreeMutations");
 const PredefinedTypeEditorModal_1 = require("./PredefinedTypeEditorModal");
 const AccountingFlagsTable_1 = require("./AccountingFlagsTable");
 const ExtDimensionTypesTable_1 = require("./ExtDimensionTypesTable");
-const AccountingFlagsView_1 = require("./AccountingFlagsView");
-const ExtDimensionTypesView_1 = require("./ExtDimensionTypesView");
 require("../../styles/editor.css");
 require("./PredefinedEditorApp.css");
+/** Рекурсивно разворачивает дерево Item в плоский список с путём и глубиной */
+function pathsEqual(a, b) {
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+/** Кастомный выбор родителя: нативный select в webview на Windows даёт белый список опций. */
+function ParentPathCombobox({ value, flatRows, onChange }) {
+    const [open, setOpen] = (0, react_1.useState)(false);
+    const wrapRef = (0, react_1.useRef)(null);
+    (0, react_1.useEffect)(() => {
+        if (!open)
+            return;
+        const onDocMouseDown = (e) => {
+            if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', onDocMouseDown);
+        return () => document.removeEventListener('mousedown', onDocMouseDown);
+    }, [open]);
+    const currentLabel = value.length === 0
+        ? '(Верхний уровень)'
+        : (() => {
+            const row = flatRows.find((r) => pathsEqual(r.path, value));
+            return row ? `${row.item.Code} ${row.item.Name}` : value.join('.');
+        })();
+    return (react_1.default.createElement("div", { className: "predefined-combobox", ref: wrapRef },
+        react_1.default.createElement("button", { type: "button", className: "predefined-combobox-trigger", onClick: () => setOpen((o) => !o), "aria-expanded": open, "aria-haspopup": "listbox" },
+            react_1.default.createElement("span", { className: "predefined-combobox-value" }, currentLabel),
+            react_1.default.createElement("span", { className: "predefined-combobox-chevron", "aria-hidden": true }, "\u25BE")),
+        open && (react_1.default.createElement("ul", { className: "predefined-combobox-list", role: "listbox" },
+            react_1.default.createElement("li", { role: "option", "aria-selected": value.length === 0, className: value.length === 0 ? 'is-selected' : undefined, onClick: () => {
+                    onChange([]);
+                    setOpen(false);
+                } }, "(\u0412\u0435\u0440\u0445\u043D\u0438\u0439 \u0443\u0440\u043E\u0432\u0435\u043D\u044C)"),
+            flatRows.map(({ item: pItem, path: pPath, depth: pDepth }) => {
+                const selected = pathsEqual(pPath, value);
+                return (react_1.default.createElement("li", { key: pPath.join('-'), role: "option", "aria-selected": selected, className: selected ? 'is-selected' : undefined, style: { paddingLeft: `${10 + pDepth * 14}px` }, onClick: () => {
+                        onChange(pPath);
+                        setOpen(false);
+                    } }, `${'\u2014 '.repeat(pDepth)}${pItem.Code} ${pItem.Name}`));
+            })))));
+}
+function flattenPredefinedItems(items) {
+    const out = [];
+    function walk(list, prefixPath, depth) {
+        list.forEach((item, i) => {
+            const path = [...prefixPath, i];
+            out.push({ item, path, depth });
+            const children = item.ChildItems?.Item;
+            if (children && children.length > 0) {
+                walk(children, path, depth + 1);
+            }
+        });
+    }
+    walk(items, [], 0);
+    return out;
+}
+/** Глубокая копия элемента для редактирования (признаки учёта и виды субконто) */
+function copyPredefinedItemForEdit(source) {
+    return {
+        ...source,
+        Displaced: source.Displaced ? [...source.Displaced] : source.Displaced,
+        Leading: source.Leading ? [...source.Leading] : source.Leading,
+        Base: source.Base ? [...source.Base] : source.Base,
+        AccountingFlags: source.AccountingFlags && source.AccountingFlags.length > 0
+            ? source.AccountingFlags.map((flag) => ({
+                flagName: flag.flagName,
+                enabled: flag.enabled,
+                ref: flag.ref
+            }))
+            : source.AccountingFlags,
+        ExtDimensionTypes: source.ExtDimensionTypes && source.ExtDimensionTypes.length > 0
+            ? source.ExtDimensionTypes.map((dimType) => {
+                const copiedFlags = {};
+                if (dimType.flags) {
+                    Object.entries(dimType.flags).forEach(([key, value]) => {
+                        if (typeof value === 'boolean') {
+                            copiedFlags[key] = value;
+                        }
+                        else if (value && typeof value === 'object' && 'enabled' in value) {
+                            copiedFlags[key] = { enabled: value.enabled, ref: value.ref };
+                        }
+                    });
+                }
+                return {
+                    dimensionType: dimType.dimensionType,
+                    turnoverOnly: dimType.turnoverOnly,
+                    flags: copiedFlags,
+                    name: dimType.name
+                };
+            })
+            : source.ExtDimensionTypes
+    };
+}
+function accountTypeLabel(v) {
+    if (!v)
+        return '—';
+    if (v === 'Active')
+        return 'Активный';
+    if (v === 'Passive')
+        return 'Пассивный';
+    if (v === 'ActivePassive')
+        return 'Активно-пассивный';
+    return v;
+}
+/** Чекбоксы полных ссылок ChartOfCalculationTypes.<План>.<Имя> по группам планов. */
+function CalculationTypeRefsPane(props) {
+    const { groups, value, excludeRef, onChange } = props;
+    const selected = new Set(value);
+    const toggle = (ref) => {
+        const next = new Set(selected);
+        if (next.has(ref)) {
+            next.delete(ref);
+        }
+        else {
+            next.add(ref);
+        }
+        onChange([...next]);
+    };
+    if (!groups.length) {
+        return (react_1.default.createElement("div", { style: { padding: '8px', color: 'var(--vscode-descriptionForeground)', fontSize: '12px' } }, "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u043E \u043F\u043B\u0430\u043D\u0430\u0445 \u0432\u0438\u0434\u043E\u0432 \u0440\u0430\u0441\u0447\u0451\u0442\u0430 (\u043A\u0430\u0442\u0430\u043B\u043E\u0433 ChartsOfCalculationTypes \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0438\u043B\u0438 \u043F\u0443\u0441\u0442)."));
+    }
+    return (react_1.default.createElement("div", { style: { maxHeight: '320px', overflowY: 'auto', fontSize: '12px' } }, groups.map((g) => (react_1.default.createElement("div", { key: g.chartName, style: { marginBottom: '12px' } },
+        react_1.default.createElement("div", { style: { fontWeight: 600, marginBottom: '6px' } }, g.chartName),
+        g.refs
+            .filter((r) => !excludeRef || r !== excludeRef)
+            .map((r) => {
+            const short = r.split('.').pop() || r;
+            return (react_1.default.createElement("label", { key: r, style: { display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px', marginBottom: '4px', cursor: 'pointer' } },
+                react_1.default.createElement("input", { type: "checkbox", checked: selected.has(r), onChange: () => toggle(r) }),
+                react_1.default.createElement("span", { title: r }, short)));
+        }))))));
+}
+function rowHasChildren(item) {
+    return !!(item.ChildItems?.Item && item.ChildItems.Item.length > 0);
+}
+/** Таблица предопределённых элементов с иерархией по отступам и сворачиванием веток */
+const PredefinedTable = ({ rows, isChartOfAccounts, isChartOfCharacteristicTypes, collapsedPathKeys, onToggleBranch, onEditPath, onDeletePath }) => {
+    const visibleRows = (0, react_1.useMemo)(() => {
+        return rows.filter(({ path }) => {
+            for (let d = 0; d < path.length - 1; d++) {
+                const prefixKey = path.slice(0, d + 1).join(',');
+                if (collapsedPathKeys.has(prefixKey))
+                    return false;
+            }
+            return true;
+        });
+    }, [rows, collapsedPathKeys]);
+    return (react_1.default.createElement("div", { className: "predefined-table-wrap" },
+        react_1.default.createElement("table", { className: "predefined-flat-table" },
+            react_1.default.createElement("thead", null,
+                react_1.default.createElement("tr", null,
+                    react_1.default.createElement("th", { className: "col-code" }, "\u041A\u043E\u0434"),
+                    react_1.default.createElement("th", { className: "col-name" }, "\u041D\u0430\u0438\u043C\u0435\u043D\u043E\u0432\u0430\u043D\u0438\u0435"),
+                    isChartOfCharacteristicTypes && react_1.default.createElement("th", { className: "col-type" }, "\u0422\u0438\u043F"),
+                    isChartOfAccounts && (react_1.default.createElement(react_1.default.Fragment, null,
+                        react_1.default.createElement("th", { className: "col-account-type" }, "\u0412\u0438\u0434"),
+                        react_1.default.createElement("th", { className: "col-off" }, "\u0417\u0430\u0431\u0430\u043B\u0430\u043D\u0441\u043E\u0432\u044B\u0439"),
+                        react_1.default.createElement("th", { className: "col-order" }, "\u041F\u043E\u0440\u044F\u0434\u043E\u043A"))),
+                    react_1.default.createElement("th", { className: "col-folder" }, "\u041F\u0430\u043F\u043A\u0430"),
+                    react_1.default.createElement("th", { className: "col-actions" }, "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044F"))),
+            react_1.default.createElement("tbody", null, visibleRows.map(({ item, path, depth }) => {
+                const rowKey = item.id
+                    ? `${path.join('-')}-${item.id}`
+                    : `${path.join('-')}-${item.Code}-${item.Name}`;
+                const pathKey = path.join(',');
+                const hasKids = rowHasChildren(item);
+                const branchCollapsed = collapsedPathKeys.has(pathKey);
+                const typePreview = item.Type && item.Type.length > 48 ? `${item.Type.slice(0, 48)}…` : item.Type || '';
+                return (react_1.default.createElement("tr", { key: rowKey },
+                    react_1.default.createElement("td", { className: "col-code" }, item.Code),
+                    react_1.default.createElement("td", { className: "col-name" },
+                        react_1.default.createElement("span", { className: "predefined-name-cell", style: { paddingLeft: depth * 20 }, title: item.Description || item.Name },
+                            hasKids ? (react_1.default.createElement("button", { type: "button", className: "predefined-tree-toggle", "aria-expanded": !branchCollapsed, "aria-label": branchCollapsed ? 'Развернуть дочерние элементы' : 'Свернуть дочерние элементы', title: branchCollapsed ? 'Развернуть' : 'Свернуть', onClick: (e) => {
+                                    e.stopPropagation();
+                                    onToggleBranch(path);
+                                } }, branchCollapsed ? '▶' : '▼')) : (react_1.default.createElement("span", { className: "predefined-tree-toggle-placeholder", "aria-hidden": true })),
+                            react_1.default.createElement("span", { className: "predefined-icon", "aria-hidden": true }, item.IsFolder ? '📁' : '📄'),
+                            react_1.default.createElement("span", { className: "predefined-name-text" }, item.Name))),
+                    isChartOfCharacteristicTypes && (react_1.default.createElement("td", { className: "col-type predefined-type-cell", title: item.Type || '' }, typePreview || '—')),
+                    isChartOfAccounts && (react_1.default.createElement(react_1.default.Fragment, null,
+                        react_1.default.createElement("td", { className: "col-account-type" }, accountTypeLabel(item.AccountType)),
+                        react_1.default.createElement("td", { className: "col-off" }, item.OffBalance === undefined ? '—' : item.OffBalance ? 'Да' : 'Нет'),
+                        react_1.default.createElement("td", { className: "col-order" }, item.Order || '—'))),
+                    react_1.default.createElement("td", { className: "col-folder" }, item.IsFolder ? 'Да' : 'Нет'),
+                    react_1.default.createElement("td", { className: "col-actions" },
+                        react_1.default.createElement("button", { type: "button", className: "btn-edit-type predefined-table-action", onClick: () => onEditPath(path), title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", "aria-label": "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C" }, "\u270E"),
+                        react_1.default.createElement("button", { type: "button", className: "btn-edit-type predefined-table-action predefined-table-action-delete", onClick: () => onDeletePath(path), title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C" }, "\u00D7"))));
+            })))));
+};
 const PredefinedEditorApp = ({ vscode }) => {
     const [items, setItems] = (0, react_1.useState)([]);
-    const [editingIndex, setEditingIndex] = (0, react_1.useState)(null);
     const [editingItem, setEditingItem] = (0, react_1.useState)(null);
     const [editingChild, setEditingChild] = (0, react_1.useState)(null);
     const [showAddModal, setShowAddModal] = (0, react_1.useState)(false);
@@ -51,6 +239,7 @@ const PredefinedEditorApp = ({ vscode }) => {
         referenceTypes: []
     });
     const [chartOfAccountsData, setChartOfAccountsData] = (0, react_1.useState)(undefined);
+    const [chartOfCalculationTypesData, setChartOfCalculationTypesData] = (0, react_1.useState)(undefined);
     const [showTypeModal, setShowTypeModal] = (0, react_1.useState)(false);
     const [typeModalContext, setTypeModalContext] = (0, react_1.useState)({
         mode: 'add',
@@ -63,6 +252,33 @@ const PredefinedEditorApp = ({ vscode }) => {
         Type: '',
         IsFolder: false
     });
+    /** Путь к родителю при добавлении ([] — корень, как в XML) */
+    const [addParentPath, setAddParentPath] = (0, react_1.useState)([]);
+    /** Ключи path.join(',') свёрнутых узлов (дочерние строки скрыты) */
+    const [collapsedPathKeys, setCollapsedPathKeys] = (0, react_1.useState)(() => new Set());
+    const toggleBranchCollapsed = (0, react_1.useCallback)((path) => {
+        const k = path.join(',');
+        setCollapsedPathKeys((prev) => {
+            const next = new Set(prev);
+            if (next.has(k))
+                next.delete(k);
+            else
+                next.add(k);
+            return next;
+        });
+    }, []);
+    /** Раскрыть все предки пути (после добавления в свёрнутую ветку новый элемент виден) */
+    const expandAncestorsOfPath = (0, react_1.useCallback)((parentPath) => {
+        if (parentPath.length === 0)
+            return;
+        setCollapsedPathKeys((prev) => {
+            const next = new Set(prev);
+            for (let d = 0; d < parentPath.length; d++) {
+                next.delete(parentPath.slice(0, d + 1).join(','));
+            }
+            return next;
+        });
+    }, []);
     // Проверка, является ли объект планом видов характеристик
     const isChartOfCharacteristicTypes = (0, react_1.useMemo)(() => {
         return objectType === 'ChartOfCharacteristicTypes' ||
@@ -75,6 +291,12 @@ const PredefinedEditorApp = ({ vscode }) => {
             objectType === 'План счетов' ||
             objectType.includes('ChartOfAccounts');
     }, [objectType]);
+    const isChartOfCalculationTypes = (0, react_1.useMemo)(() => {
+        return (objectType === 'ChartOfCalculationTypes' ||
+            objectType === 'План видов расчета' ||
+            objectType.includes('ChartOfCalculationTypes'));
+    }, [objectType]);
+    const flatRows = (0, react_1.useMemo)(() => flattenPredefinedItems(items), [items]);
     // Обработка сообщений от extension
     (0, react_1.useEffect)(() => {
         const handleMessage = (event) => {
@@ -108,11 +330,17 @@ const PredefinedEditorApp = ({ vscode }) => {
                 else {
                     console.warn('[PredefinedEditorApp] Данные плана счетов не получены');
                 }
+                if (initMsg.chartOfCalculationTypesData) {
+                    setChartOfCalculationTypesData(initMsg.chartOfCalculationTypesData);
+                }
+                else {
+                    setChartOfCalculationTypesData(undefined);
+                }
             }
             else if (message.type === 'saved') {
                 if (message.payload?.success) {
-                    setEditingIndex(null);
                     setEditingItem(null);
+                    setEditingChild(null);
                     setShowAddModal(false);
                     setShowTypeModal(false);
                     setShowDeleteConfirm(false);
@@ -135,7 +363,11 @@ const PredefinedEditorApp = ({ vscode }) => {
         vscode.postMessage({ type: 'save', payload: items });
     };
     const handleAdd = () => {
-        if (!newItem.Name || !newItem.Code) {
+        if (!newItem.Name) {
+            alert('Заполните обязательное поле: Имя');
+            return;
+        }
+        if (!isChartOfCalculationTypes && !newItem.Code) {
             alert('Заполните обязательные поля: Имя и Код');
             return;
         }
@@ -143,7 +375,7 @@ const PredefinedEditorApp = ({ vscode }) => {
         // Убираем поля плана счетов если это не план счетов
         const itemToAdd = {
             Name: newItem.Name,
-            Code: newItem.Code,
+            Code: newItem.Code ?? '',
             Description: newItem.Description || '',
             Type: isChartOfCharacteristicTypes ? (newItem.Type || '') : '',
             IsFolder: newItem.IsFolder || false,
@@ -152,12 +384,30 @@ const PredefinedEditorApp = ({ vscode }) => {
             OffBalance: isChartOfAccounts ? newItem.OffBalance : undefined,
             Order: isChartOfAccounts ? newItem.Order : undefined,
             AccountingFlags: isChartOfAccounts && newItem.AccountingFlags ? newItem.AccountingFlags : undefined,
-            ExtDimensionTypes: isChartOfAccounts && newItem.ExtDimensionTypes ? newItem.ExtDimensionTypes : undefined
+            ExtDimensionTypes: isChartOfAccounts && newItem.ExtDimensionTypes ? newItem.ExtDimensionTypes : undefined,
+            ActionPeriodIsBase: isChartOfCalculationTypes ? Boolean(newItem.ActionPeriodIsBase) : undefined,
+            Displaced: isChartOfCalculationTypes && newItem.Displaced?.length
+                ? [...newItem.Displaced]
+                : isChartOfCalculationTypes
+                    ? []
+                    : undefined,
+            Leading: isChartOfCalculationTypes && newItem.Leading?.length
+                ? [...newItem.Leading]
+                : isChartOfCalculationTypes
+                    ? []
+                    : undefined,
+            Base: isChartOfCalculationTypes && newItem.Base?.length
+                ? [...newItem.Base]
+                : isChartOfCalculationTypes
+                    ? []
+                    : undefined
         };
-        const updatedItems = [...items, itemToAdd];
+        const updatedItems = (0, predefinedTreeMutations_1.insertItemUnderParent)(items, addParentPath, itemToAdd);
         setItems(updatedItems);
-        vscode.postMessage({ type: 'addItem', payload: itemToAdd });
+        expandAncestorsOfPath(addParentPath);
+        vscode.postMessage({ type: 'addItem', payload: { item: itemToAdd, parentPath: addParentPath } });
         setNewItem({ Name: '', Code: '', Description: '', Type: '', IsFolder: false });
+        setAddParentPath([]);
         setShowAddModal(false);
     };
     /** Получить элемент по пути [rootIndex, childIndex1, childIndex2, ...] */
@@ -211,54 +461,22 @@ const PredefinedEditorApp = ({ vscode }) => {
         updatedChildren[first] = updatedChild;
         return { ...item, ChildItems: { Item: updatedChildren } };
     };
-    const handleEdit = (index) => {
-        setEditingIndex(index);
-        setEditingItem({ ...items[index] });
-        setEditingChild(null);
-    };
-    const handleEditChild = (path) => {
-        if (path.length < 2)
+    /** Открыть редактирование элемента по пути (корень или вложенный) */
+    const handleEditByPath = (path) => {
+        if (path.length < 1)
             return;
-        const childItem = getItemByPath(items, path);
-        if (!childItem)
+        const target = getItemByPath(items, path);
+        if (!target)
             return;
-        const copiedItem = {
-            ...childItem,
-            AccountingFlags: childItem.AccountingFlags && childItem.AccountingFlags.length > 0
-                ? childItem.AccountingFlags.map(flag => ({
-                    flagName: flag.flagName,
-                    enabled: flag.enabled,
-                    ref: flag.ref
-                }))
-                : childItem.AccountingFlags,
-            ExtDimensionTypes: childItem.ExtDimensionTypes && childItem.ExtDimensionTypes.length > 0
-                ? childItem.ExtDimensionTypes.map(dimType => {
-                    const copiedFlags = {};
-                    if (dimType.flags) {
-                        Object.entries(dimType.flags).forEach(([key, value]) => {
-                            if (typeof value === 'boolean') {
-                                copiedFlags[key] = value;
-                            }
-                            else if (value && typeof value === 'object' && 'enabled' in value) {
-                                copiedFlags[key] = { enabled: value.enabled, ref: value.ref };
-                            }
-                        });
-                    }
-                    return {
-                        dimensionType: dimType.dimensionType,
-                        turnoverOnly: dimType.turnoverOnly,
-                        flags: copiedFlags,
-                        name: dimType.name
-                    };
-                })
-                : childItem.ExtDimensionTypes
-        };
         setEditingChild({ path });
-        setEditingItem(copiedItem);
-        setEditingIndex(null);
+        setEditingItem(copyPredefinedItemForEdit(target));
     };
     const handleUpdate = (updatedItem) => {
-        if (!updatedItem.Name || !updatedItem.Code) {
+        if (!updatedItem.Name) {
+            alert('Заполните обязательное поле: Имя');
+            return;
+        }
+        if (!isChartOfCalculationTypes && !updatedItem.Code) {
             alert('Заполните обязательные поля: Имя и Код');
             return;
         }
@@ -274,46 +492,57 @@ const PredefinedEditorApp = ({ vscode }) => {
             updatedItem.AccountingFlags = undefined;
             updatedItem.ExtDimensionTypes = undefined;
         }
-        if (editingChild && editingChild.path.length >= 2) {
-            // Обновление вложенного элемента по пути
+        if (!isChartOfCalculationTypes) {
+            updatedItem.Displaced = undefined;
+            updatedItem.Leading = undefined;
+            updatedItem.Base = undefined;
+            updatedItem.ActionPeriodIsBase = undefined;
+        }
+        if (editingChild) {
             const path = editingChild.path;
-            const rootIndex = path[0];
             const updatedChildItem = {
                 ...updatedItem,
+                Displaced: updatedItem.Displaced ? [...updatedItem.Displaced] : undefined,
+                Leading: updatedItem.Leading ? [...updatedItem.Leading] : undefined,
+                Base: updatedItem.Base ? [...updatedItem.Base] : undefined,
                 AccountingFlags: updatedItem.AccountingFlags
-                    ? updatedItem.AccountingFlags.map(flag => ({ ...flag }))
+                    ? updatedItem.AccountingFlags.map((flag) => ({ ...flag }))
                     : undefined,
                 ExtDimensionTypes: updatedItem.ExtDimensionTypes
-                    ? updatedItem.ExtDimensionTypes.map(dimType => ({
+                    ? updatedItem.ExtDimensionTypes.map((dimType) => ({
                         ...dimType,
                         flags: dimType.flags ? { ...dimType.flags } : {}
                     }))
                     : undefined
             };
-            const updatedRootItem = updateItemAtPath(items[rootIndex], path.slice(1), updatedChildItem);
-            if (updatedRootItem) {
+            if (path.length === 1) {
+                const rootIndex = path[0];
                 const updatedItems = [...items];
-                updatedItems[rootIndex] = updatedRootItem;
+                updatedItems[rootIndex] = updatedChildItem;
                 setItems(updatedItems);
                 vscode.postMessage({
                     type: 'updateItem',
-                    payload: { index: rootIndex, item: updatedRootItem }
+                    payload: { index: rootIndex, item: updatedChildItem }
                 });
             }
+            else {
+                const rootIndex = path[0];
+                const updatedRootItem = updateItemAtPath(items[rootIndex], path.slice(1), updatedChildItem);
+                if (updatedRootItem) {
+                    const updatedItems = [...items];
+                    updatedItems[rootIndex] = updatedRootItem;
+                    setItems(updatedItems);
+                    vscode.postMessage({
+                        type: 'updateItem',
+                        payload: { index: rootIndex, item: updatedRootItem }
+                    });
+                }
+            }
             setEditingChild(null);
-        }
-        else {
-            // Обновление обычного элемента
-            const updatedItems = [...items];
-            updatedItems[editingIndex] = updatedItem;
-            setItems(updatedItems);
-            vscode.postMessage({ type: 'updateItem', payload: { index: editingIndex, item: updatedItem } });
-            setEditingIndex(null);
         }
         setEditingItem(null);
     };
     const handleCancelEdit = () => {
-        setEditingIndex(null);
         setEditingItem(null);
         setEditingChild(null);
     };
@@ -328,6 +557,15 @@ const PredefinedEditorApp = ({ vscode }) => {
         setDeleteChild({ path });
         setDeleteIndex(null);
         setShowDeleteConfirm(true);
+    };
+    /** Удаление по пути: корень или вложенный элемент */
+    const handleDeleteByPath = (path) => {
+        if (path.length === 1) {
+            handleDelete(path[0]);
+        }
+        else {
+            handleDeleteChild(path);
+        }
     };
     const handleConfirmDelete = () => {
         if (deleteChild && deleteChild.path.length >= 2) {
@@ -388,6 +626,7 @@ const PredefinedEditorApp = ({ vscode }) => {
             react_1.default.createElement("div", { className: "editor-content" },
                 showAddModal && (react_1.default.createElement("div", { className: "modal-overlay", onClick: () => {
                         setShowAddModal(false);
+                        setAddParentPath([]);
                         setNewItem({
                             Name: '',
                             Code: '',
@@ -398,17 +637,25 @@ const PredefinedEditorApp = ({ vscode }) => {
                             OffBalance: undefined,
                             Order: undefined,
                             AccountingFlags: undefined,
-                            ExtDimensionTypes: undefined
+                            ExtDimensionTypes: undefined,
+                            ActionPeriodIsBase: undefined,
+                            Displaced: undefined,
+                            Leading: undefined,
+                            Base: undefined
                         });
                     } },
                     react_1.default.createElement("div", { className: "modal", onClick: (e) => e.stopPropagation() },
                         react_1.default.createElement("h3", null, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u044D\u043B\u0435\u043C\u0435\u043D\u0442"),
                         react_1.default.createElement("div", { className: "modal-content" },
+                            react_1.default.createElement("label", { className: "predefined-combobox-label" },
+                                "\u0420\u043E\u0434\u0438\u0442\u0435\u043B\u044C:",
+                                react_1.default.createElement(ParentPathCombobox, { value: addParentPath, flatRows: flatRows, onChange: setAddParentPath })),
                             react_1.default.createElement("label", null,
                                 "\u0418\u043C\u044F: *",
                                 react_1.default.createElement("input", { type: "text", value: newItem.Name || '', onChange: (e) => setNewItem({ ...newItem, Name: e.target.value }) })),
                             react_1.default.createElement("label", null,
-                                "\u041A\u043E\u0434: *",
+                                "\u041A\u043E\u0434:",
+                                !isChartOfCalculationTypes ? ' *' : '',
                                 react_1.default.createElement("input", { type: "text", value: newItem.Code || '', onChange: (e) => setNewItem({ ...newItem, Code: e.target.value }) })),
                             react_1.default.createElement("label", null,
                                 "\u041D\u0430\u0438\u043C\u0435\u043D\u043E\u0432\u0430\u043D\u0438\u0435:",
@@ -426,18 +673,15 @@ const PredefinedEditorApp = ({ vscode }) => {
                                             cursor: 'pointer',
                                             fontSize: '12px'
                                         } }, "\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0442\u0438\u043F")))),
+                            isChartOfCalculationTypes && (react_1.default.createElement(react_1.default.Fragment, null,
+                                react_1.default.createElement("label", { className: "checkbox-label" },
+                                    react_1.default.createElement("input", { type: "checkbox", checked: newItem.ActionPeriodIsBase === true, onChange: (e) => setNewItem({ ...newItem, ActionPeriodIsBase: e.target.checked }) }),
+                                    "\u0411\u0430\u0437\u043E\u0432\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044F"),
+                                react_1.default.createElement("p", { style: { fontSize: '11px', color: 'var(--vscode-descriptionForeground)', margin: '4px 0 0' } }, "\u0421\u0432\u044F\u0437\u0438 \u0432\u044B\u0442\u0435\u0441\u043D\u044F\u044E\u0449\u0438\u0445, \u0432\u0435\u0434\u0443\u0449\u0438\u0445 \u0438 \u0431\u0430\u0437\u043E\u0432\u044B\u0445 \u0432\u0438\u0434\u043E\u0432 \u0437\u0430\u0434\u0430\u0439\u0442\u0435 \u043F\u043E\u0441\u043B\u0435 \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0438\u044F \u0447\u0435\u0440\u0435\u0437 \u00AB\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C\u00BB."))),
                             isChartOfAccounts && (react_1.default.createElement(react_1.default.Fragment, null,
                                 react_1.default.createElement("label", null,
                                     "\u0412\u0438\u0434:",
-                                    react_1.default.createElement("select", { value: newItem.AccountType || '', onChange: (e) => setNewItem({ ...newItem, AccountType: e.target.value }), style: {
-                                            width: '100%',
-                                            padding: '6px 12px',
-                                            border: '1px solid var(--vscode-input-border)',
-                                            background: 'var(--vscode-input-background)',
-                                            color: 'var(--vscode-input-foreground)',
-                                            borderRadius: '3px',
-                                            fontSize: '12px'
-                                        } },
+                                    react_1.default.createElement("select", { value: newItem.AccountType || '', onChange: (e) => setNewItem({ ...newItem, AccountType: e.target.value }) },
                                         react_1.default.createElement("option", { value: "" }, "\u041D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D"),
                                         react_1.default.createElement("option", { value: "Active" }, "\u0410\u043A\u0442\u0438\u0432\u043D\u044B\u0439"),
                                         react_1.default.createElement("option", { value: "Passive" }, "\u041F\u0430\u0441\u0441\u0438\u0432\u043D\u044B\u0439"),
@@ -460,6 +704,7 @@ const PredefinedEditorApp = ({ vscode }) => {
                             react_1.default.createElement("button", { className: "btn-primary", onClick: handleAdd }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C"),
                             react_1.default.createElement("button", { className: "btn-secondary", onClick: () => {
                                     setShowAddModal(false);
+                                    setAddParentPath([]);
                                     setNewItem({
                                         Name: '',
                                         Code: '',
@@ -470,20 +715,26 @@ const PredefinedEditorApp = ({ vscode }) => {
                                         OffBalance: undefined,
                                         Order: undefined,
                                         AccountingFlags: undefined,
-                                        ExtDimensionTypes: undefined
+                                        ExtDimensionTypes: undefined,
+                                        ActionPeriodIsBase: undefined,
+                                        Displaced: undefined,
+                                        Leading: undefined,
+                                        Base: undefined
                                     });
                                 } }, "\u041E\u0442\u043C\u0435\u043D\u0430"))))),
-                items.length === 0 ? (react_1.default.createElement("div", { className: "empty-state" }, "\u0414\u043B\u044F \u0434\u0430\u043D\u043D\u043E\u0433\u043E \u043E\u0431\u044A\u0435\u043A\u0442\u0430 \u043F\u0440\u0435\u0434\u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u044B \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u044B")) : (react_1.default.createElement("div", { className: "attributes-list" }, items.map((item, index) => {
-                    const itemKey = item.id ? item.id : `${item.Code}-${item.Name}-${index}`;
-                    return editingIndex === index ? (react_1.default.createElement(EditItemCard, { key: itemKey, item: editingItem, index: index, parentPath: [index], isChartOfCharacteristicTypes: isChartOfCharacteristicTypes, isChartOfAccounts: isChartOfAccounts, chartOfAccountsData: chartOfAccountsData, onSave: handleUpdate, onCancel: handleCancelEdit, onChange: setEditingItem, onOpenTypeModal: handleOpenTypeModal, onEditChild: handleEditChild, onDeleteChild: handleDeleteChild, editingChild: editingChild, editingItem: editingItem })) : (react_1.default.createElement(PredefinedItemCard, { key: itemKey, item: item, index: index, isChartOfAccounts: isChartOfAccounts, isChartOfCharacteristicTypes: isChartOfCharacteristicTypes, chartOfAccountsData: chartOfAccountsData, onEdit: handleEdit, onDelete: handleDelete, onEditChild: handleEditChild, onDeleteChild: handleDeleteChild, editingChild: editingChild, editingItem: editingItem, onSave: handleUpdate, onCancel: handleCancelEdit, onChange: setEditingItem, onOpenTypeModal: handleOpenTypeModal }));
-                }))),
+                items.length === 0 ? (react_1.default.createElement("div", { className: "empty-state" }, "\u0414\u043B\u044F \u0434\u0430\u043D\u043D\u043E\u0433\u043E \u043E\u0431\u044A\u0435\u043A\u0442\u0430 \u043F\u0440\u0435\u0434\u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u044B \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u044B")) : (react_1.default.createElement(PredefinedTable, { rows: flatRows, isChartOfAccounts: isChartOfAccounts, isChartOfCharacteristicTypes: isChartOfCharacteristicTypes, collapsedPathKeys: collapsedPathKeys, onToggleBranch: toggleBranchCollapsed, onEditPath: handleEditByPath, onDeletePath: handleDeleteByPath })),
                 showTypeModal && (react_1.default.createElement(PredefinedTypeEditorModal_1.PredefinedTypeEditorModal, { isOpen: showTypeModal, typeValue: typeModalContext.currentType || null, metadata: metadata, onClose: () => setShowTypeModal(false), onSave: handleTypeSave })),
                 editingChild && editingItem && (react_1.default.createElement("div", { className: "modal-overlay", onClick: handleCancelEdit },
-                    react_1.default.createElement("div", { className: "modal edit-item-modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', overflowX: 'hidden' } },
+                    react_1.default.createElement("div", { className: "modal edit-item-modal", onClick: (e) => e.stopPropagation(), style: {
+                            maxWidth: isChartOfCalculationTypes ? '680px' : '600px',
+                            maxHeight: '90vh',
+                            overflowY: 'auto',
+                            overflowX: 'hidden'
+                        } },
                         react_1.default.createElement("h3", { style: { marginBottom: '16px' } },
                             "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435: ",
                             editingItem.Name || 'Элемент'),
-                        react_1.default.createElement(EditItemCard, { item: editingItem, parentPath: editingChild.path, isChartOfCharacteristicTypes: isChartOfCharacteristicTypes, isChartOfAccounts: isChartOfAccounts, chartOfAccountsData: chartOfAccountsData, onSave: handleUpdate, onCancel: handleCancelEdit, onChange: setEditingItem, onOpenTypeModal: handleOpenTypeModal, onEditChild: handleEditChild, onDeleteChild: handleDeleteChild, editingChild: editingChild, editingItem: editingItem, showInModal: true })))),
+                        react_1.default.createElement(EditItemCard, { item: editingItem, isChartOfCharacteristicTypes: isChartOfCharacteristicTypes, isChartOfAccounts: isChartOfAccounts, isChartOfCalculationTypes: isChartOfCalculationTypes, chartOfAccountsData: chartOfAccountsData, chartOfCalculationTypesData: chartOfCalculationTypesData, onSave: handleUpdate, onCancel: handleCancelEdit, onChange: setEditingItem, onOpenTypeModal: handleOpenTypeModal, showInModal: true })))),
                 showDeleteConfirm && (react_1.default.createElement("div", { className: "modal-overlay", onClick: handleCancelDelete },
                     react_1.default.createElement("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: '400px' } },
                         react_1.default.createElement("h3", null, "\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u0435 \u0443\u0434\u0430\u043B\u0435\u043D\u0438\u044F"),
@@ -494,109 +745,32 @@ const PredefinedEditorApp = ({ vscode }) => {
                             react_1.default.createElement("button", { className: "btn-secondary", onClick: handleCancelDelete }, "\u041E\u0442\u043C\u0435\u043D\u0430")))))))));
 };
 exports.PredefinedEditorApp = PredefinedEditorApp;
-const PredefinedItemCard = ({ item, index, parentPath, isChartOfAccounts, isChartOfCharacteristicTypes, chartOfAccountsData, onEdit, onDelete, onEditChild, onDeleteChild, editingChild, editingItem, onSave, onCancel, onChange, onOpenTypeModal, isBeingEdited = false }) => {
-    const childPath = parentPath !== undefined ? [...parentPath, index] : [index];
-    const isChildCard = parentPath !== undefined;
-    return (react_1.default.createElement("div", { className: "attribute-card", style: isBeingEdited ? { border: '2px solid var(--vscode-focusBorder)', boxShadow: '0 0 0 1px var(--vscode-focusBorder)' } : undefined },
-        react_1.default.createElement("div", { className: "attribute-header" },
-            react_1.default.createElement("h4", null,
-                react_1.default.createElement("span", { style: { marginRight: '8px' } }, item.IsFolder ? '📁' : '📄'),
-                item.Name),
-            (index >= 0 || isChildCard) && (react_1.default.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-                react_1.default.createElement("button", { className: "btn-edit-type", type: "button", onClick: () => {
-                        if (isChildCard && onEditChild && childPath.length >= 2) {
-                            onEditChild(childPath);
-                        }
-                        else if (!isChildCard) {
-                            onEdit(index);
-                        }
-                    }, title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", "aria-label": "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", style: {
-                        padding: '4px 8px',
-                        fontSize: '16px',
-                        background: 'var(--vscode-button-secondaryBackground)',
-                        color: 'var(--vscode-button-secondaryForeground)',
-                        border: '1px solid var(--vscode-button-border)',
-                        borderRadius: '3px',
-                        cursor: 'pointer',
-                        lineHeight: '1'
-                    } }, "\u270E"),
-                react_1.default.createElement("button", { className: "btn-edit-type", type: "button", onClick: () => {
-                        if (isChildCard && onDeleteChild && childPath.length >= 2) {
-                            onDeleteChild(childPath);
-                        }
-                        else if (!isChildCard) {
-                            onDelete(index);
-                        }
-                    }, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", style: {
-                        padding: '4px 8px',
-                        fontSize: '16px',
-                        background: 'var(--vscode-errorForeground)',
-                        color: 'var(--vscode-button-foreground)',
-                        border: '1px solid var(--vscode-button-border)',
-                        borderRadius: '3px',
-                        cursor: 'pointer',
-                        lineHeight: '1'
-                    } }, "\u00D7")))),
-        react_1.default.createElement("div", { className: "attribute-properties" },
-            react_1.default.createElement("div", { className: "property-row" },
-                react_1.default.createElement("span", { className: "property-name" }, "\u041A\u043E\u0434:"),
-                react_1.default.createElement("span", { className: "property-value" }, item.Code)),
-            item.Description && (react_1.default.createElement("div", { className: "property-row" },
-                react_1.default.createElement("span", { className: "property-name" }, "\u041D\u0430\u0438\u043C\u0435\u043D\u043E\u0432\u0430\u043D\u0438\u0435:"),
-                react_1.default.createElement("span", { className: "property-value" }, item.Description))),
-            isChartOfCharacteristicTypes && item.Type && (react_1.default.createElement("div", { className: "property-row" },
-                react_1.default.createElement("span", { className: "property-name" }, "\u0422\u0438\u043F:"),
-                react_1.default.createElement("span", { className: "property-value", style: { fontFamily: 'monospace', fontSize: '11px' } }, item.Type.includes('|')
-                    ? item.Type.split('|').map((t, idx) => (react_1.default.createElement("span", { key: idx },
-                        t.trim(),
-                        idx < item.Type.split('|').length - 1 && react_1.default.createElement("span", { style: { color: 'var(--vscode-descriptionForeground)' } }, " | "))))
-                    : item.Type))),
-            isChartOfAccounts && (react_1.default.createElement(react_1.default.Fragment, null,
-                item.Parent && (react_1.default.createElement("div", { className: "property-row" },
-                    react_1.default.createElement("span", { className: "property-name" }, "\u0420\u043E\u0434\u0438\u0442\u0435\u043B\u044C:"),
-                    react_1.default.createElement("span", { className: "property-value" }, item.Parent))),
-                item.AccountType && (react_1.default.createElement("div", { className: "property-row" },
-                    react_1.default.createElement("span", { className: "property-name" }, "\u0412\u0438\u0434:"),
-                    react_1.default.createElement("span", { className: "property-value" }, item.AccountType))),
-                item.OffBalance !== undefined && (react_1.default.createElement("div", { className: "property-row" },
-                    react_1.default.createElement("span", { className: "property-name" }, "\u0417\u0430\u0431\u0430\u043B\u0430\u043D\u0441\u043E\u0432\u044B\u0439:"),
-                    react_1.default.createElement("span", { className: "property-value" }, item.OffBalance ? 'Да' : 'Нет'))),
-                item.Order && (react_1.default.createElement("div", { className: "property-row" },
-                    react_1.default.createElement("span", { className: "property-name" }, "\u041F\u043E\u0440\u044F\u0434\u043E\u043A:"),
-                    react_1.default.createElement("span", { className: "property-value" }, item.Order))),
-                react_1.default.createElement(AccountingFlagsView_1.AccountingFlagsView, { item: item }),
-                react_1.default.createElement(ExtDimensionTypesView_1.ExtDimensionTypesView, { item: item }))),
-            react_1.default.createElement("div", { className: "property-row" },
-                react_1.default.createElement("span", { className: "property-name" }, "\u041F\u0430\u043F\u043A\u0430:"),
-                react_1.default.createElement("span", { className: "property-value" }, item.IsFolder ? 'Да' : 'Нет')),
-            item.ChildItems && item.ChildItems.Item && item.ChildItems.Item.length > 0 && (react_1.default.createElement("div", { style: { marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--vscode-panel-border)' } },
-                react_1.default.createElement("div", { style: { fontWeight: 'bold', fontSize: '13px', marginBottom: '8px' } },
-                    "\u0414\u043E\u0447\u0435\u0440\u043D\u0438\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u044B (",
-                    item.ChildItems.Item.length,
-                    "):"),
-                react_1.default.createElement("div", { className: "child-items-container", style: {
-                        marginLeft: '16px',
-                        maxHeight: '400px',
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
-                        paddingRight: '8px'
-                    } }, item.ChildItems.Item.map((childItem, childIndex) => {
-                    const childPath = parentPath !== undefined ? [...parentPath, index, childIndex] : [index, childIndex];
-                    const isEditing = !!(editingChild && editingChild.path.length === childPath.length &&
-                        editingChild.path.every((p, i) => p === childPath[i]));
-                    const childKey = childItem.id || `${childItem.Code}-${childItem.Name}-${childIndex}`;
-                    return (react_1.default.createElement(PredefinedItemCard, { key: childKey, item: childItem, index: childIndex, parentPath: parentPath !== undefined ? [...parentPath, index] : [index], isChartOfAccounts: isChartOfAccounts, isChartOfCharacteristicTypes: isChartOfCharacteristicTypes, chartOfAccountsData: chartOfAccountsData, onEdit: () => { }, onDelete: () => { }, onEditChild: onEditChild, onDeleteChild: onDeleteChild, editingChild: editingChild, editingItem: editingItem, onSave: onSave, onCancel: onCancel, onChange: onChange, onOpenTypeModal: onOpenTypeModal, isBeingEdited: isEditing }));
-                })))))));
-};
-const EditItemCard = ({ item, index = 0, parentPath, isChartOfCharacteristicTypes, isChartOfAccounts, chartOfAccountsData, onSave, onCancel, onChange, onOpenTypeModal, onEditChild, onDeleteChild, editingChild, editingItem, showInModal = false }) => {
+const EditItemCard = ({ item, isChartOfCharacteristicTypes, isChartOfAccounts, isChartOfCalculationTypes = false, chartOfAccountsData, chartOfCalculationTypesData, onSave, onCancel, onChange, onOpenTypeModal, showInModal = false }) => {
+    const [calcTab, setCalcTab] = (0, react_1.useState)('main');
+    (0, react_1.useEffect)(() => {
+        setCalcTab('main');
+    }, [item?.id, item?.Name]);
     if (!item)
         return null;
     const handleSave = () => {
-        if (!item.Name || !item.Code) {
+        if (!item.Name) {
+            alert('Заполните обязательное поле: Имя');
+            return;
+        }
+        if (!isChartOfCalculationTypes && !item.Code) {
             alert('Заполните обязательные поля: Имя и Код');
             return;
         }
         onSave(item);
+    };
+    const selfCalcRef = isChartOfCalculationTypes && chartOfCalculationTypesData?.currentPlanName && item.Name
+        ? `ChartOfCalculationTypes.${chartOfCalculationTypesData.currentPlanName}.${item.Name}`
+        : undefined;
+    const calcTabLabels = {
+        main: 'Основное',
+        displaced: 'Вытесняющие',
+        leading: 'Ведущие',
+        base: 'Базовые'
     };
     return (react_1.default.createElement("div", { className: "attribute-card", style: {
             border: showInModal ? '1px solid var(--vscode-panel-border)' : '2px solid var(--vscode-focusBorder)',
@@ -636,7 +810,9 @@ const EditItemCard = ({ item, index = 0, parentPath, isChartOfCharacteristicType
                         flex: 1
                     } })),
             react_1.default.createElement("div", { className: "property-row" },
-                react_1.default.createElement("span", { className: "property-name" }, "\u041A\u043E\u0434: *"),
+                react_1.default.createElement("span", { className: "property-name" },
+                    "\u041A\u043E\u0434:",
+                    !isChartOfCalculationTypes ? ' *' : ''),
                 react_1.default.createElement("input", { type: "text", value: item.Code || '', onChange: (e) => onChange({ ...item, Code: e.target.value }), placeholder: "\u041A\u043E\u0434", style: {
                         padding: '4px 8px',
                         border: '1px solid var(--vscode-input-border)',
@@ -657,6 +833,32 @@ const EditItemCard = ({ item, index = 0, parentPath, isChartOfCharacteristicType
                         fontSize: '12px',
                         flex: 1
                     } })),
+            isChartOfCalculationTypes && (react_1.default.createElement(react_1.default.Fragment, null,
+                react_1.default.createElement("div", { style: {
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '6px',
+                        marginTop: '8px',
+                        marginBottom: '8px'
+                    } }, Object.keys(calcTabLabels).map((t) => (react_1.default.createElement("button", { key: t, type: "button", onClick: () => setCalcTab(t), style: {
+                        padding: '4px 10px',
+                        fontSize: '12px',
+                        borderRadius: '3px',
+                        border: calcTab === t
+                            ? '1px solid var(--vscode-focusBorder)'
+                            : '1px solid var(--vscode-button-border)',
+                        background: calcTab === t ? 'var(--vscode-button-background)' : 'var(--vscode-button-secondaryBackground)',
+                        color: calcTab === t ? 'var(--vscode-button-foreground)' : 'var(--vscode-button-secondaryForeground)',
+                        cursor: 'pointer'
+                    } }, calcTabLabels[t])))),
+                calcTab === 'main' && (react_1.default.createElement("div", { className: "property-row" },
+                    react_1.default.createElement("span", { className: "property-name" }, "\u0411\u0430\u0437\u043E\u0432\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434:"),
+                    react_1.default.createElement("label", { style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' } },
+                        react_1.default.createElement("input", { type: "checkbox", checked: item.ActionPeriodIsBase === true, onChange: (e) => onChange({ ...item, ActionPeriodIsBase: e.target.checked }) }),
+                        react_1.default.createElement("span", null, item.ActionPeriodIsBase ? 'Да' : 'Нет')))),
+                calcTab === 'displaced' && (react_1.default.createElement(CalculationTypeRefsPane, { groups: chartOfCalculationTypesData?.groups ?? [], value: item.Displaced || [], excludeRef: selfCalcRef, onChange: (refs) => onChange({ ...item, Displaced: refs }) })),
+                calcTab === 'leading' && (react_1.default.createElement(CalculationTypeRefsPane, { groups: chartOfCalculationTypesData?.groups ?? [], value: item.Leading || [], excludeRef: selfCalcRef, onChange: (refs) => onChange({ ...item, Leading: refs }) })),
+                calcTab === 'base' && (react_1.default.createElement(CalculationTypeRefsPane, { groups: chartOfCalculationTypesData?.groups ?? [], value: item.Base || [], excludeRef: selfCalcRef, onChange: (refs) => onChange({ ...item, Base: refs }) })))),
             isChartOfCharacteristicTypes && (react_1.default.createElement("div", { className: "property-row" },
                 react_1.default.createElement("span", { className: "property-name" }, "\u0422\u0438\u043F:"),
                 react_1.default.createElement("div", { style: { display: 'flex', gap: '8px', alignItems: 'center', flex: 1 } },
@@ -696,15 +898,7 @@ const EditItemCard = ({ item, index = 0, parentPath, isChartOfCharacteristicType
                         } }))),
                 react_1.default.createElement("div", { className: "property-row" },
                     react_1.default.createElement("span", { className: "property-name" }, "\u0412\u0438\u0434:"),
-                    react_1.default.createElement("select", { value: item.AccountType || '', onChange: (e) => onChange({ ...item, AccountType: e.target.value }), style: {
-                            padding: '4px 8px',
-                            border: '1px solid var(--vscode-input-border)',
-                            background: 'var(--vscode-input-background)',
-                            color: 'var(--vscode-input-foreground)',
-                            borderRadius: '3px',
-                            fontSize: '12px',
-                            flex: 1
-                        } },
+                    react_1.default.createElement("select", { value: item.AccountType || '', onChange: (e) => onChange({ ...item, AccountType: e.target.value }), className: "predefined-select-inline" },
                         react_1.default.createElement("option", { value: "" }, "\u041D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D"),
                         react_1.default.createElement("option", { value: "Active" }, "\u0410\u043A\u0442\u0438\u0432\u043D\u044B\u0439"),
                         react_1.default.createElement("option", { value: "Passive" }, "\u041F\u0430\u0441\u0441\u0438\u0432\u043D\u044B\u0439"),
@@ -732,25 +926,6 @@ const EditItemCard = ({ item, index = 0, parentPath, isChartOfCharacteristicType
                 react_1.default.createElement("span", { className: "property-name" }, "\u041F\u0430\u043F\u043A\u0430:"),
                 react_1.default.createElement("label", { style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' } },
                     react_1.default.createElement("input", { type: "checkbox", checked: item.IsFolder || false, onChange: (e) => onChange({ ...item, IsFolder: e.target.checked }), style: { cursor: 'pointer' } }),
-                    react_1.default.createElement("span", null, item.IsFolder ? 'Да' : 'Нет'))),
-            item.ChildItems && item.ChildItems.Item && item.ChildItems.Item.length > 0 && onEditChild && onDeleteChild && editingItem && onSave && onCancel && onChange && onOpenTypeModal && (react_1.default.createElement("div", { style: { marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--vscode-panel-border)' } },
-                react_1.default.createElement("div", { style: { fontWeight: 'bold', fontSize: '13px', marginBottom: '8px' } },
-                    "\u0412\u043B\u043E\u0436\u0435\u043D\u043D\u044B\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u044B (",
-                    item.ChildItems.Item.length,
-                    "):"),
-                react_1.default.createElement("div", { className: "child-items-container", style: {
-                        marginLeft: '16px',
-                        maxHeight: '400px',
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
-                        paddingRight: '8px'
-                    } }, item.ChildItems.Item.map((childItem, childIndex) => {
-                    const itemPath = parentPath ?? [index];
-                    const childPath = [...itemPath, childIndex];
-                    const isEditing = !!(editingChild && editingChild.path.length === childPath.length &&
-                        editingChild.path.every((p, i) => p === childPath[i]));
-                    const childKey = childItem.id || `${childItem.Code}-${childItem.Name}-${childIndex}`;
-                    return (react_1.default.createElement(PredefinedItemCard, { key: childKey, item: childItem, index: childIndex, parentPath: itemPath, isChartOfAccounts: isChartOfAccounts, isChartOfCharacteristicTypes: isChartOfCharacteristicTypes, chartOfAccountsData: chartOfAccountsData, onEdit: () => { }, onDelete: () => { }, onEditChild: onEditChild, onDeleteChild: onDeleteChild, editingChild: editingChild, editingItem: editingItem, onSave: onSave, onCancel: onCancel, onChange: onChange, onOpenTypeModal: onOpenTypeModal, isBeingEdited: isEditing }));
-                })))))));
+                    react_1.default.createElement("span", null, item.IsFolder ? 'Да' : 'Нет'))))));
 };
 //# sourceMappingURL=PredefinedEditorApp.js.map

@@ -2305,7 +2305,11 @@ function CreateTreeElements(rootPath, element, metadataFile, subsystemFilter) {
                 previous.sessionParameter.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, { icon: 'sessionParameter' }));
                 break;
             case current.$_name.startsWith('Role.'):
-                previous.role.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, { icon: 'role' }));
+                previous.role.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, {
+                    icon: 'role',
+                    context: 'role',
+                    path: treeItemPath,
+                }));
                 break;
             case current.$_name.startsWith('CommonAttribute.'):
                 previous.commonAttribute.push((0, utils_1.GetTreeItem)(treeItemId, current.$_name, { icon: 'attribute' }));

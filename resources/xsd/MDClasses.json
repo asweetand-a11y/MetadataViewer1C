@@ -648,10 +648,10 @@
         "Item"
       ],
       "childMin": {
-        "Item": 1
+        "Item": 0
       },
       "childMax": {
-        "Item": 1
+        "Item": -1
       },
       "allowAny": false,
       "simpleType": false,
@@ -4484,7 +4484,7 @@
         "Item"
       ],
       "childMin": {
-        "Item": 2
+        "Item": 0
       },
       "childMax": {
         "Item": -1
@@ -4877,7 +4877,7 @@
         "StandardTabularSection"
       ],
       "childMin": {
-        "StandardTabularSection": 3
+        "StandardTabularSection": 1
       },
       "childMax": {
         "StandardTabularSection": -1

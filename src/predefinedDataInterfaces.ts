@@ -26,4 +26,9 @@ export interface PredefinedDataItem {
 		flags: Record<string, boolean | { enabled: boolean; ref?: string }>; // Признаки учета по субконто (ключ - имя признака, значение - включен/выключен или объект с enabled и ref)
 		name?: string; // Полное имя вида субконто (для сохранения)
 	}>; // Виды субконто
+	// Поля для плана видов расчёта (PredefinedData xsi:type="CalculationTypePredefinedItems")
+	Displaced?: string[]; // вытесняющие: полные пути ChartOfCalculationTypes.План.Вид
+	Leading?: string[]; // ведущие виды расчёта
+	Base?: string[]; // базовые виды расчёта
+	ActionPeriodIsBase?: boolean; // базовый период действия
 }

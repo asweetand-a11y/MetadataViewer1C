@@ -211,9 +211,32 @@ function applyPropertiesChangesWithDom(objElement, properties) {
         propertiesElement = objElement.ownerDocument.createElement('Properties');
         objElement.appendChild(propertiesElement);
     }
+    /** У регистров в выгрузке 1С нет свойства RegisteredDocuments (оно у журналов документов). */
+    const registerRootLocalNames = new Set([
+        'InformationRegister',
+        'AccumulationRegister',
+        'AccountingRegister',
+        'CalculationRegister'
+    ]);
+    const objRootLocal = objElement.localName ||
+        (objElement.tagName && String(objElement.tagName).includes(':')
+            ? String(objElement.tagName).split(':').pop() || objElement.tagName
+            : objElement.tagName);
+    if (registerRootLocalNames.has(objRootLocal)) {
+        const rdList = propertiesElement.getElementsByTagName('RegisteredDocuments');
+        for (let i = rdList.length - 1; i >= 0; i--) {
+            const rd = rdList[i];
+            if (rd.parentNode === propertiesElement) {
+                propertiesElement.removeChild(rd);
+            }
+        }
+    }
     // Применяем изменения к каждому свойству
     for (const [key, value] of Object.entries(properties)) {
         if (value === undefined || value === null) {
+            continue;
+        }
+        if (key === 'RegisteredDocuments' && registerRootLocalNames.has(objRootLocal)) {
             continue;
         }
         // Специальная обработка для StandardAttributes

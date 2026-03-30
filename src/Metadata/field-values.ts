@@ -126,8 +126,19 @@ export const FIELD_VALUES: Record<string, string[]> = {
     // EnableTotalsSliceFirst
     "EnableTotalsSliceFirst": ["true", "false"],
     
-    // InformationRegisterPeriodicity
-    "InformationRegisterPeriodicity": ["Nonperiodical", "Second", "RecorderPosition"],
+    // InformationRegisterPeriodicity (как в XML 1С и objectSchemas; см. выгрузку InformationRegisters)
+    "InformationRegisterPeriodicity": [
+        "Nonperiodical",
+        "Second",
+        "Day",
+        "Month",
+        "Quarter",
+        "Year",
+        "RecorderPosition"
+    ],
+
+    // RegisterType (регистр накопления): в XML 1С — Turnovers | Balances (не Balance / не BalancesAndTurnovers)
+    "RegisterType": ["Turnovers", "Balances"],
     
     // MainAttribute
     "MainAttribute": ["true", "false"],
@@ -234,6 +245,7 @@ export const TEXT_INPUT_FIELDS = [
     "Format",
     "EditFormat",
     "Mask",
+    "CodeMask",
     "MaxValue",
     "MinValue",
 ];
@@ -245,6 +257,31 @@ export function getFieldValues(fieldName: string): string[] | null {
     // Убираем префиксы xr:, v8: и т.д.
     const cleanName = fieldName.replace(/^(xr:|v8:|cfg:|app:)/, '');
     return FIELD_VALUES[cleanName] || null;
+}
+
+/**
+ * Приводит RegisterType регистра накопления к значениям выгрузки 1С: Turnovers | Balances.
+ * Исправляет неверные варианты вроде Balance (единственное число).
+ */
+export function normalizeAccumulationRegisterTypeValue(raw: unknown): string | undefined {
+    if (raw === undefined || raw === null) {
+        return undefined;
+    }
+    const s = String(raw).trim();
+    if (!s) {
+        return undefined;
+    }
+    if (s === "Turnovers" || s === "Balances") {
+        return s;
+    }
+    const lower = s.toLowerCase();
+    if (lower === "balance" || lower === "balances") {
+        return "Balances";
+    }
+    if (lower === "turnover" || lower === "turnovers") {
+        return "Turnovers";
+    }
+    return s;
 }
 
 /**
@@ -324,12 +361,17 @@ export const FIELD_LABELS: Record<string, string> = {
     'Explanation': 'Пояснение',
     'ExtendedPresentation': 'Расширенное представление',
     'RegisterType': 'Тип регистра',
+    'ChartOfAccounts': 'План счетов',
+    'Correspondence': 'Корреспонденция',
+    'PeriodAdjustmentLength': 'Длина уточнения периода',
+    'Master': 'Ведущий',
+    'MainFilter': 'Основной фильтр',
     'Periodicity': 'Периодичность',
     'ActionPeriod': 'Период действия',
     'BasePeriod': 'Базовый период',
-    'Schedule': 'Расписание',
-    'ScheduleValue': 'Значение расписания',
-    'ScheduleDate': 'Дата расписания',
+    'Schedule': 'График',
+    'ScheduleValue': 'Значение графика',
+    'ScheduleDate': 'Дата графика',
     'ChartOfCalculationTypes': 'План видов расчета',
     'Hierarchical': 'Иерархический',
     'FoldersOnTop': 'Папки сверху',
@@ -373,9 +415,10 @@ export const FIELD_LABELS: Record<string, string> = {
     'ReadOnly': 'Только чтение',
     'TypeReductionMode': 'Режим приведения типа',
     'StandardTabularSections': 'Стандартные табличные части',
-    'DependenceOnCalculationTypes': 'Зависимость от видов расчета',
-    'BaseCalculationTypes': 'Базовые виды расчета',
-    'ActionPeriodUse': 'Использование периода действия',
+    'DependenceOnCalculationTypes': 'Зависимость от базы',
+    'BaseCalculationTypes': 'Базовые планы видов расчета',
+    'ActionPeriodUse': 'Использует период действия',
+    'ActionPeriodIsBase': 'Базовый период действия',
     'Type': 'Тип',
     'CharacteristicExtValues': 'Внешние значения характеристик',
     'NumberLength': 'Длина номера',
@@ -504,6 +547,16 @@ export const FIELD_LABELS: Record<string, string> = {
  * Словарь переводов значений enum для выпадающих списков
  */
 export const ENUM_VALUE_LABELS: Record<string, string> = {
+    // DependenceOnCalculationTypes (ПВР — зависимость от базы)
+    'DontDepend': 'Не зависит',
+    'OnActionPeriod': 'Зависит по периоду действия',
+    'OnRegistrationPeriod': 'Зависит по периоду регистрации',
+
+    // RegisterType (регистр накопления)
+    'Turnovers': 'Обороты',
+    'Balances': 'Остатки',
+    'BalancesAndTurnovers': 'Остатки и обороты',
+
     // FillChecking
     'DontCheck': 'Не проверять',
     'ShowError': 'Показать ошибку',
@@ -673,11 +726,29 @@ export function getFieldLabel(field: string): string {
 }
 
 /**
+ * Подписи значений периодичности регистра сведений (как в конфигураторе 1С: «В пределах …»).
+ * Отличаются от подписей для Periodicity регистра расчёта (там «Месяц», «День» и т.д.).
+ */
+const INFORMATION_REGISTER_PERIODICITY_LABELS: Record<string, string> = {
+    Nonperiodical: 'Непериодический',
+    Second: 'В пределах секунды',
+    Day: 'В пределах дня',
+    Month: 'В пределах месяца',
+    Quarter: 'В пределах квартала',
+    Year: 'В пределах года',
+    RecorderPosition: 'Позиция регистратора'
+};
+
+/**
  * Получить переведенное значение enum для выпадающего списка
  * @param value - значение enum (например, 'DontCheck', 'ShowError')
+ * @param field - имя поля метаданных; для InformationRegisterPeriodicity — отдельные подписи конфигуратора
  * @returns переведенное значение или исходное значение, если перевод не найден
  */
-export function getEnumValueLabel(value: string): string {
+export function getEnumValueLabel(value: string, field?: string): string {
+    if (field === 'InformationRegisterPeriodicity') {
+        return INFORMATION_REGISTER_PERIODICITY_LABELS[value] || value;
+    }
     return ENUM_VALUE_LABELS[value] || value;
 }
 

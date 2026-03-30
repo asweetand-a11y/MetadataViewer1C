@@ -23,11 +23,44 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseMetadataXml = void 0;
+exports.parseMetadataXml = exports.isParsedTypeRefDate = void 0;
 const path = __importStar(require("path"));
 const fileUtils_1 = require("../utils/fileUtils");
 const xmlUtils_1 = require("../utils/xmlUtils");
 const predefinedParser_1 = require("./predefinedParser");
+const field_values_1 = require("../metadata/field-values");
+/**
+ * Подходит ли тип измерения для «даты графика» регистра расчёта (Дата / ДатаВремя / Время в выгрузке XML).
+ */
+function isParsedTypeRefDate(type) {
+    if (!type) {
+        return false;
+    }
+    const kindOk = (k) => {
+        const s = String(k).trim().toLowerCase();
+        return s === "xs:date" || s === "xs:datetime" || s === "xs:time";
+    };
+    if (kindOk(type.kind)) {
+        return true;
+    }
+    if (type.kind === "Composite" && type.details && typeof type.details === "object") {
+        const raw = type.details.Type;
+        const arr = Array.isArray(raw) ? raw : raw !== undefined ? [raw] : [];
+        for (const item of arr) {
+            const t = typeof item === "object" &&
+                item !== null &&
+                "Type" in item &&
+                item.Type !== undefined
+                ? String(item.Type)
+                : String(item);
+            if (kindOk(t)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+exports.isParsedTypeRefDate = isParsedTypeRefDate;
 /**
  * Парсинг XML файла метаданных (async)
  */
@@ -115,6 +148,7 @@ async function parseMetadataXml(xmlPath) {
         console.log(`[parseMetadataXml] Начало парсинга свойств и атрибутов`);
         const parsed = {
             objectType: objectTypeMap[objectType] || objectType,
+            xmlObjectType: objectType,
             name,
             sourcePath: xmlPath,
             properties: parseProperties(objNode.Properties),
@@ -138,6 +172,12 @@ async function parseMetadataXml(xmlPath) {
             enumValues: objectType === 'Enum' ? parseEnumValues(objNode.ChildObjects) : undefined,
             _originalXml: _originalXml // Сохраняем исходный XML как строку для максимального сохранения структуры
         };
+        if (objectType === "AccumulationRegister" && parsed.properties.RegisterType !== undefined) {
+            const n = (0, field_values_1.normalizeAccumulationRegisterTypeValue)(parsed.properties.RegisterType);
+            if (n !== undefined) {
+                parsed.properties.RegisterType = n;
+            }
+        }
         console.log(`[parseMetadataXml] Парсинг завершен успешно. Объект: ${parsed.objectType}, Имя: ${parsed.name}`);
         return parsed;
     }

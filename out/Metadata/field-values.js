@@ -3,7 +3,7 @@
  * Справочник допустимых значений для полей объектов метаданных
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getEnumValueLabel = exports.getFieldLabel = exports.ENUM_VALUE_LABELS = exports.FIELD_LABELS = exports.isTextInputField = exports.getFieldValues = exports.TEXT_INPUT_FIELDS = exports.FIELD_VALUES = void 0;
+exports.getEnumValueLabel = exports.getFieldLabel = exports.ENUM_VALUE_LABELS = exports.FIELD_LABELS = exports.isTextInputField = exports.normalizeAccumulationRegisterTypeValue = exports.getFieldValues = exports.TEXT_INPUT_FIELDS = exports.FIELD_VALUES = void 0;
 exports.FIELD_VALUES = {
     // Boolean fields (да/нет)
     "UseStandardCommands": ["true", "false"],
@@ -99,8 +99,18 @@ exports.FIELD_VALUES = {
     "EnableTotalsSliceLast": ["true", "false"],
     // EnableTotalsSliceFirst
     "EnableTotalsSliceFirst": ["true", "false"],
-    // InformationRegisterPeriodicity
-    "InformationRegisterPeriodicity": ["Nonperiodical", "Second", "RecorderPosition"],
+    // InformationRegisterPeriodicity (как в XML 1С и objectSchemas; см. выгрузку InformationRegisters)
+    "InformationRegisterPeriodicity": [
+        "Nonperiodical",
+        "Second",
+        "Day",
+        "Month",
+        "Quarter",
+        "Year",
+        "RecorderPosition"
+    ],
+    // RegisterType (регистр накопления): в XML 1С — Turnovers | Balances (не Balance / не BalancesAndTurnovers)
+    "RegisterType": ["Turnovers", "Balances"],
     // MainAttribute
     "MainAttribute": ["true", "false"],
     // Use (for dimensions/resources)
@@ -177,6 +187,7 @@ exports.TEXT_INPUT_FIELDS = [
     "Format",
     "EditFormat",
     "Mask",
+    "CodeMask",
     "MaxValue",
     "MinValue",
 ];
@@ -189,6 +200,31 @@ function getFieldValues(fieldName) {
     return exports.FIELD_VALUES[cleanName] || null;
 }
 exports.getFieldValues = getFieldValues;
+/**
+ * Приводит RegisterType регистра накопления к значениям выгрузки 1С: Turnovers | Balances.
+ * Исправляет неверные варианты вроде Balance (единственное число).
+ */
+function normalizeAccumulationRegisterTypeValue(raw) {
+    if (raw === undefined || raw === null) {
+        return undefined;
+    }
+    const s = String(raw).trim();
+    if (!s) {
+        return undefined;
+    }
+    if (s === "Turnovers" || s === "Balances") {
+        return s;
+    }
+    const lower = s.toLowerCase();
+    if (lower === "balance" || lower === "balances") {
+        return "Balances";
+    }
+    if (lower === "turnover" || lower === "turnovers") {
+        return "Turnovers";
+    }
+    return s;
+}
+exports.normalizeAccumulationRegisterTypeValue = normalizeAccumulationRegisterTypeValue;
 /**
  * Проверить, должно ли поле быть текстовым
  */
@@ -266,12 +302,17 @@ exports.FIELD_LABELS = {
     'Explanation': 'Пояснение',
     'ExtendedPresentation': 'Расширенное представление',
     'RegisterType': 'Тип регистра',
+    'ChartOfAccounts': 'План счетов',
+    'Correspondence': 'Корреспонденция',
+    'PeriodAdjustmentLength': 'Длина уточнения периода',
+    'Master': 'Ведущий',
+    'MainFilter': 'Основной фильтр',
     'Periodicity': 'Периодичность',
     'ActionPeriod': 'Период действия',
     'BasePeriod': 'Базовый период',
-    'Schedule': 'Расписание',
-    'ScheduleValue': 'Значение расписания',
-    'ScheduleDate': 'Дата расписания',
+    'Schedule': 'График',
+    'ScheduleValue': 'Значение графика',
+    'ScheduleDate': 'Дата графика',
     'ChartOfCalculationTypes': 'План видов расчета',
     'Hierarchical': 'Иерархический',
     'FoldersOnTop': 'Папки сверху',
@@ -315,9 +356,10 @@ exports.FIELD_LABELS = {
     'ReadOnly': 'Только чтение',
     'TypeReductionMode': 'Режим приведения типа',
     'StandardTabularSections': 'Стандартные табличные части',
-    'DependenceOnCalculationTypes': 'Зависимость от видов расчета',
-    'BaseCalculationTypes': 'Базовые виды расчета',
-    'ActionPeriodUse': 'Использование периода действия',
+    'DependenceOnCalculationTypes': 'Зависимость от базы',
+    'BaseCalculationTypes': 'Базовые планы видов расчета',
+    'ActionPeriodUse': 'Использует период действия',
+    'ActionPeriodIsBase': 'Базовый период действия',
     'Type': 'Тип',
     'CharacteristicExtValues': 'Внешние значения характеристик',
     'NumberLength': 'Длина номера',
@@ -445,6 +487,14 @@ exports.FIELD_LABELS = {
  * Словарь переводов значений enum для выпадающих списков
  */
 exports.ENUM_VALUE_LABELS = {
+    // DependenceOnCalculationTypes (ПВР — зависимость от базы)
+    'DontDepend': 'Не зависит',
+    'OnActionPeriod': 'Зависит по периоду действия',
+    'OnRegistrationPeriod': 'Зависит по периоду регистрации',
+    // RegisterType (регистр накопления)
+    'Turnovers': 'Обороты',
+    'Balances': 'Остатки',
+    'BalancesAndTurnovers': 'Остатки и обороты',
     // FillChecking
     'DontCheck': 'Не проверять',
     'ShowError': 'Показать ошибку',
@@ -581,11 +631,28 @@ function getFieldLabel(field) {
 }
 exports.getFieldLabel = getFieldLabel;
 /**
+ * Подписи значений периодичности регистра сведений (как в конфигураторе 1С: «В пределах …»).
+ * Отличаются от подписей для Periodicity регистра расчёта (там «Месяц», «День» и т.д.).
+ */
+const INFORMATION_REGISTER_PERIODICITY_LABELS = {
+    Nonperiodical: 'Непериодический',
+    Second: 'В пределах секунды',
+    Day: 'В пределах дня',
+    Month: 'В пределах месяца',
+    Quarter: 'В пределах квартала',
+    Year: 'В пределах года',
+    RecorderPosition: 'Позиция регистратора'
+};
+/**
  * Получить переведенное значение enum для выпадающего списка
  * @param value - значение enum (например, 'DontCheck', 'ShowError')
+ * @param field - имя поля метаданных; для InformationRegisterPeriodicity — отдельные подписи конфигуратора
  * @returns переведенное значение или исходное значение, если перевод не найден
  */
-function getEnumValueLabel(value) {
+function getEnumValueLabel(value, field) {
+    if (field === 'InformationRegisterPeriodicity') {
+        return INFORMATION_REGISTER_PERIODICITY_LABELS[value] || value;
+    }
     return exports.ENUM_VALUE_LABELS[value] || value;
 }
 exports.getEnumValueLabel = getEnumValueLabel;

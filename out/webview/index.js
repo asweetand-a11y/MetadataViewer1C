@@ -33,6 +33,7 @@ const SimpleQueryEditor_1 = require("./components/SimpleQueryEditor");
 const StandaloneQueryEditor_1 = require("./components/StandaloneQueryEditor");
 const TemplateEditorApp_1 = require("./components/TemplateEditor/TemplateEditorApp");
 const PredefinedEditorApp_1 = require("./components/PredefinedEditor/PredefinedEditorApp");
+const RoleEditorApp_1 = require("./components/RoleEditor/RoleEditorApp");
 require("../webview/styles/editor.css");
 const vscode = acquireVsCodeApi();
 // Инициализация React приложения
@@ -54,7 +55,9 @@ const App = appMode === 'templateEditor'
                     ? StandaloneQueryEditor_1.StandaloneQueryEditor
                     : appMode === 'predefinedEditor'
                         ? PredefinedEditorApp_1.PredefinedEditorApp
-                        : MetadataEditor_1.MetadataEditor;
+                        : appMode === 'roleEditor'
+                            ? RoleEditorApp_1.RoleEditorApp
+                            : MetadataEditor_1.MetadataEditor;
 root.render(react_1.default.createElement(react_1.default.StrictMode, null,
     react_1.default.createElement(App, { vscode: vscode })));
 // КРИТИЧНО: Отправляем сообщение "webviewReady" после инициализации React

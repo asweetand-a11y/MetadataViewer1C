@@ -30,6 +30,7 @@ import { SimpleQueryEditor } from './components/SimpleQueryEditor';
 import { StandaloneQueryEditor } from './components/StandaloneQueryEditor';
 import { TemplateEditorApp } from './components/TemplateEditor/TemplateEditorApp';
 import { PredefinedEditorApp } from './components/PredefinedEditor/PredefinedEditorApp';
+import { RoleEditorApp } from './components/RoleEditor/RoleEditorApp';
 import '../webview/styles/editor.css';
 
 // Получаем vscode API
@@ -55,8 +56,10 @@ const App =
           ? SimpleQueryEditor
           : appMode === 'standaloneQueryEditor'
             ? StandaloneQueryEditor
-            : appMode === 'predefinedEditor'
+              : appMode === 'predefinedEditor'
               ? PredefinedEditorApp
+              : appMode === 'roleEditor'
+              ? RoleEditorApp
               : MetadataEditor;
 
 root.render(

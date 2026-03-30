@@ -219,6 +219,121 @@
   color: var(--vscode-foreground);
 }
 
+/* Кастомный combobox «Родитель» (нативный select даёт белый выпадающий список в webview) */
+.predefined-combobox-label .predefined-combobox {
+  margin-top: 2px;
+}
+
+.predefined-combobox {
+  position: relative;
+  width: 100%;
+}
+
+.predefined-combobox-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1px solid var(--vscode-dropdown-border, var(--vscode-input-border));
+  border-radius: 3px;
+  background-color: var(--vscode-dropdown-background, var(--vscode-input-background));
+  color: var(--vscode-dropdown-foreground, var(--vscode-input-foreground));
+  font-family: var(--vscode-font-family);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.predefined-combobox-trigger:hover {
+  background-color: var(--vscode-list-hoverBackground, var(--vscode-input-background));
+  color: var(--vscode-list-hoverForeground, var(--vscode-input-foreground));
+}
+
+.predefined-combobox-trigger:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.predefined-combobox-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.predefined-combobox-chevron {
+  flex-shrink: 0;
+  opacity: 0.85;
+  font-size: 10px;
+}
+
+.predefined-combobox-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 10001;
+  margin: 0;
+  padding: 4px 0;
+  max-height: min(320px, 50vh);
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--vscode-dropdown-border, var(--vscode-panel-border));
+  border-radius: 3px;
+  background-color: var(--vscode-dropdown-background, var(--vscode-editor-background));
+  color: var(--vscode-dropdown-foreground, var(--vscode-foreground));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.predefined-combobox-list li {
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.predefined-combobox-list li:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  color: var(--vscode-list-hoverForeground, var(--vscode-foreground));
+}
+
+.predefined-combobox-list li.is-selected {
+  background-color: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground, var(--vscode-foreground));
+}
+
+/* Остальные select: подсказка движку о тёмной/светной схеме и цвета по переменным VS Code */
+.predefined-editor select {
+  color-scheme: light dark;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1px solid var(--vscode-dropdown-border, var(--vscode-input-border));
+  border-radius: 3px;
+  background-color: var(--vscode-dropdown-background, var(--vscode-input-background));
+  color: var(--vscode-dropdown-foreground, var(--vscode-input-foreground));
+  font-family: var(--vscode-font-family);
+  font-size: 13px;
+}
+
+.predefined-editor select:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.predefined-editor select.predefined-select-inline {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
 .modal-content input[type="text"] {
   padding: 6px 10px;
   border: 1px solid var(--vscode-input-border);
@@ -406,5 +521,127 @@
 
 .child-items-container::-webkit-scrollbar-thumb:hover {
   background-color: var(--vscode-scrollbarSlider-hoverBackground);
+}
+
+/* Плоская таблица предопределённых элементов (иерархия через отступ) */
+.predefined-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+.predefined-flat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: auto;
+}
+
+.predefined-flat-table th,
+.predefined-flat-table td {
+  border: 1px solid var(--vscode-panel-border);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.predefined-flat-table thead th {
+  position: sticky;
+  top: 0;
+  background-color: var(--vscode-editor-background);
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  z-index: 1;
+}
+
+.predefined-flat-table tbody tr:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.predefined-flat-table .col-code {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.predefined-flat-table .col-name {
+  min-width: 160px;
+  max-width: 420px;
+}
+
+.predefined-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.predefined-tree-toggle {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 2px;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.predefined-tree-toggle:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.predefined-tree-toggle-placeholder {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+}
+
+.predefined-icon {
+  flex-shrink: 0;
+}
+
+.predefined-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.predefined-type-cell {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+}
+
+.predefined-flat-table .col-folder,
+.predefined-flat-table .col-off {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.predefined-flat-table .col-actions {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.predefined-table-action {
+  margin-right: 4px;
+  line-height: 1;
+  font-size: 16px;
+}
+
+.predefined-table-action-delete {
+  background: var(--vscode-errorForeground) !important;
+  color: var(--vscode-button-foreground) !important;
 }
 

@@ -305,6 +305,21 @@ function activate(context) {
         const { MetadataPanel } = await Promise.resolve().then(() => __importStar(require('./panels/MetadataPanel')));
         await MetadataPanel.createOrShowFromTreeItem(context.extensionUri, node);
     });
+    // Редактор прав роли
+    vscode.commands.registerCommand('metadataViewer.openRoleEditor', async (node) => {
+        if (!node?.path) {
+            vscode.window.showWarningMessage('Не удалось определить путь к роли');
+            return;
+        }
+        const { RoleEditorPanel } = await Promise.resolve().then(() => __importStar(require('./roleEditorPanel')));
+        // node.path — путь к директории роли (например: .../Roles/ПолныеПрава)
+        // Нормализуем слеши для Windows
+        const rolePath = node.path.replace(/\//g, require('path').sep);
+        // Имя роли из node.label (убираем префикс "Role.")
+        const rawLabel = typeof node.label === 'string' ? node.label : (node.label?.label ?? '');
+        const roleName = rawLabel.replace(/^Role\./, '');
+        await RoleEditorPanel.createOrShow(context.extensionUri, rolePath, roleName);
+    });
     // Команды для работы с закладками и форматированием BSL
     vscode.commands.registerCommand('metadataViewer.toggleBookmark', (args) => {
         const editor = vscode.window.activeTextEditor;

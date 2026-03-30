@@ -1,11 +1,46 @@
 import * as path from "path";
+import type { SubsystemMembershipRow } from "../utils/subsystemMembership";
 import { safeReadFile } from "../utils/fileUtils";
 import { createXMLParser, createPreserveOrderParser } from "../utils/xmlUtils";
 import { parsePredefinedXml, hasPredefinedFile, getPredefinedPath } from "./predefinedParser";
+import { normalizeAccumulationRegisterTypeValue } from "../metadata/field-values";
 
 export interface ParsedTypeRef {
     kind: string;
     details?: any;
+}
+
+/**
+ * Подходит ли тип измерения для «даты графика» регистра расчёта (Дата / ДатаВремя / Время в выгрузке XML).
+ */
+export function isParsedTypeRefDate(type: ParsedTypeRef | null | undefined): boolean {
+    if (!type) {
+        return false;
+    }
+    const kindOk = (k: string): boolean => {
+        const s = String(k).trim().toLowerCase();
+        return s === "xs:date" || s === "xs:datetime" || s === "xs:time";
+    };
+    if (kindOk(type.kind)) {
+        return true;
+    }
+    if (type.kind === "Composite" && type.details && typeof type.details === "object") {
+        const raw = (type.details as { Type?: unknown }).Type;
+        const arr = Array.isArray(raw) ? raw : raw !== undefined ? [raw] : [];
+        for (const item of arr) {
+            const t =
+                typeof item === "object" &&
+                item !== null &&
+                "Type" in item &&
+                (item as { Type: unknown }).Type !== undefined
+                    ? String((item as { Type: unknown }).Type)
+                    : String(item);
+            if (kindOk(t)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 export interface ParsedAttribute {
@@ -54,6 +89,10 @@ export interface ParsedEnumValue {
 
 export interface ParsedMetadataObject {
     objectType: string;
+    /**
+     * Имя тега объекта в XML (Catalog, ChartOfAccounts, …) для ссылок вида Type.Name
+     */
+    xmlObjectType?: string;
     name: string;
     sourcePath: string;
     properties: Record<string, any>;
@@ -68,11 +107,18 @@ export interface ParsedMetadataObject {
     extDimensionAccountingFlags?: ParsedAttribute[];
     /** Значения перечисления (только для Enum) */
     enumValues?: ParsedEnumValue[];
+    /** Участие в подсистемах (заполняется при открытии из cf/Subsystems) */
+    subsystems?: SubsystemMembershipRow[];
     /**
      * Исходный XML как строка (для сохранения структуры при записи)
      * Используется как основа для применения изменений без изменения структуры
      */
     _originalXml?: string;
+    /**
+     * Для регистров: имена документов (без .xml), в чьих RegisterRecords есть ссылка на этот регистр.
+     * Заполняется при открытии редактора; при сохранении синхронизируется с XML документов, не с файлом регистра.
+     */
+    recorderDocumentNames?: string[];
 }
 
 /**
@@ -182,6 +228,7 @@ export async function parseMetadataXml(xmlPath: string): Promise<ParsedMetadataO
         
         const parsed = {
             objectType: objectTypeMap[objectType] || objectType,  // Простой маппинг типов
+            xmlObjectType: objectType,
             name,
             sourcePath: xmlPath,
             properties: parseProperties(objNode.Properties),
@@ -205,6 +252,13 @@ export async function parseMetadataXml(xmlPath: string): Promise<ParsedMetadataO
             enumValues: objectType === 'Enum' ? parseEnumValues(objNode.ChildObjects) : undefined,
             _originalXml: _originalXml  // Сохраняем исходный XML как строку для максимального сохранения структуры
         };
+
+        if (objectType === "AccumulationRegister" && parsed.properties.RegisterType !== undefined) {
+            const n = normalizeAccumulationRegisterTypeValue(parsed.properties.RegisterType);
+            if (n !== undefined) {
+                parsed.properties.RegisterType = n;
+            }
+        }
         
         console.log(`[parseMetadataXml] Парсинг завершен успешно. Объект: ${parsed.objectType}, Имя: ${parsed.name}`);
         return parsed;

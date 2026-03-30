@@ -39,7 +39,8 @@ const MetadataEditor = ({ vscode }) => {
     const [xmlContent, setXmlContent] = (0, react_1.useState)('');
     const [metadata, setMetadata] = (0, react_1.useState)({
         registers: [],
-        referenceTypes: []
+        referenceTypes: [],
+        informationRegistersSchedule: []
     });
     const [isDirty, setIsDirty] = (0, react_1.useState)(false);
     const [activeTab, setActiveTab] = (0, react_1.useState)('properties');
@@ -52,7 +53,11 @@ const MetadataEditor = ({ vscode }) => {
                 const initMsg = message;
                 setObjects(initMsg.payload || []);
                 if (initMsg.metadata) {
-                    setMetadata(initMsg.metadata);
+                    setMetadata({
+                        referenceTypes: initMsg.metadata.referenceTypes,
+                        registers: initMsg.metadata.registers ?? [],
+                        informationRegistersSchedule: initMsg.metadata.informationRegistersSchedule ?? []
+                    });
                 }
                 // Выбираем первый объект по умолчанию
                 if (initMsg.payload && initMsg.payload.length > 0) {
@@ -148,6 +153,18 @@ const MetadataEditor = ({ vscode }) => {
         setIsDirty(true);
         // TODO: Парсить XML и обновить форму
     }, []);
+    const handleSubsystemToggle = (0, react_1.useCallback)((relPath) => {
+        setSelectedObject(prev => {
+            if (!prev?.subsystems?.length) {
+                return prev;
+            }
+            return {
+                ...prev,
+                subsystems: prev.subsystems.map(row => row.relPath === relPath ? { ...row, included: !row.included } : row),
+            };
+        });
+        setIsDirty(true);
+    }, []);
     // Сохранение изменений
     const handleSave = (0, react_1.useCallback)(() => {
         if (!selectedObject)
@@ -218,6 +235,14 @@ const MetadataEditor = ({ vscode }) => {
         if (isChartOfAccounts) {
             result.push({ id: 'accountingFlags', label: 'Признаки учета', count: accountingFlagsCount });
         }
+        if (selectedObject.subsystems !== undefined) {
+            const n = selectedObject.subsystems.filter(s => s.included).length;
+            result.push({
+                id: 'subsystems',
+                label: 'Подсистемы',
+                count: selectedObject.subsystems.length > 0 ? n : undefined,
+            });
+        }
         result.push({ id: 'xml', label: 'XML' });
         return result;
     }, [selectedObject]);
@@ -242,7 +267,14 @@ const MetadataEditor = ({ vscode }) => {
                 tab.count,
                 ")")))))),
         react_1.default.createElement("div", { className: `editor-content ${showSplitView && activeTab !== 'xml' ? 'split-view' : ''}` }, activeTab === 'xml' ? (react_1.default.createElement("div", { className: "editor-pane editor-xml-full" },
-            react_1.default.createElement(XmlEditor_1.XmlEditor, { value: xmlContent, onChange: handleXmlChange, language: "xml" }))) : (react_1.default.createElement(react_1.default.Fragment, null,
+            react_1.default.createElement(XmlEditor_1.XmlEditor, { value: xmlContent, onChange: handleXmlChange, language: "xml" }))) : activeTab === 'subsystems' && selectedObject.subsystems !== undefined ? (react_1.default.createElement("div", { className: "editor-pane editor-form subsystem-membership-pane" },
+            react_1.default.createElement("div", { className: "section-header" },
+                react_1.default.createElement("h3", null, "\u041F\u043E\u0434\u0441\u0438\u0441\u0442\u0435\u043C\u044B, \u0432 \u043A\u043E\u0442\u043E\u0440\u044B\u0445 \u0443\u0447\u0430\u0441\u0442\u0432\u0443\u0435\u0442 \u043E\u0431\u044A\u0435\u043A\u0442")),
+            selectedObject.subsystems.length === 0 ? (react_1.default.createElement("p", { className: "subsystem-membership-empty" }, "\u0412 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0435 Subsystems \u043D\u0435\u0442 XML-\u0444\u0430\u0439\u043B\u043E\u0432 \u043F\u043E\u0434\u0441\u0438\u0441\u0442\u0435\u043C.")) : (react_1.default.createElement("ul", { className: "subsystem-membership-list" }, selectedObject.subsystems.map(row => (react_1.default.createElement("li", { key: row.relPath, className: "subsystem-membership-item" },
+                react_1.default.createElement("label", { className: "subsystem-membership-label" },
+                    react_1.default.createElement("input", { type: "checkbox", checked: row.included, onChange: () => handleSubsystemToggle(row.relPath) }),
+                    react_1.default.createElement("span", { className: "subsystem-membership-title" }, row.label),
+                    react_1.default.createElement("span", { className: "subsystem-membership-path" }, row.relPath.replace(/^Subsystems\//, '')))))))))) : (react_1.default.createElement(react_1.default.Fragment, null,
             react_1.default.createElement("div", { className: "editor-pane editor-form" },
                 react_1.default.createElement(FormEditor_1.FormEditor, { objectType: selectedObject.objectType, formData: formData, onChange: handleFormChange, metadata: metadata, activeTab: activeTab, selectedObject: selectedObject, onSelectedObjectChange: handleSelectedObjectChange })),
             showSplitView && (react_1.default.createElement("div", { className: "editor-pane editor-xml" },

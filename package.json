@@ -2,7 +2,7 @@
 	"name": "1c-configuration-tree",
 	"displayName": "1C Configuration tree",
 	"description": "Дерево конфигураций 1С: Предприятие 8",
-	"version": "2.10.6",
+	"version": "2.10.7",
 	"publisher": "whiterabbit",
 	"repository": {
     "type": "git",
@@ -113,6 +113,10 @@
 			{
 				"command": "metadataViewer.openPredefinedData",
 				"title": "%1c-metadata-viewer.openPredefinedData.title%"
+			},
+			{
+				"command": "metadataViewer.openRoleEditor",
+				"title": "%1c-metadata-viewer.openRoleEditor.title%"
 			},
 			{
 				"command": "metadataViewer.openHandler",
@@ -300,6 +304,11 @@
 					"command": "metadataViewer.openPredefinedData",
 					"group": "bsl",
 					"when": "viewItem =~ /predefined/"
+				},
+				{
+					"command": "metadataViewer.openRoleEditor",
+					"group": "edit",
+					"when": "viewItem == role"
 				},
 				{
 					"command": "metadataViewer.showTemplate",

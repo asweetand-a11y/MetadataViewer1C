@@ -9,6 +9,40 @@ import { PredefinedDataItem } from '../predefinedDataInterfaces';
 import { formatXml } from '../utils/xmlDomUtils';
 
 /**
+ * Полный ref вида ChartOfAccounts.<План>.ExtDimensionAccountingFlag.<Имя> для Flag внутри ExtDimensionType.
+ * Если в файле ещё нет таких ref, имя плана берётся из ChartOfAccounts.<План>.AccountingFlag.* (как в эталоне 1С).
+ */
+function resolveExtDimensionAccountingFlagRefPrefix(doc: Document): string | null {
+    const flagCollection = doc.getElementsByTagName('Flag');
+    for (let i = 0; i < flagCollection.length; i++) {
+        const ref = flagCollection[i].getAttribute('ref');
+        if (!ref || !ref.startsWith('ChartOfAccounts.')) {
+            continue;
+        }
+        const parts = ref.split('.');
+        const extIdx = parts.findIndex((p) => p === 'ExtDimensionAccountingFlag');
+        if (extIdx >= 1 && extIdx < parts.length - 1) {
+            return parts.slice(0, extIdx + 1).join('.');
+        }
+    }
+    for (let i = 0; i < flagCollection.length; i++) {
+        const ref = flagCollection[i].getAttribute('ref');
+        if (!ref || !ref.startsWith('ChartOfAccounts.')) {
+            continue;
+        }
+        const parts = ref.split('.');
+        const accIdx = parts.findIndex((p) => p === 'AccountingFlag');
+        if (accIdx >= 1 && accIdx < parts.length - 1) {
+            const chartName = parts[1];
+            if (chartName) {
+                return `ChartOfAccounts.${chartName}.ExtDimensionAccountingFlag`;
+            }
+        }
+    }
+    return null;
+}
+
+/**
  * Определяет namespace prefix из исходного XML (например, d4p1, d5p1)
  * Ищет в первом элементе Type значение типа с префиксом
  */
@@ -38,6 +72,27 @@ function addNamespacePrefix(typeText: string, namespacePrefix: string): string {
     // Не добавляем, если уже есть namespace prefix
     if (typeText.match(/^[a-z]\d+p\d+:/i)) return typeText;
     return namespacePrefix + typeText;
+}
+
+/**
+ * Перезаписывает содержимое контейнера Displaced / Leading / Base списком элементов CalculationType.
+ */
+function rebuildCalculationTypeRefContainer(container: Element, paths: string[] | undefined): void {
+    while (container.firstChild) {
+        container.removeChild(container.firstChild);
+    }
+    if (!paths || paths.length === 0) {
+        return;
+    }
+    const doc = container.ownerDocument!;
+    for (const p of paths) {
+        if (!p || !String(p).trim()) {
+            continue;
+        }
+        const el = doc.createElement('CalculationType');
+        el.textContent = String(p).trim();
+        container.appendChild(el);
+    }
 }
 
 /**
@@ -499,16 +554,22 @@ function updateItemElementInDom(itemElement: Element, newItem: PredefinedDataIte
                                 flagRef = flagValue.ref;
                             }
                             
-                            // Определяем ref
+                            // Определяем ref (короткое имя без точек конфигуратор не принимает)
                             let finalRef: string;
-                            if (flagRef) {
+                            if (flagRef && flagRef.includes('.')) {
                                 finalRef = flagRef;
                             } else if (flagPathPrefix) {
                                 finalRef = `${flagPathPrefix}.${flagName}`;
                             } else {
-                                // Пытаемся найти существующий ref
                                 const existingFlagInfo = allExtDimensionFlags.get(flagName);
-                                finalRef = existingFlagInfo?.ref || flagName;
+                                const inferred = resolveExtDimensionAccountingFlagRefPrefix(doc);
+                                if (existingFlagInfo?.ref && existingFlagInfo.ref.includes('.')) {
+                                    finalRef = existingFlagInfo.ref;
+                                } else if (inferred) {
+                                    finalRef = `${inferred}.${flagName}`;
+                                } else {
+                                    finalRef = flagName;
+                                }
                             }
                             
                             flagsToSave.set(flagName, {
@@ -591,6 +652,35 @@ function updateItemElementInDom(itemElement: Element, newItem: PredefinedDataIte
                     while (child.firstChild) {
                         child.removeChild(child.firstChild);
                     }
+                }
+                break;
+            case 'ActionPeriodIsBase':
+                child.textContent =
+                    newItem.ActionPeriodIsBase === undefined
+                        ? 'false'
+                        : newItem.ActionPeriodIsBase
+                          ? 'true'
+                          : 'false';
+                break;
+            case 'Displaced':
+                if (newItem.Displaced && newItem.Displaced.length > 0) {
+                    rebuildCalculationTypeRefContainer(child, newItem.Displaced);
+                } else if (child.parentNode) {
+                    child.parentNode.removeChild(child);
+                }
+                break;
+            case 'Leading':
+                if (newItem.Leading && newItem.Leading.length > 0) {
+                    rebuildCalculationTypeRefContainer(child, newItem.Leading);
+                } else if (child.parentNode) {
+                    child.parentNode.removeChild(child);
+                }
+                break;
+            case 'Base':
+                if (newItem.Base && newItem.Base.length > 0) {
+                    rebuildCalculationTypeRefContainer(child, newItem.Base);
+                } else if (child.parentNode) {
+                    child.parentNode.removeChild(child);
                 }
                 break;
         }
@@ -829,16 +919,21 @@ function updateItemElementInDom(itemElement: Element, newItem: PredefinedDataIte
                     flagRef = flagValue.ref;
                 }
                 
-                // Определяем ref
                 let finalRef: string;
-                if (flagRef) {
+                if (flagRef && flagRef.includes('.')) {
                     finalRef = flagRef;
                 } else if (flagPathPrefix) {
                     finalRef = `${flagPathPrefix}.${flagName}`;
                 } else {
-                    // Пытаемся найти существующий ref
                     const existingFlagInfo = allExtDimensionFlags.get(flagName);
-                    finalRef = existingFlagInfo?.ref || flagName;
+                    const inferred = resolveExtDimensionAccountingFlagRefPrefix(doc);
+                    if (existingFlagInfo?.ref && existingFlagInfo.ref.includes('.')) {
+                        finalRef = existingFlagInfo.ref;
+                    } else if (inferred) {
+                        finalRef = `${inferred}.${flagName}`;
+                    } else {
+                        finalRef = flagName;
+                    }
                 }
                 
                 flagsToSave.set(flagName, {
@@ -867,6 +962,108 @@ function updateItemElementInDom(itemElement: Element, newItem: PredefinedDataIte
                 itemElement.insertBefore(extDimensionTypesElement, insertBefore);
             } else {
                 itemElement.appendChild(extDimensionTypesElement);
+            }
+        }
+    }
+
+    /** Локальные имена прямых дочерних элементов Item (для плана видов расчёта и др.). */
+    function collectItemChildLocalNames(itemEl: Element): Set<string> {
+        const s = new Set<string>();
+        for (let i = 0; i < itemEl.childNodes.length; i++) {
+            const n = itemEl.childNodes[i];
+            if (n.nodeType !== 1) {
+                continue;
+            }
+            const e = n as Element;
+            const ln = (e as any).localName || e.nodeName.split(':').pop() || e.nodeName;
+            s.add(ln);
+        }
+        return s;
+    }
+    function getFirstChildItemsElement(itemEl: Element): Element | null {
+        for (let i = 0; i < itemEl.childNodes.length; i++) {
+            const n = itemEl.childNodes[i];
+            if (n.nodeType !== 1) {
+                continue;
+            }
+            const e = n as Element;
+            const ln = (e as any).localName || e.nodeName.split(':').pop() || e.nodeName;
+            if (ln === 'ChildItems') {
+                return e;
+            }
+        }
+        return null;
+    }
+    function insertBeforeChildItems(itemEl: Element, newEl: Element, boundary: Element | null): void {
+        if (boundary) {
+            itemEl.insertBefore(newEl, boundary);
+        } else {
+            itemEl.appendChild(newEl);
+        }
+    }
+
+    const presentLocals = collectItemChildLocalNames(itemElement);
+    const childItemsEl = getFirstChildItemsElement(itemElement);
+    const docPvr = itemElement.ownerDocument!;
+
+    const isCalculationTypePredefinedItem =
+        presentLocals.has('ActionPeriodIsBase') ||
+        presentLocals.has('Displaced') ||
+        presentLocals.has('Leading') ||
+        presentLocals.has('Base') ||
+        newItem.ActionPeriodIsBase !== undefined ||
+        newItem.Displaced !== undefined ||
+        newItem.Leading !== undefined ||
+        newItem.Base !== undefined;
+
+    if (isCalculationTypePredefinedItem && !presentLocals.has('ActionPeriodIsBase')) {
+        const el = docPvr.createElement('ActionPeriodIsBase');
+        el.textContent =
+            newItem.ActionPeriodIsBase === undefined
+                ? 'false'
+                : newItem.ActionPeriodIsBase
+                  ? 'true'
+                  : 'false';
+        insertBeforeChildItems(itemElement, el, childItemsEl);
+        presentLocals.add('ActionPeriodIsBase');
+    }
+
+    function ensureCalculationRefBlock(
+        tag: 'Displaced' | 'Leading' | 'Base',
+        data: string[] | undefined
+    ): void {
+        if (!isCalculationTypePredefinedItem || !data || data.length === 0 || presentLocals.has(tag)) {
+            return;
+        }
+        const wrap = docPvr.createElement(tag);
+        rebuildCalculationTypeRefContainer(wrap, data);
+        insertBeforeChildItems(itemElement, wrap, childItemsEl);
+        presentLocals.add(tag);
+    }
+    ensureCalculationRefBlock('Displaced', newItem.Displaced);
+    ensureCalculationRefBlock('Leading', newItem.Leading);
+    ensureCalculationRefBlock('Base', newItem.Base);
+
+    // Иерархия: в модели дети лежат в ChildItems.Item, но в исходном XML у папки мог не быть
+    // узла <ChildItems> (все Item были соседями в корне). Тогда case 'ChildItems' выше не сработает.
+    if (!existingElements.has('ChildItems')) {
+        const nested = newItem.ChildItems?.Item
+            ? Array.isArray(newItem.ChildItems.Item)
+                ? newItem.ChildItems.Item
+                : [newItem.ChildItems.Item]
+            : [];
+        if (nested.length > 0) {
+            const doc = itemElement.ownerDocument!;
+            const template = extractItemTemplate(new XMLSerializer().serializeToString(doc));
+            if (template) {
+                const childItemsEl = doc.createElement('ChildItems');
+                for (const childItem of nested) {
+                    childItemsEl.appendChild(
+                        createItemElementFromTemplate(doc, template, childItem, namespacePrefix)
+                    );
+                }
+                // После полей элемента (в т.ч. видов субконто у ПС); для справочника — после IsFolder
+                itemElement.appendChild(childItemsEl);
             }
         }
     }
