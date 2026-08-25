@@ -2,7 +2,7 @@
 	"name": "1c-configuration-tree",
 	"displayName": "1C Configuration tree",
 	"description": "Дерево конфигураций 1С: Предприятие 8",
-	"version": "2.10.7",
+	"version": "2.10.8",
 	"publisher": "whiterabbit",
 	"repository": {
     "type": "git",

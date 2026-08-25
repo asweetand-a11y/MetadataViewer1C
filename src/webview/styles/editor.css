@@ -2801,9 +2801,11 @@ body.edt-resizing-props-cols {
 
 .designer-commandbar {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 4px 0;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 2px 0 8px;
+  align-items: center;
 }
 
 .designer-commandbar__empty {
@@ -2812,14 +2814,26 @@ body.edt-resizing-props-cols {
 }
 
 .designer-button {
-  height: 26px;
-  padding: 0 10px;
+  height: 22px;
+  padding: 0 8px;
   border: 1px solid var(--vscode-panel-border);
-  border-radius: 3px;
+  border-radius: 2px;
   background: var(--vscode-button-secondaryBackground);
   color: var(--vscode-button-secondaryForeground);
   cursor: pointer;
   font-size: 12px;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.designer-group__caption {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--vscode-foreground);
 }
 
 .designer-button:hover {

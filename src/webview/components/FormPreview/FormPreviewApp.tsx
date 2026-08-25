@@ -68,24 +68,88 @@ function formatValue(value: any): string {
   }
 }
 
-function getCommandCaptionFromItem(item: FormItem): string {
+function getCommandCaptionFromItem(item: FormItem, formCommands?: FormCommand[]): string {
   if (!item) return 'Команда';
   const props = (item.properties || {}) as any;
+  const title = getItemTitleFromProps(props);
+  if (title.trim()) {
+    return title.trim();
+  }
   const cmdName =
     extractScalarText(props.CommandName) ||
     extractScalarText(props.Command) ||
     extractScalarText(props.CommandRef) ||
     '';
   if (cmdName) {
-    return cmdName;
+    const formCmd = matchFormCommandTitle(cmdName, formCommands);
+    if (formCmd) {
+      return formCmd;
+    }
+    return humanizeCommandRef(cmdName);
   }
-  const fallback =
-    getItemTitleFromProps(props) ||
-    props?.Representation ||
-    props?.Title ||
-    item.name ||
-    'Команда';
+  const fallback = extractScalarText(props.Representation) || item.name || 'Команда';
   return typeof fallback === 'string' ? fallback : formatValue(fallback);
+}
+
+const STANDARD_COMMAND_CAPTIONS: Record<string, string> = {
+  Add: 'Добавить',
+  Delete: 'Удалить',
+  Change: 'Изменить',
+  Copy: 'Скопировать',
+  MoveUp: 'Вверх',
+  MoveDown: 'Вниз',
+  Find: 'Найти',
+  Refresh: 'Обновить',
+  EndEdit: 'Закончить редактирование',
+  Pickup: 'Подобрать',
+  OutputList: 'Вывести список',
+};
+
+function matchFormCommandTitle(cmdName: string, formCommands?: FormCommand[]): string {
+  const m = String(cmdName).trim().match(/^Form\.Command\.(.+)$/i);
+  if (!m || !formCommands?.length) {
+    return '';
+  }
+  const cmd = formCommands.find((c) => c.name === m[1]);
+  if (!cmd?.properties) {
+    return '';
+  }
+  return getItemTitleFromProps(cmd.properties).trim();
+}
+
+function humanizeCommandRef(cmdName: string): string {
+  const s = String(cmdName).trim();
+  const std = s.match(/StandardCommand\.([A-Za-z0-9_]+)$/);
+  if (std) {
+    return STANDARD_COMMAND_CAPTIONS[std[1]] || std[1];
+  }
+  const formCmd = s.match(/^Form\.Command\.(.+)$/i);
+  if (formCmd) {
+    return formCmd[1];
+  }
+  const last = s.split('.').filter(Boolean).pop();
+  return last || s;
+}
+
+function flattenCommandBarNodes(nodes: TreeNode[]): TreeNode[] {
+  const out: TreeNode[] = [];
+  for (const n of nodes) {
+    const t = n.item.type;
+    if (t === 'ButtonGroup' || t === 'UsualGroup' || t === 'Popup') {
+      out.push(...flattenCommandBarNodes(n.children || []));
+    } else if (t === 'Button') {
+      out.push(n);
+    }
+  }
+  return out;
+}
+
+function isCommandBarLocationNone(props: Record<string, unknown> | undefined): boolean {
+  return extractScalarText((props as any)?.CommandBarLocation).toLowerCase() === 'none';
+}
+
+function isPagesWithoutTabs(props: Record<string, unknown> | undefined): boolean {
+  return extractScalarText((props as any)?.PagesRepresentation).toLowerCase() === 'none';
 }
 
 /**
@@ -334,12 +398,16 @@ function buildTree(items: FormItem[] | undefined, basePath = ''): TreeNode[] {
  * Пытается получить короткий заголовок для узла.
  */
 function getItemLabel(item: FormItem): string {
+  const title = getItemTitleFromProps(item.properties);
+  if (title.trim()) {
+    return title.trim();
+  }
   const name = item.name || (item.properties as any)?.name;
-  const id = item.id || (item.properties as any)?.id;
-
   const type = item.type || 'Unknown';
-  const suffix = name ? ` ${String(name)}` : id ? ` #${String(id)}` : '';
-  return `${type}${suffix}`;
+  if (name) {
+    return String(name);
+  }
+  return type;
 }
 
 /** Человекочитаемое название типа элемента для заголовка панели «Свойства». */
@@ -1622,7 +1690,13 @@ export const FormPreviewApp: React.FC<FormPreviewAppProps> = ({ vscode }) => {
             {selectedItem ? (
               <div className="edt-bottom__hint">Выделено: <b>{getItemLabel(selectedItem)}</b></div>
             ) : null}
-            <DesignerPreview items={form.childItems || []} selectedPath={selectedPath} onSelect={onSelect} />
+            <DesignerPreview
+              items={form.childItems || []}
+              formCommandBar={form.properties?.AutoCommandBar}
+              formCommands={form.commands || []}
+              selectedPath={selectedPath}
+              onSelect={onSelect}
+            />
           </div>
         </div>
         </div>
@@ -3152,10 +3226,18 @@ function buildVisualTree(items: FormItem[] | undefined, basePath = ''): TreeNode
 
 const DesignerPreview: React.FC<{
   items: FormItem[];
+  formCommandBar?: unknown;
+  formCommands?: FormCommand[];
   selectedPath: string;
   onSelect: (path: string) => void;
-}> = ({ items, selectedPath, onSelect }) => {
-  const nodes = useMemo(() => buildVisualTree(items), [items]);
+}> = ({ items, formCommandBar, formCommands, selectedPath, onSelect }) => {
+  const nodes = useMemo(() => {
+    const rootItems = [...items];
+    if (formCommandBar && typeof formCommandBar === 'object') {
+      rootItems.unshift(convertRawFormItem(formCommandBar, 'AutoCommandBar'));
+    }
+    return buildVisualTree(rootItems);
+  }, [items, formCommandBar]);
   const [activePages, setActivePages] = useState<Record<string, string>>({});
 
   const setActivePage = useCallback((pagesPath: string, pagePath: string) => {
@@ -3172,6 +3254,7 @@ const DesignerPreview: React.FC<{
           onSelect={onSelect}
           activePages={activePages}
           setActivePage={setActivePage}
+          formCommands={formCommands}
         />
       ))}
     </div>
@@ -3184,7 +3267,8 @@ const DesignerNode: React.FC<{
   onSelect: (path: string) => void;
   activePages: Record<string, string>;
   setActivePage: (pagesPath: string, pagePath: string) => void;
-}> = ({ node, selectedPath, onSelect, activePages, setActivePage }) => {
+  formCommands?: FormCommand[];
+}> = ({ node, selectedPath, onSelect, activePages, setActivePage, formCommands }) => {
   const isSelected = node.path === selectedPath;
   const type = node.item.type || 'Unknown';
 
@@ -3225,6 +3309,7 @@ const DesignerNode: React.FC<{
               onSelect={onSelect}
               activePages={activePages}
               setActivePage={setActivePage}
+              formCommands={formCommands}
             />
           ))}
         </div>
@@ -3240,6 +3325,7 @@ const DesignerNode: React.FC<{
             onSelect={onSelect}
             activePages={activePages}
             setActivePage={setActivePage}
+              formCommands={formCommands}
           />
         ))}
       </>
@@ -3253,12 +3339,7 @@ const DesignerNode: React.FC<{
 
     return (
       <div className={`${baseClass} designer-node--pages`} onClick={onClickSelect} title={node.path}>
-        <div className="designer-node__title">
-          <span className="designer-node__type">Pages</span>
-          <span className="designer-node__name">{title || node.item.name || ''}</span>
-        </div>
-
-        {pages.length > 0 ? (
+        {pages.length > 0 && !isPagesWithoutTabs(layoutProps) ? (
           <div className="designer-tabs" onClick={(e) => e.stopPropagation()}>
             {pages.map((p) => {
               const pTitle = getItemTitleFromProps(p.item.properties) || p.item.name || '';
@@ -3293,6 +3374,7 @@ const DesignerNode: React.FC<{
                   onSelect={onSelect}
                   activePages={activePages}
                   setActivePage={setActivePage}
+              formCommands={formCommands}
                 />
               ))}
             </div>
@@ -3305,10 +3387,6 @@ const DesignerNode: React.FC<{
   if (type === 'Page') {
     return (
       <div className={`${baseClass} designer-node--page`} onClick={onClickSelect} title={node.path}>
-        <div className="designer-node__title">
-          <span className="designer-node__type">Page</span>
-          <span className="designer-node__name">{title || node.item.name || ''}</span>
-        </div>
         {children.length > 0 ? (
           <div className="designer-node__children">
             {children.map((ch) => (
@@ -3319,6 +3397,7 @@ const DesignerNode: React.FC<{
                 onSelect={onSelect}
                 activePages={activePages}
                 setActivePage={setActivePage}
+              formCommands={formCommands}
               />
             ))}
           </div>
@@ -3337,10 +3416,9 @@ const DesignerNode: React.FC<{
 
     return (
       <div className={`${baseClass} designer-node--group`} onClick={onClickSelect} title={node.path}>
-        <div className="designer-node__title">
-          <span className="designer-node__type">{type}</span>
-          <span className="designer-node__name">{showTitle ? (title || node.item.name || '') : (node.item.name || '')}</span>
-        </div>
+        {showTitle && (title || node.item.name) ? (
+          <div className="designer-group__caption">{title || node.item.name}</div>
+        ) : null}
         {children.length > 0 ? (
           <div className={`designer-group__content designer-group__content--${orientation}`}>
             {children.map((ch) => (
@@ -3351,6 +3429,7 @@ const DesignerNode: React.FC<{
                 onSelect={onSelect}
                 activePages={activePages}
                 setActivePage={setActivePage}
+              formCommands={formCommands}
               />
             ))}
           </div>
@@ -3384,7 +3463,7 @@ const DesignerNode: React.FC<{
         <div className={`${fieldLayoutClass}${readOnly ? ' designer-field--readonly' : ''}`}>
           <div className="designer-field__label">{label}</div>
           <div className={`designer-field__control ${multiline ? 'is-multiline' : ''}`}>
-            {dp ? <span className="designer-field__hint">{dp}</span> : <span className="designer-field__hint">&nbsp;</span>}
+            <span className="designer-field__hint">&nbsp;</span>
           </div>
         </div>
       </div>
@@ -3439,8 +3518,8 @@ const DesignerNode: React.FC<{
     );
   }
 
-  if (type === 'CommandBar') {
-    const buttons = children;
+  if (type === 'CommandBar' || type === 'AutoCommandBar') {
+    const buttons = flattenCommandBarNodes(children);
     return (
       <div className={`${baseClass} designer-node--commandbar`} onClick={onClickSelect} title={node.path}>
         <div className="designer-commandbar" onClick={(e) => e.stopPropagation()}>
@@ -3448,12 +3527,13 @@ const DesignerNode: React.FC<{
             <span className="designer-commandbar__empty">Командная панель</span>
           ) : (
             buttons.map((b) => {
-              const caption = getCommandCaptionFromItem(b.item);
+              const caption = getCommandCaptionFromItem(b.item, formCommands);
               return (
                 <button
                   key={b.path}
                   type="button"
                   className="designer-button"
+                  title={caption}
                   onClick={() => onSelect(b.path)}
                 >
                   {caption}
@@ -3467,12 +3547,7 @@ const DesignerNode: React.FC<{
   }
 
   if (type === 'Button') {
-    const bTitle =
-      getItemTitleFromProps(node.item.properties) ||
-      (node.item.properties as any)?.Representation ||
-      (node.item.properties as any)?.CommandName ||
-      node.item.name ||
-      'Кнопка';
+    const bTitle = getCommandCaptionFromItem(node.item, formCommands) || 'Кнопка';
     const btnBoxStyle = buildFieldPreviewStyle(layoutProps) as React.CSSProperties;
     return (
       <div className={`${baseClass} designer-node--button`} style={btnBoxStyle} onClick={onClickSelect} title={node.path}>
@@ -3501,9 +3576,7 @@ const DesignerNode: React.FC<{
     const tableBoxStyle = buildTablePreviewStyle(layoutProps) as React.CSSProperties;
 
     const panelNodes = children.filter((c) => isPanelItemType(c.item.type));
-    const contextPanel = panelNodes.find((c) => c.item.type === 'ContextMenu') || null;
     const autoPanel = panelNodes.find((c) => c.item.type === 'AutoCommandBar') || null;
-    const contextCommands = contextPanel ? contextPanel.children : [];
     const autoCommands = autoPanel ? autoPanel.children : [];
     const model = buildTableHeadModel(node.item);
 
@@ -3562,62 +3635,38 @@ const DesignerNode: React.FC<{
           </div>
         ) : null}
 
-        {contextPanel || autoPanel ? (
-          <div className="designer-table__bars">
-            {autoPanel ? (
-              <div className="designer-table__bar" title={autoPanel.item.name || 'AutoCommandBar'}>
+        {(() => {
+          const showAutoBar = Boolean(autoPanel) && !isCommandBarLocationNone(layoutProps);
+          const autoButtons = showAutoBar ? flattenCommandBarNodes(autoCommands) : [];
+          if (!showAutoBar || autoButtons.length === 0) {
+            return null;
+          }
+          return (
+            <div className="designer-table__bars">
+              <div className="designer-table__bar" title={autoPanel?.item.name || 'Командная панель'}>
                 <div className="designer-table__barButtons">
-                  {autoCommands.length === 0 ? (
-                    <span className="designer-table__barEmpty">Нет команд</span>
-                  ) : (
-                    autoCommands.map((cmd) => {
-                      const caption = getCommandCaptionFromItem(cmd.item);
-                      return (
-                        <button
-                          key={cmd.path}
-                          type="button"
-                          className="designer-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelect(cmd.path);
-                          }}
-                        >
-                          {caption}
-                        </button>
-                      );
-                    })
-                  )}
+                  {autoButtons.map((cmd) => {
+                    const caption = getCommandCaptionFromItem(cmd.item, formCommands);
+                    return (
+                      <button
+                        key={cmd.path}
+                        type="button"
+                        className="designer-button"
+                        title={caption}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelect(cmd.path);
+                        }}
+                      >
+                        {caption}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            ) : null}
-            {contextPanel ? (
-              <div className="designer-table__bar" title={contextPanel.item.name || 'ContextMenu'}>
-                <div className="designer-table__barButtons">
-                  {contextCommands.length === 0 ? (
-                    <span className="designer-table__barEmpty">Нет команд</span>
-                  ) : (
-                    contextCommands.map((cmd) => {
-                      const caption = getCommandCaptionFromItem(cmd.item);
-                      return (
-                        <button
-                          key={cmd.path}
-                          type="button"
-                          className="designer-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelect(cmd.path);
-                          }}
-                        >
-                          {caption}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
+            </div>
+          );
+        })()}
 
         <div className={tableSurfaceClass} style={gridStyle}>
           {showHead && model.colCount > 0 ? (
@@ -3651,7 +3700,6 @@ const DesignerNode: React.FC<{
             ))}
           </div>
         </div>
-        {dp ? <div className="designer-node__props"><span className="designer-node__datapath">{dp}</span></div> : null}
       </div>
     );
   }
@@ -3659,8 +3707,7 @@ const DesignerNode: React.FC<{
   return (
     <div className={baseClass} onClick={onClickSelect} title={node.path}>
       <div className="designer-node__title">
-        <span className="designer-node__type">{type}</span>
-        <span className="designer-node__name">{title || node.item.name || node.item.id || ''}</span>
+        <span className="designer-node__name">{title || node.item.name || ''}</span>
       </div>
 
       {children.length > 0 ? (
@@ -3673,6 +3720,7 @@ const DesignerNode: React.FC<{
               onSelect={onSelect}
               activePages={activePages}
               setActivePage={setActivePage}
+              formCommands={formCommands}
             />
           ))}
         </div>
