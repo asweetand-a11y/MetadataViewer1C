@@ -2663,12 +2663,7 @@ const DesignerPreview = ({ items, formCommandBar, formCommands, selectedPath, on
             return;
         const frame = window.requestAnimationFrame(() => {
             const marked = root.querySelectorAll('[data-path]');
-            let target = null;
-            marked.forEach((n) => {
-                if (n.getAttribute('data-path') === selectedPath) {
-                    target = n;
-                }
-            });
+            const target = Array.from(marked).find((n) => n instanceof HTMLElement && n.getAttribute('data-path') === selectedPath);
             target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         });
         return () => window.cancelAnimationFrame(frame);
