@@ -37,6 +37,17 @@ exports.FormPreviewApp = void 0;
 const react_1 = __importStar(require("react"));
 /** Специальный путь для выбора самой формы (корень) в панели свойств. */
 const FORM_ROOT_PATH = '__form__';
+/** Главная командная панель формы (AutoCommandBar в properties, не в childItems). */
+const FORM_COMMAND_BAR_PATH = '__acb__';
+function isFormCommandBarPath(path) {
+    return path === FORM_COMMAND_BAR_PATH || path.startsWith(`${FORM_COMMAND_BAR_PATH}.`);
+}
+function formCommandBarRestPath(path) {
+    if (path === FORM_COMMAND_BAR_PATH) {
+        return '';
+    }
+    return path.slice(FORM_COMMAND_BAR_PATH.length + 1);
+}
 const typeUtils_1 = require("../../utils/typeUtils");
 const EditAttributeModal_1 = require("./modals/EditAttributeModal");
 const EditCommandModal_1 = require("./modals/EditCommandModal");
@@ -118,17 +129,58 @@ function humanizeCommandRef(cmdName) {
     const last = s.split('.').filter(Boolean).pop();
     return last || s;
 }
-function flattenCommandBarNodes(nodes) {
+function isPictureRepresentation(props) {
+    const r = extractScalarText(props?.Representation).toLowerCase();
+    return r === 'picture' || r === 'картинка';
+}
+/**
+ * Popup в командной панели 1С — одна кнопка; по клику выпадает меню дочерних команд.
+ */
+const DesignerPopupMenuButton = ({ node, selectedPath, onSelect, formCommands }) => {
+    const [open, setOpen] = (0, react_1.useState)(false);
+    const props = node.item.properties;
+    const title = getItemTitleFromProps(props) || node.item.name || '';
+    const pictureOnly = isPictureRepresentation(props);
+    const items = (node.children || []).filter((c) => c.item.type === 'Button');
+    const selectedInside = selectedPath === node.path || selectedPath.startsWith(`${node.path}.`);
+    const showMenu = open || selectedInside;
+    return (react_1.default.createElement("div", { className: `designer-popup${selectedPath === node.path ? ' is-selected' : ''}`, "data-path": node.path },
+        react_1.default.createElement("button", { type: "button", className: `designer-button designer-popup__trigger${pictureOnly ? ' designer-popup__trigger--picture' : ''}${selectedPath === node.path ? ' is-selected' : ''}`, title: title, onClick: (e) => {
+                e.stopPropagation();
+                onSelect(node.path);
+                setOpen((v) => !v);
+            } },
+            pictureOnly ? react_1.default.createElement("span", { className: "designer-popup__icon", "aria-hidden": true }) : title,
+            react_1.default.createElement("span", { className: "designer-popup__caret", "aria-hidden": true }, "\u25BE")),
+        showMenu ? (react_1.default.createElement("div", { className: "designer-popup__menu", role: "menu" }, items.map((b) => {
+            const caption = getCommandCaptionFromItem(b.item, formCommands);
+            const itemSelected = selectedPath === b.path;
+            return (react_1.default.createElement("button", { key: b.path, type: "button", className: `designer-popup__item${itemSelected ? ' is-selected' : ''}`, "data-path": b.path, role: "menuitem", onClick: (e) => {
+                    e.stopPropagation();
+                    onSelect(b.path);
+                    setOpen(false);
+                } }, caption));
+        }))) : null));
+};
+/** Кнопки панели: ButtonGroup разворачивается, Popup остаётся подменю. */
+function renderCommandBarVisuals(nodes, selectedPath, onSelect, formCommands) {
     const out = [];
-    for (const n of nodes) {
-        const t = n.item.type;
-        if (t === 'ButtonGroup' || t === 'UsualGroup' || t === 'Popup') {
-            out.push(...flattenCommandBarNodes(n.children || []));
+    const walk = (list) => {
+        for (const n of list) {
+            const t = n.item.type;
+            if (t === 'ButtonGroup' || t === 'UsualGroup') {
+                walk(n.children || []);
+            }
+            else if (t === 'Popup') {
+                out.push(react_1.default.createElement(DesignerPopupMenuButton, { key: n.path, node: n, selectedPath: selectedPath, onSelect: onSelect, formCommands: formCommands }));
+            }
+            else if (t === 'Button') {
+                const caption = getCommandCaptionFromItem(n.item, formCommands);
+                out.push(react_1.default.createElement("button", { key: n.path, type: "button", className: `designer-button${selectedPath === n.path ? ' is-selected' : ''}`, "data-path": n.path, title: caption, onClick: () => onSelect(n.path) }, caption));
+            }
         }
-        else if (t === 'Button') {
-            out.push(n);
-        }
-    }
+    };
+    walk(nodes);
     return out;
 }
 function isCommandBarLocationNone(props) {
@@ -168,24 +220,90 @@ function resolveActionProcedureFromButtonCommandRefs(props, commands) {
         return '';
     return extractScalarText(cmd.properties.Action).trim();
 }
+function getFormAutoCommandBarItem(form) {
+    const raw = form?.properties?.AutoCommandBar;
+    if (!raw || typeof raw !== 'object') {
+        return null;
+    }
+    const item = convertRawFormItem(raw, 'AutoCommandBar');
+    if (!item.childItems?.length) {
+        const kids = convertRawChildItems(raw.ChildItems
+            ?? raw.childItems);
+        if (kids.length > 0) {
+            item.childItems = kids;
+        }
+    }
+    return item;
+}
+function buildElementsTree(form) {
+    const body = buildTree(form?.childItems);
+    const bar = getFormAutoCommandBarItem(form);
+    if (!bar) {
+        return body;
+    }
+    return [
+        {
+            path: FORM_COMMAND_BAR_PATH,
+            item: bar,
+            children: buildTree(bar.childItems, FORM_COMMAND_BAR_PATH),
+        },
+        ...body,
+    ];
+}
+function resolveFormItemAtPath(form, path) {
+    if (path === FORM_ROOT_PATH) {
+        return { type: 'Form', name: form.name, properties: form.properties || {} };
+    }
+    if (isFormCommandBarPath(path)) {
+        const bar = getFormAutoCommandBarItem(form);
+        if (!bar) {
+            return null;
+        }
+        const rest = formCommandBarRestPath(path);
+        if (!rest) {
+            return bar;
+        }
+        const idxs = rest.split('.').map(s => Number(s));
+        let current = null;
+        let list = bar.childItems;
+        for (const idx of idxs) {
+            if (!Array.isArray(list) || !Number.isFinite(idx) || idx < 0 || idx >= list.length) {
+                return null;
+            }
+            current = list[idx];
+            list = current?.childItems;
+        }
+        return current;
+    }
+    if (!path) {
+        return null;
+    }
+    const idxs = path.split('.').map(s => Number(s));
+    let current = null;
+    let list = form.childItems;
+    for (const idx of idxs) {
+        if (!Array.isArray(list) || !Number.isFinite(idx) || idx < 0 || idx >= list.length) {
+            return null;
+        }
+        current = list[idx];
+        list = current?.childItems;
+    }
+    return current;
+}
 /**
- * Иммутабельно обновляет элемент формы по пути вида "0.1.2".
- * Нужно для редактирования свойств в webview без потери ссылочной целостности React-состояния.
+ * Иммутабельно обновляет элемент в списке по числовому пути "0.1.2".
  */
-function updateFormItemAtPath(form, path, updater) {
+function updateItemsAtNumericPath(items, path, updater) {
     const idxs = String(path || '').split('.').map(s => Number(s)).filter(n => Number.isFinite(n));
-    if (idxs.length === 0)
-        return form;
-    const rootItems = Array.isArray(form.childItems) ? form.childItems : [];
-    const nextForm = {
-        ...form,
-        childItems: [...rootItems],
-    };
-    let list = nextForm.childItems;
+    if (idxs.length === 0) {
+        return null;
+    }
+    const nextItems = [...items];
+    let list = nextItems;
     for (let depth = 0; depth < idxs.length; depth++) {
         const idx = idxs[depth];
         if (!Array.isArray(list) || idx < 0 || idx >= list.length) {
-            return form;
+            return null;
         }
         const current = list[idx];
         const cloned = {
@@ -195,12 +313,68 @@ function updateFormItemAtPath(form, path, updater) {
         };
         if (depth === idxs.length - 1) {
             list[idx] = updater(cloned);
-            return nextForm;
+            return nextItems;
         }
         list[idx] = cloned;
         list = cloned.childItems || (cloned.childItems = []);
     }
-    return nextForm;
+    return nextItems;
+}
+/**
+ * Иммутабельно обновляет элемент формы по пути вида "0.1.2" или "__acb__.0".
+ * Нужно для редактирования свойств в webview без потери ссылочной целостности React-состояния.
+ */
+function updateFormItemAtPath(form, path, updater) {
+    if (isFormCommandBarPath(path)) {
+        const raw = form.properties?.AutoCommandBar;
+        if (!raw || typeof raw !== 'object') {
+            return form;
+        }
+        const bar = getFormAutoCommandBarItem(form);
+        if (!bar) {
+            return form;
+        }
+        const rest = formCommandBarRestPath(path);
+        let nextBar;
+        if (!rest) {
+            nextBar = updater({
+                ...bar,
+                properties: { ...(bar.properties || {}) },
+                childItems: Array.isArray(bar.childItems) ? [...bar.childItems] : undefined,
+            });
+        }
+        else {
+            const nextChildren = updateItemsAtNumericPath(bar.childItems || [], rest, updater);
+            if (!nextChildren) {
+                return form;
+            }
+            nextBar = { ...bar, childItems: nextChildren };
+        }
+        return {
+            ...form,
+            properties: {
+                ...(form.properties || {}),
+                AutoCommandBar: {
+                    ...raw,
+                    name: nextBar.name ?? raw.name,
+                    id: nextBar.id ?? raw.id,
+                    ChildItems: nextBar.childItems ?? raw.ChildItems,
+                },
+            },
+        };
+    }
+    const idxs = String(path || '').split('.').map(s => Number(s)).filter(n => Number.isFinite(n));
+    if (idxs.length === 0)
+        return form;
+    const rootItems = Array.isArray(form.childItems) ? form.childItems : [];
+    const nextChildren = updateItemsAtNumericPath(rootItems, path, updater);
+    if (!nextChildren) {
+        return form;
+    }
+    return {
+        ...form,
+        childItems: nextChildren,
+    };
 }
 /**
  * Применяет изменение одного свойства на FormItem.
@@ -274,10 +448,31 @@ function updateCommandNameRefsInForm(form, oldCommandName, newCommandName) {
         return form;
     const items = Array.isArray(form.childItems) ? form.childItems : [];
     const nextItems = items.map((it) => updateCommandNameRefsInItem(it, oldCommandName, newCommandName));
-    const changed = nextItems.some((it, i) => it !== items[i]);
-    if (!changed)
+    const itemsChanged = nextItems.some((it, i) => it !== items[i]);
+    const raw = form.properties?.AutoCommandBar;
+    let nextProperties = form.properties;
+    if (raw && typeof raw === 'object') {
+        const bar = getFormAutoCommandBarItem(form);
+        if (bar) {
+            const nextBar = updateCommandNameRefsInItem(bar, oldCommandName, newCommandName);
+            if (nextBar !== bar) {
+                nextProperties = {
+                    ...(form.properties || {}),
+                    AutoCommandBar: {
+                        ...raw,
+                        ChildItems: nextBar.childItems ?? raw.ChildItems,
+                    },
+                };
+            }
+        }
+    }
+    if (!itemsChanged && nextProperties === form.properties)
         return form;
-    return { ...form, childItems: nextItems };
+    return {
+        ...form,
+        childItems: itemsChanged ? nextItems : form.childItems,
+        properties: nextProperties,
+    };
 }
 function findCommandNameUsagesInAny(value, target, propPath, out, ctx, limit) {
     if (out.length >= limit)
@@ -328,6 +523,15 @@ function findCommandNameUsagesInForm(form, commandName, limit = 50) {
         }
     };
     walk(form.childItems, '');
+    const bar = getFormAutoCommandBarItem(form);
+    if (bar) {
+        findCommandNameUsagesInAny(bar.properties || {}, commandName, 'properties', out, {
+            itemPath: FORM_COMMAND_BAR_PATH,
+            itemType: bar.type || 'AutoCommandBar',
+            itemName: bar.name || 'Командная панель',
+        }, limit);
+        walk(bar.childItems, FORM_COMMAND_BAR_PATH);
+    }
     return out;
 }
 /**
@@ -346,6 +550,10 @@ function buildTree(items, basePath = '') {
  * Пытается получить короткий заголовок для узла.
  */
 function getItemLabel(item) {
+    if (item.type === 'AutoCommandBar' || item.type === 'CommandBar') {
+        const title = getItemTitleFromProps(item.properties);
+        return title.trim() || 'Командная панель';
+    }
     const title = getItemTitleFromProps(item.properties);
     if (title.trim()) {
         return title.trim();
@@ -365,6 +573,9 @@ const ELEMENT_TYPE_LABELS = {
     CheckBoxField: 'Поле флажка',
     LabelField: 'Поле надписи',
     Button: 'Кнопка',
+    AutoCommandBar: 'Командная панель',
+    CommandBar: 'Командная панель',
+    ButtonGroup: 'Группа кнопок',
     UsualGroup: 'Группа',
     ColumnGroup: 'Группа колонок',
     Table: 'Таблица',
@@ -1054,27 +1265,12 @@ const FormPreviewApp = ({ vscode }) => {
             return;
         vscode.postMessage({ type: 'saveForm', payload: form });
     };
-    const tree = (0, react_1.useMemo)(() => buildTree(form?.childItems), [form]);
+    const tree = (0, react_1.useMemo)(() => buildElementsTree(form), [form]);
     const filteredTree = (0, react_1.useMemo)(() => filterTree(tree, treeQuery), [tree, treeQuery]);
     const selectedItem = (0, react_1.useMemo)(() => {
-        if (!form)
+        if (!form || !selectedPath)
             return null;
-        if (selectedPath === FORM_ROOT_PATH) {
-            return { type: 'Form', name: form.name, properties: form.properties || {} };
-        }
-        if (!selectedPath)
-            return null;
-        const idxs = selectedPath.split('.').map(s => Number(s));
-        let current = null;
-        let list = form.childItems;
-        for (const idx of idxs) {
-            if (!Array.isArray(list) || !Number.isFinite(idx) || idx < 0 || idx >= list.length) {
-                return null;
-            }
-            current = list[idx];
-            list = current?.childItems;
-        }
-        return current;
+        return resolveFormItemAtPath(form, selectedPath);
     }, [form, selectedPath]);
     const onSelect = (0, react_1.useCallback)((path) => {
         setSelectedPath(path);
@@ -2442,17 +2638,42 @@ function buildVisualTree(items, basePath = '') {
 }
 const DesignerPreview = ({ items, formCommandBar, formCommands, selectedPath, onSelect }) => {
     const nodes = (0, react_1.useMemo)(() => {
-        const rootItems = [...items];
-        if (formCommandBar && typeof formCommandBar === 'object') {
-            rootItems.unshift(convertRawFormItem(formCommandBar, 'AutoCommandBar'));
+        const body = buildVisualTree(items);
+        if (!formCommandBar || typeof formCommandBar !== 'object') {
+            return body;
         }
-        return buildVisualTree(rootItems);
+        const barItem = convertRawFormItem(formCommandBar, 'AutoCommandBar');
+        const barNode = {
+            path: FORM_COMMAND_BAR_PATH,
+            item: barItem,
+            children: buildVisualTree(barItem.childItems || [], FORM_COMMAND_BAR_PATH),
+        };
+        return [barNode, ...body];
     }, [items, formCommandBar]);
     const [activePages, setActivePages] = (0, react_1.useState)({});
+    const canvasRef = (0, react_1.useRef)(null);
     const setActivePage = (0, react_1.useCallback)((pagesPath, pagePath) => {
         setActivePages((prev) => ({ ...prev, [pagesPath]: pagePath }));
     }, []);
-    return (react_1.default.createElement("div", { className: "designer designer-edt" }, nodes.map((n) => (react_1.default.createElement(DesignerNode, { key: n.path, node: n, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands })))));
+    (0, react_1.useEffect)(() => {
+        if (!selectedPath)
+            return;
+        const root = canvasRef.current;
+        if (!root)
+            return;
+        const frame = window.requestAnimationFrame(() => {
+            const marked = root.querySelectorAll('[data-path]');
+            let target = null;
+            marked.forEach((n) => {
+                if (n.getAttribute('data-path') === selectedPath) {
+                    target = n;
+                }
+            });
+            target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        });
+        return () => window.cancelAnimationFrame(frame);
+    }, [selectedPath]);
+    return (react_1.default.createElement("div", { className: "designer designer-edt", ref: canvasRef }, nodes.map((n) => (react_1.default.createElement(DesignerNode, { key: n.path, node: n, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands })))));
 };
 const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage, formCommands }) => {
     const isSelected = node.path === selectedPath;
@@ -2460,6 +2681,10 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
     const layoutProps = node.item.properties;
     const layoutHidden = (0, formLayoutProps_1.isLayoutInvisible)(layoutProps);
     const hiddenClass = layoutHidden ? ' designer-node--layout-hidden' : '';
+    const selectedDescendant = selectedPath.startsWith(`${node.path}.`);
+    if (layoutHidden && !isSelected && !selectedDescendant) {
+        return null;
+    }
     const title = getItemTitleFromProps(node.item.properties);
     const dp = getDataPath(node.item.properties);
     const children = node.children;
@@ -2479,7 +2704,7 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
     if (!showTitle) {
         if (isLayoutGroup) {
             const orientation = getOrientation(node.item.properties);
-            return (react_1.default.createElement("div", { className: `designer-group__content designer-group__content--${orientation}${hiddenClass}` }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands })))));
+            return (react_1.default.createElement("div", { className: `designer-group__content designer-group__content--${orientation}${hiddenClass}${isSelected ? ' is-selected' : ''}`, "data-path": node.path, onClick: onClickSelect, title: node.path }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands })))));
         }
         return (react_1.default.createElement(react_1.default.Fragment, null, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands })))));
     }
@@ -2487,7 +2712,11 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
         const pages = children.filter((c) => c.item.type === 'Page');
         const activeFromSelection = pages.find((p) => selectedPath.startsWith(p.path))?.path;
         const active = activeFromSelection || activePages[node.path] || pages[0]?.path || '';
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--pages`, onClick: onClickSelect, title: node.path },
+        const noTabs = isPagesWithoutTabs(layoutProps);
+        const noHStretch = (0, formLayoutProps_1.isHorizontalStretchFalse)(layoutProps);
+        const pagesStyle = noHStretch ? (0, formLayoutProps_1.buildNoHorizontalStretchStyle)(layoutProps) : undefined;
+        const pagesClass = `${baseClass} designer-node--pages${noTabs ? ' designer-node--pages-notabs' : ''}${noHStretch ? ' designer-node--no-hstretch' : ''}`;
+        return (react_1.default.createElement("div", { className: pagesClass, style: pagesStyle, "data-path": node.path, onClick: onClickSelect, title: node.path },
             pages.length > 0 && !isPagesWithoutTabs(layoutProps) ? (react_1.default.createElement("div", { className: "designer-tabs", onClick: (e) => e.stopPropagation() }, pages.map((p) => {
                 const pTitle = getItemTitleFromProps(p.item.properties) || p.item.name || '';
                 const isActive = p.path === active;
@@ -2500,11 +2729,11 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
                 const pageNode = pages.find((p) => p.path === active);
                 if (!pageNode)
                     return null;
-                return (react_1.default.createElement("div", { className: "designer-node__children designer-node__children--pages" }, pageNode.children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands })))));
+                return (react_1.default.createElement("div", { className: `designer-node__children designer-node__children--pages${selectedPath === pageNode.path ? ' is-selected' : ''}`, "data-path": pageNode.path }, pageNode.children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands })))));
             })()));
     }
     if (type === 'Page') {
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--page`, onClick: onClickSelect, title: node.path }, children.length > 0 ? (react_1.default.createElement("div", { className: "designer-node__children" }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands }))))) : null));
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--page`, "data-path": node.path, onClick: onClickSelect, title: node.path }, children.length > 0 ? (react_1.default.createElement("div", { className: "designer-node__children" }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands }))))) : null));
     }
     if (type === 'UsualGroup' || type === 'ColumnGroup') {
         const orientation = getOrientation(node.item.properties);
@@ -2512,12 +2741,13 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
         const showTitle = showTitleVal !== false &&
             showTitleVal !== 'false' &&
             (typeof showTitleVal !== 'string' || showTitleVal.toLowerCase() !== 'false');
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--group`, onClick: onClickSelect, title: node.path },
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--group`, "data-path": node.path, onClick: onClickSelect, title: node.path },
             showTitle && (title || node.item.name) ? (react_1.default.createElement("div", { className: "designer-group__caption" }, title || node.item.name)) : null,
             children.length > 0 ? (react_1.default.createElement("div", { className: `designer-group__content designer-group__content--${orientation}` }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands }))))) : (react_1.default.createElement("div", { className: "designer-node__props" }, dp ? react_1.default.createElement("span", { className: "designer-node__datapath" }, formatValue(dp)) : null))));
     }
     if (type === 'InputField' || type === 'SelectField') {
         const label = title || deriveLabelFromDataPath(dp) || node.item.name || '';
+        const inputHint = extractTitle(layoutProps?.InputHint).trim();
         const multiline = Boolean(node.item.properties?.MultiLine);
         const titleLoc = (0, formLayoutProps_1.parseTitleLocation)(layoutProps);
         const fieldLayoutClass = titleLoc === 'none'
@@ -2527,17 +2757,18 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
                 : 'designer-field designer-field--title-left';
         const readOnly = (0, formLayoutProps_1.isLayoutReadOnly)(layoutProps);
         const fieldBoxStyle = (0, formLayoutProps_1.buildFieldPreviewStyle)(layoutProps);
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--field`, style: fieldBoxStyle, onClick: onClickSelect, title: node.path },
+        const noTitle = titleLoc === 'none';
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--field${noTitle ? ' designer-node--field-notitle' : ''}`, style: fieldBoxStyle, "data-path": node.path, onClick: onClickSelect, title: node.path },
             react_1.default.createElement("div", { className: `${fieldLayoutClass}${readOnly ? ' designer-field--readonly' : ''}` },
                 react_1.default.createElement("div", { className: "designer-field__label" }, label),
                 react_1.default.createElement("div", { className: `designer-field__control ${multiline ? 'is-multiline' : ''}` },
-                    react_1.default.createElement("span", { className: "designer-field__hint" }, "\u00A0")))));
+                    react_1.default.createElement("span", { className: "designer-field__hint" }, inputHint || '\u00A0')))));
     }
     if (type === 'CheckBoxField') {
         const label = title || deriveLabelFromDataPath(dp) || node.item.name || '';
         const readOnly = (0, formLayoutProps_1.isLayoutReadOnly)(layoutProps);
         const cbStyle = (0, formLayoutProps_1.buildFieldPreviewStyle)(layoutProps);
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--checkbox`, style: cbStyle, onClick: onClickSelect, title: node.path },
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--checkbox`, style: cbStyle, "data-path": node.path, onClick: onClickSelect, title: node.path },
             react_1.default.createElement("div", { className: `designer-checkbox${readOnly ? ' designer-checkbox--readonly' : ''}` },
                 react_1.default.createElement("input", { type: "checkbox", className: "designer-checkbox__input", disabled: true, "aria-hidden": true }),
                 react_1.default.createElement("span", { className: "designer-checkbox__label" }, label || (dp ? formatValue(dp) : '\u00A0')))));
@@ -2545,31 +2776,33 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
     if (type === 'LabelField') {
         const label = title || node.item.name || '';
         const lfStyle = (0, formLayoutProps_1.buildFieldPreviewStyle)(layoutProps);
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--label`, style: lfStyle, onClick: onClickSelect, title: node.path },
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--label`, style: lfStyle, "data-path": node.path, onClick: onClickSelect, title: node.path },
             react_1.default.createElement("div", { className: "designer-label" }, label)));
     }
     if (type === 'LabelDecoration') {
         const labelText = getItemTitleFromProps(node.item.properties) || '';
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--label`, onClick: onClickSelect, title: node.path },
-            react_1.default.createElement("div", { className: "designer-label" }, labelText || '\u00A0')));
+        const isSpacer = !labelText.trim();
+        if (isSpacer) {
+            const grow = (0, formLayoutProps_1.isVerticalStretchTrue)(layoutProps);
+            return (react_1.default.createElement("div", { className: `${baseClass} designer-node--spacer${grow ? ' designer-node--spacer-grow' : ' designer-node--spacer-gap'}`, "data-path": node.path, onClick: onClickSelect, title: node.path }));
+        }
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--label`, "data-path": node.path, onClick: onClickSelect, title: node.path },
+            react_1.default.createElement("div", { className: "designer-label" }, labelText)));
     }
     if (type === 'PictureDecoration') {
         const resourceIconUrl = (typeof window !== 'undefined' && window.__FORM_PREVIEW_RESOURCE_ICON__) || '';
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--picture`, onClick: onClickSelect, title: node.path },
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--picture`, "data-path": node.path, onClick: onClickSelect, title: node.path },
             react_1.default.createElement("img", { src: resourceIconUrl, width: 16, height: 16, alt: "", className: "designer-picture-decoration" })));
     }
     if (type === 'CommandBar' || type === 'AutoCommandBar') {
-        const buttons = flattenCommandBarNodes(children);
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--commandbar`, onClick: onClickSelect, title: node.path },
-            react_1.default.createElement("div", { className: "designer-commandbar", onClick: (e) => e.stopPropagation() }, buttons.length === 0 ? (react_1.default.createElement("span", { className: "designer-commandbar__empty" }, "\u041A\u043E\u043C\u0430\u043D\u0434\u043D\u0430\u044F \u043F\u0430\u043D\u0435\u043B\u044C")) : (buttons.map((b) => {
-                const caption = getCommandCaptionFromItem(b.item, formCommands);
-                return (react_1.default.createElement("button", { key: b.path, type: "button", className: "designer-button", title: caption, onClick: () => onSelect(b.path) }, caption));
-            })))));
+        const visuals = renderCommandBarVisuals(children, selectedPath, onSelect, formCommands);
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--commandbar`, "data-path": node.path, onClick: onClickSelect, title: node.path },
+            react_1.default.createElement("div", { className: "designer-commandbar", onClick: (e) => e.stopPropagation() }, visuals.length === 0 ? (react_1.default.createElement("span", { className: "designer-commandbar__empty" }, "\u041A\u043E\u043C\u0430\u043D\u0434\u043D\u0430\u044F \u043F\u0430\u043D\u0435\u043B\u044C")) : (visuals))));
     }
     if (type === 'Button') {
         const bTitle = getCommandCaptionFromItem(node.item, formCommands) || 'Кнопка';
         const btnBoxStyle = (0, formLayoutProps_1.buildFieldPreviewStyle)(layoutProps);
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--button`, style: btnBoxStyle, onClick: onClickSelect, title: node.path },
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--button`, style: btnBoxStyle, "data-path": node.path, onClick: onClickSelect, title: node.path },
             react_1.default.createElement("button", { type: "button", className: "designer-button", onClick: (e) => {
                     e.stopPropagation();
                     onSelect(node.path);
@@ -2612,27 +2845,29 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
             .filter(Boolean)
             .join(' ');
         const readOnly = (0, formLayoutProps_1.isLayoutReadOnly)(layoutProps);
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--table${readOnly ? ' designer-node--table-readonly' : ''}`, style: tableBoxStyle, onClick: onClickSelect, title: node.path },
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--table${readOnly ? ' designer-node--table-readonly' : ''}`, style: tableBoxStyle, "data-path": node.path, onClick: onClickSelect, title: node.path },
             showTableTitle ? react_1.default.createElement("div", { className: "designer-table__title" }, tTitle) : null,
             adds.search || adds.status || adds.control ? (react_1.default.createElement("div", { className: "designer-table__additions", onClick: (e) => e.stopPropagation() },
-                adds.search ? (react_1.default.createElement("div", { className: "designer-table__addition designer-table__addition--search", title: "SearchStringAddition" }, "\u0421\u0442\u0440\u043E\u043A\u0430 \u043F\u043E\u0438\u0441\u043A\u0430")) : null,
-                adds.status ? (react_1.default.createElement("div", { className: "designer-table__addition designer-table__addition--status", title: "ViewStatusAddition" }, "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430")) : null,
-                adds.control ? (react_1.default.createElement("div", { className: "designer-table__addition designer-table__addition--control", title: "SearchControlAddition" }, "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043F\u043E\u0438\u0441\u043A\u043E\u043C")) : null)) : null,
+                adds.search ? (react_1.default.createElement("div", { className: `designer-table__addition designer-table__addition--search${children.some((c) => c.item.type === 'SearchStringAddition' && c.path === selectedPath)
+                        ? ' is-selected'
+                        : ''}`, "data-path": children.find((c) => c.item.type === 'SearchStringAddition')?.path, title: "SearchStringAddition" }, "\u0421\u0442\u0440\u043E\u043A\u0430 \u043F\u043E\u0438\u0441\u043A\u0430")) : null,
+                adds.status ? (react_1.default.createElement("div", { className: `designer-table__addition designer-table__addition--status${children.some((c) => c.item.type === 'ViewStatusAddition' && c.path === selectedPath)
+                        ? ' is-selected'
+                        : ''}`, "data-path": children.find((c) => c.item.type === 'ViewStatusAddition')?.path, title: "ViewStatusAddition" }, "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430")) : null,
+                adds.control ? (react_1.default.createElement("div", { className: `designer-table__addition designer-table__addition--control${children.some((c) => c.item.type === 'SearchControlAddition' && c.path === selectedPath)
+                        ? ' is-selected'
+                        : ''}`, "data-path": children.find((c) => c.item.type === 'SearchControlAddition')?.path, title: "SearchControlAddition" }, "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043F\u043E\u0438\u0441\u043A\u043E\u043C")) : null)) : null,
             (() => {
                 const showAutoBar = Boolean(autoPanel) && !isCommandBarLocationNone(layoutProps);
-                const autoButtons = showAutoBar ? flattenCommandBarNodes(autoCommands) : [];
-                if (!showAutoBar || autoButtons.length === 0) {
+                const autoVisuals = showAutoBar
+                    ? renderCommandBarVisuals(autoCommands, selectedPath, onSelect, formCommands)
+                    : [];
+                if (!showAutoBar || autoVisuals.length === 0) {
                     return null;
                 }
                 return (react_1.default.createElement("div", { className: "designer-table__bars" },
                     react_1.default.createElement("div", { className: "designer-table__bar", title: autoPanel?.item.name || 'Командная панель' },
-                        react_1.default.createElement("div", { className: "designer-table__barButtons" }, autoButtons.map((cmd) => {
-                            const caption = getCommandCaptionFromItem(cmd.item, formCommands);
-                            return (react_1.default.createElement("button", { key: cmd.path, type: "button", className: "designer-button", title: caption, onClick: (e) => {
-                                    e.stopPropagation();
-                                    onSelect(cmd.path);
-                                } }, caption));
-                        })))));
+                        react_1.default.createElement("div", { className: "designer-table__barButtons", onClick: (e) => e.stopPropagation() }, autoVisuals))));
             })(),
             react_1.default.createElement("div", { className: tableSurfaceClass, style: gridStyle },
                 showHead && model.colCount > 0 ? (react_1.default.createElement("div", { className: "designer-table__headGrid", style: headStyle }, model.cells.map((c) => (react_1.default.createElement("div", { key: c.key, className: cellClass(c.kind), style: {
@@ -2644,7 +2879,7 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
                 react_1.default.createElement("div", { className: "designer-table__row" }, Array.from({ length: model.colCount }).map((_, i) => (react_1.default.createElement("div", { key: i, className: "designer-table__cell" }, "\u00A0")))),
                 react_1.default.createElement("div", { className: "designer-table__row" }, Array.from({ length: model.colCount }).map((_, i) => (react_1.default.createElement("div", { key: i, className: "designer-table__cell" }, "\u00A0")))))));
     }
-    return (react_1.default.createElement("div", { className: baseClass, onClick: onClickSelect, title: node.path },
+    return (react_1.default.createElement("div", { className: baseClass, "data-path": node.path, onClick: onClickSelect, title: node.path },
         react_1.default.createElement("div", { className: "designer-node__title" },
             react_1.default.createElement("span", { className: "designer-node__name" }, title || node.item.name || '')),
         children.length > 0 ? (react_1.default.createElement("div", { className: "designer-node__children" }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands }))))) : (react_1.default.createElement("div", { className: "designer-node__props" }, dp ? react_1.default.createElement("div", { className: "designer-node__datapath" }, formatValue(dp)) : null))));

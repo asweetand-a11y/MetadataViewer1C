@@ -3528,12 +3528,10 @@ const DesignerPreview: React.FC<{
     if (!root) return;
     const frame = window.requestAnimationFrame(() => {
       const marked = root.querySelectorAll('[data-path]');
-      let target: HTMLElement | null = null;
-      marked.forEach((n) => {
-        if ((n as HTMLElement).getAttribute('data-path') === selectedPath) {
-          target = n as HTMLElement;
-        }
-      });
+      const target = Array.from(marked).find(
+        (n): n is HTMLElement =>
+          n instanceof HTMLElement && n.getAttribute('data-path') === selectedPath
+      );
       target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     });
     return () => window.cancelAnimationFrame(frame);
