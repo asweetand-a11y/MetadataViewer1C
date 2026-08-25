@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TemplateDocument, TemplateRow, TemplateCell, CellPosition, CellRange, TemplateColumns } from '../../../templatInterfaces';
-import { calculateColumnWidth, calculateRowHeight, getMinRowIndex, getMaxRowIndex } from '../../../utils/templateUtils';
+import { calculateColumnWidth, calculateRowHeight, getMinRowIndex, getMaxRowIndex, toTemplateIndex, namedAreaMatchesColumnsId } from '../../../utils/templateUtils';
 import { findCellByPosition, getCellFillPattern, extractTextFromTemplateTextData, extractStringValue, getEffectiveFormat, getEffectiveFont, formatBorderLineCode, getAllNamedAreas, findNamedAreaByPosition, getNamedAreaForRow, getNamedAreaForColumn, getNamedAreasForRow, getNamedAreasForColumn, isCellOnNamedAreaBoundary, resolveTemplateBorderColorForCss } from '../../../utils/templateUtils';
 import { buildCellBorderCss } from '../../../utils/spreadsheetCellLineType';
 import { NamedArea } from '../../../templatInterfaces';
@@ -58,12 +58,12 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
         if (templateDocument.rowsItem) {
             templateDocument.rowsItem.forEach((row) => {
                 // Используем реальный индекс строки из данных
-                const rowIndex = row.index !== undefined ? row.index : templateDocument.rowsItem.indexOf(row);
+                const rowIndex = toTemplateIndex(row.index, templateDocument.rowsItem.indexOf(row));
                 if (row.row && row.row.c) {
                     let currentColIndex = 0;
                     row.row.c.forEach((cell, cellIdx) => {
                         // Определяем индекс колонки: если есть i, используем его, иначе порядковый номер
-                        const colIndex = cell.i !== undefined ? cell.i : currentColIndex;
+                        const colIndex = cell.i !== undefined ? toTemplateIndex(cell.i, currentColIndex) : currentColIndex;
                         currentColIndex = colIndex + 1;
                         
                         const key = `${rowIndex}_${colIndex}`;
@@ -146,6 +146,44 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
         if (right && left) left.scrollTop = right.scrollTop;
         if (right && header) header.scrollLeft = right.scrollLeft;
     }, [templateDocument]);
+
+    // Высоты строк левой панели должны совпадать с правой: rowspan и перенос текста иначе сдвигают имена областей
+    useEffect(() => {
+        const syncRowHeights = () => {
+            const leftBody = leftScrollRef.current?.querySelector('tbody');
+            const rightBody = rightScrollRef.current?.querySelector('tbody');
+            if (!leftBody || !rightBody) {
+                return;
+            }
+            const leftRows = leftBody.querySelectorAll('tr');
+            const rightRows = rightBody.querySelectorAll('tr');
+            const count = Math.min(leftRows.length, rightRows.length);
+            for (let i = 0; i < count; i++) {
+                const rightHeight = (rightRows[i] as HTMLElement).getBoundingClientRect().height;
+                const leftRow = leftRows[i] as HTMLElement;
+                leftRow.style.height = `${rightHeight}px`;
+                leftRow.style.minHeight = `${rightHeight}px`;
+            }
+            const leftTop = leftScrollRef.current?.parentElement?.querySelector('.template-table-left-top') as HTMLElement | null;
+            const rightTop = rightHeaderScrollRef.current;
+            if (leftTop && rightTop) {
+                leftTop.style.height = `${rightTop.getBoundingClientRect().height}px`;
+            }
+        };
+        syncRowHeights();
+        const frame = requestAnimationFrame(syncRowHeights);
+        const rightBodyEl = rightScrollRef.current;
+        const observer = typeof ResizeObserver !== 'undefined' && rightBodyEl
+            ? new ResizeObserver(() => syncRowHeights())
+            : null;
+        if (observer && rightBodyEl) {
+            observer.observe(rightBodyEl);
+        }
+        return () => {
+            cancelAnimationFrame(frame);
+            observer?.disconnect();
+        };
+    }, [templateDocument, zoom, showHeaders, showNamedAreaBorders, cellContents]);
 
     // Функция для получения группы колонок по умолчанию
     const getDefaultColumnsGroup = useCallback((): TemplateColumns | null => {
@@ -233,7 +271,7 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                 if (row.row && row.row.c) {
                     let currentColIndex = 0;
                     row.row.c.forEach(cell => {
-                        const colIndex = cell.i !== undefined ? cell.i : currentColIndex;
+                        const colIndex = cell.i !== undefined ? toTemplateIndex(cell.i, currentColIndex) : currentColIndex;
                         if (colIndex >= max) {
                             max = colIndex + 1;
                         }
@@ -528,28 +566,26 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
     // Поэтому colspan = w + 1, rowspan = h + 1
     const getMergedCells = useCallback((row: number, col: number): { colspan: number; rowspan: number; isStart: boolean } => {
         const merges = templateDocument.merge || [];
+        const logicalRow = toTemplateIndex(row, -1);
+        const logicalCol = toTemplateIndex(col, -1);
         
         for (const merge of merges) {
-            // Проверяем, является ли эта ячейка началом объединения
-            if (merge.r === row && merge.c === col) {
+            const mergeR = toTemplateIndex(merge.r, -1);
+            const mergeC = toTemplateIndex(merge.c, -1);
+            const mergeWidth = toTemplateIndex(merge.w, 0);
+            const mergeHeight = merge.h !== undefined && merge.h !== null ? toTemplateIndex(merge.h, 0) : 0;
+
+            if (mergeR === logicalRow && mergeC === logicalCol) {
                 return {
-                    colspan: merge.w + 1, // w - количество дополнительных колонок, нужно +1
-                    rowspan: merge.h !== undefined ? merge.h + 1 : 1, // h - количество дополнительных строк, нужно +1
+                    colspan: mergeWidth + 1,
+                    rowspan: mergeHeight + 1,
                     isStart: true
                 };
             }
             
-            // Проверяем, входит ли эта ячейка в объединение (но не является началом)
-            // Если w=3, то объединяются колонки c, c+1, c+2, c+3 (включительно)
-            // Если h=1, то объединяются строки r и r+1 (всего 2 строки)
-            const mergeHeight = merge.h !== undefined ? merge.h : 0;
-            const mergeWidth = merge.w !== undefined ? merge.w : 0;
-            // Проверяем, что ячейка находится внутри объединения (но не является началом)
-            // row > merge.r && row <= merge.r + mergeHeight (для вертикального объединения)
-            // col >= merge.c && col <= merge.c + mergeWidth (для горизонтального объединения)
-            if ((row > merge.r && row <= merge.r + mergeHeight && col >= merge.c && col <= merge.c + mergeWidth) ||
-                (row === merge.r && col > merge.c && col <= merge.c + mergeWidth) ||
-                (row > merge.r && row <= merge.r + mergeHeight && col === merge.c)) {
+            if ((logicalRow > mergeR && logicalRow <= mergeR + mergeHeight && logicalCol >= mergeC && logicalCol <= mergeC + mergeWidth) ||
+                (logicalRow === mergeR && logicalCol > mergeC && logicalCol <= mergeC + mergeWidth) ||
+                (logicalRow > mergeR && logicalRow <= mergeR + mergeHeight && logicalCol === mergeC)) {
                 return {
                     colspan: 1,
                     rowspan: 1,
@@ -569,12 +605,7 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
     // Проверка, входит ли ячейка в именованную область
     const getNamedAreasForCell = useCallback((row: number, col: number, columnsID?: string): NamedArea[] => {
         const allAreas = findNamedAreaByPosition(templateDocument, row, col);
-        // Фильтруем по columnsID
-        if (columnsID) {
-            return allAreas.filter(area => area.columnsID === columnsID);
-        } else {
-            return allAreas.filter(area => !area.columnsID);
-        }
+        return allAreas.filter(area => namedAreaMatchesColumnsId(area, columnsID));
     }, [templateDocument]);
 
     const rows = templateDocument.rowsItem || [];
@@ -610,7 +641,7 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                             </colgroup>
                             <tbody>
                         {rows.map((templateRow, arrayIndex) => {
-                            const rowIndex = templateRow.index !== undefined ? templateRow.index : arrayIndex;
+                            const rowIndex = toTemplateIndex(templateRow.index, arrayIndex);
                             const activeRow = currentActiveRowIndex;
                             const isActive = activeRow === rowIndex;
                             const inFullRowRange =
@@ -619,7 +650,20 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                                 rowIndex <= fullWidthRowSelection.endRow;
                             const highlightSidebarRow = isActive || inFullRowRange;
                             const namedAreasForRow = getNamedAreasForRow(templateDocument, rowIndex, templateRow.row.columnsID);
-                            const areaNames = namedAreasForRow.map(area => area.name).join(', ');
+                            const startingRowAreas = namedAreasForRow.filter(area => area.startRow === rowIndex);
+                            const coveredByRowAreaAbove = namedAreasForRow.some(area => area.startRow < rowIndex);
+                            let namedAreaRowSpan = 1;
+                            if (startingRowAreas.length > 0) {
+                                const maxEnd = Math.max(...startingRowAreas.map(area => area.endRow));
+                                for (let i = arrayIndex + 1; i < rows.length; i++) {
+                                    const nextIndex = toTemplateIndex(rows[i].index, i);
+                                    if (nextIndex > maxEnd) {
+                                        break;
+                                    }
+                                    namedAreaRowSpan++;
+                                }
+                            }
+                            const areaNames = startingRowAreas.map(area => area.name).join(', ');
                             const heightValue = getRowHeight(rowIndex);
                             return (
                                 <tr
@@ -629,9 +673,11 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                                     onMouseEnter={() => handleRowMouseEnter(rowIndex)}
                                     onMouseLeave={handleRowMouseLeave}
                                 >
-                                    <td className="template-table-named-area-cell">
+                                    {!coveredByRowAreaAbove && (
+                                    <td className="template-table-named-area-cell" rowSpan={namedAreaRowSpan > 1 ? namedAreaRowSpan : undefined}>
                                         {areaNames && <span className="named-area-label">{areaNames}</span>}
                                     </td>
+                                    )}
                                     <td
                                         className="template-table-row-header"
                                         onClick={(e) => handleRowHeaderClick(rowIndex, e)}
@@ -665,7 +711,7 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                             let activeColumnsID: string | undefined = undefined;
                             if (activeRow !== null) {
                                 const activeRowData = rows.find(r => {
-                                    const rIndex = r.index !== undefined ? r.index : rows.indexOf(r);
+                                    const rIndex = toTemplateIndex(r.index, rows.indexOf(r));
                                     return rIndex === activeRow;
                                 });
                                 if (activeRowData) {
@@ -675,18 +721,9 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                             
                             // Используем columnsID активной строки, если есть, иначе формат по умолчанию
                             const namedAreasForColumn = getNamedAreasForColumn(templateDocument, col, activeColumnsID);
-                            const prevNamedAreas = col > 0 ? getNamedAreasForColumn(templateDocument, col - 1, activeColumnsID) : [];
-                            // Проверяем, отличается ли набор областей от предыдущей колонки
-                            const shouldShow = namedAreasForColumn.length > 0 && (
-                                prevNamedAreas.length === 0 || 
-                                prevNamedAreas.length !== namedAreasForColumn.length ||
-                                !prevNamedAreas.every((area, idx) => 
-                                    idx < namedAreasForColumn.length && 
-                                    area.name === namedAreasForColumn[idx].name &&
-                                    area.startCol === namedAreasForColumn[idx].startCol
-                                )
-                            );
-                            const areaNames = namedAreasForColumn.map(area => area.name).join(', ');
+                            const startingColAreas = namedAreasForColumn.filter(area => area.startCol === col);
+                            const shouldShow = startingColAreas.length > 0;
+                            const areaNames = startingColAreas.map(area => area.name).join(', ');
                             const isColSelected = selectedRange && col >= selectedRange.startCol && col <= selectedRange.endCol &&
                                 selectedRange.startRow === getMinRowIndex(templateDocument) && selectedRange.endRow === getMaxRowIndex(templateDocument);
                             return (
@@ -696,7 +733,6 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                                     onClick={(e) => handleColumnHeaderClick(col, e)}
                                     title={`Колонка ${col + 1}. Кликните, чтобы выделить`}
                                 >
-                                    <span className="template-column-number" style={{ color: 'var(--vscode-foreground)', display: 'block', marginBottom: 2 }}>{col + 1}</span>
                                     {shouldShow && (
                                         <span className="named-area-label">{areaNames}</span>
                                     )}
@@ -714,7 +750,7 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                             if (activeRow !== null) {
                                 // Если есть активная строка, используем её формат колонок для заголовков
                                 const activeRowData = rows.find(r => {
-                                    const rIndex = r.index !== undefined ? r.index : rows.indexOf(r);
+                                    const rIndex = toTemplateIndex(r.index, rows.indexOf(r));
                                     return rIndex === activeRow;
                                 });
                                 if (activeRowData) {
@@ -769,7 +805,7 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                             <tbody>
                     {rows.map((templateRow, arrayIndex) => {
                         // Используем реальный индекс строки из данных, а не индекс массива
-                        const rowIndex = templateRow.index !== undefined ? templateRow.index : arrayIndex;
+                        const rowIndex = toTemplateIndex(templateRow.index, arrayIndex);
                         const activeRow = currentActiveRowIndex;
                         const isActive = activeRow === rowIndex;
                         const inFullRowRange =
@@ -790,7 +826,7 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                             // Ищем строку с нужным индексом
                             // Важно: используем тот же способ определения индекса, что и при рендеринге
                             activeRowData = rows.find((r, idx) => {
-                                const rIndex = r.index !== undefined ? r.index : idx;
+                                const rIndex = toTemplateIndex(r.index, idx);
                                 return rIndex === activeRow;
                             });
                             if (activeRow === rowIndex) {
@@ -1148,6 +1184,9 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                                             </td>
                                         );
                                     })}
+                                    {Array.from({ length: maxColumns }, (_, col) => getMergedCells(rowIndex, col).isStart).every((isStart) => !isStart) && (
+                                        <td className="template-table-cell template-table-merge-placeholder" colSpan={Math.max(maxColumns, 1)} />
+                                    )}
                             </tr>
                         );
                     })}

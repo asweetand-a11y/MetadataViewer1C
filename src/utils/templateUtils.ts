@@ -36,6 +36,15 @@ export function updateTemplateDocument(
  * Находит ячейку по позиции (row, col).
  * row — логический индекс строки (row.index), не индекс в массиве.
  */
+/** Приводит индекс строки/колонки из XML (число или строка) к number. */
+export function toTemplateIndex(value: unknown, fallback: number): number {
+    if (value === undefined || value === null || value === '') {
+        return fallback;
+    }
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+}
+
 export function findCellByPosition(
     template: TemplateDocument, 
     row: number, 
@@ -45,24 +54,26 @@ export function findCellByPosition(
         return null;
     }
 
+    const logicalRow = toTemplateIndex(row, -1);
+    const logicalCol = toTemplateIndex(col, -1);
+
     // Ищем строку по row.index (логический индекс)
-    const templateRow = template.rowsItem.find(r => (r.index !== undefined ? r.index : template.rowsItem!.indexOf(r)) === row);
+    const templateRow = template.rowsItem.find((r, idx) => toTemplateIndex(r.index, idx) === logicalRow);
     if (!templateRow || !templateRow.row || !templateRow.row.c) {
         return null;
     }
 
     // Ищем ячейку с индексом col
-    // Если ячейка имеет атрибут i, используем его
-    // Если нет, индекс определяется порядком в массиве
     let currentIndex = 0;
     for (const cell of templateRow.row.c) {
         if (cell.i !== undefined) {
-            if (cell.i === col) {
+            const cellIndex = toTemplateIndex(cell.i, currentIndex);
+            if (cellIndex === logicalCol) {
                 return cell;
             }
-            currentIndex = cell.i + 1;
+            currentIndex = cellIndex + 1;
         } else {
-            if (currentIndex === col) {
+            if (currentIndex === logicalCol) {
                 return cell;
             }
             currentIndex++;
@@ -511,9 +522,9 @@ export function getMaxColumns(template: TemplateDocument): number {
  */
 export function getMinRowIndex(template: TemplateDocument): number {
     if (!template.rowsItem?.length) return 0;
-    let min = template.rowsItem[0].index ?? 0;
+    let min = toTemplateIndex(template.rowsItem[0].index, 0);
     template.rowsItem.forEach((row, idx) => {
-        const rIndex = row.index !== undefined ? row.index : idx;
+        const rIndex = toTemplateIndex(row.index, idx);
         if (rIndex < min) min = rIndex;
     });
     return min;
@@ -526,7 +537,7 @@ export function getMaxRowIndex(template: TemplateDocument): number {
     if (!template.rowsItem?.length) return 0;
     let max = 0;
     template.rowsItem.forEach((row, idx) => {
-        const rIndex = row.index !== undefined ? row.index : idx;
+        const rIndex = toTemplateIndex(row.index, idx);
         if (rIndex > max) max = rIndex;
     });
     return max;
@@ -545,11 +556,10 @@ export function getAllNamedAreas(template: TemplateDocument): Map<string, NamedA
     template.namedItem.forEach(item => {
         if (item.name && item.area) {
             const area = item.area;
-            const beginRow = area.beginRow ?? 0;
-            const beginCol = area.beginColumn ?? -1;
-            const endRow = area.endRow ?? 0;
-            const endCol = area.endColumn ?? -1;
-            // Если type не задан, но колонки = -1 — это область типа Rows
+            const beginRow = toTemplateIndex(area.beginRow, 0);
+            const beginCol = area.beginColumn === undefined || area.beginColumn === null ? -1 : toTemplateIndex(area.beginColumn, -1);
+            const endRow = toTemplateIndex(area.endRow, 0);
+            const endCol = area.endColumn === undefined || area.endColumn === null ? -1 : toTemplateIndex(area.endColumn, -1);
             let areaType = area.type;
             if (!areaType && beginCol === -1 && endCol === -1) {
                 areaType = 'Rows';
@@ -666,22 +676,21 @@ export function findNamedAreaByPosition(
 ): NamedArea[] {
     const allAreas = getAllNamedAreas(template);
     const matchingAreas: NamedArea[] = [];
+    const logicalRow = toTemplateIndex(row, -1);
+    const logicalCol = toTemplateIndex(col, -1);
 
     allAreas.forEach(area => {
         if (area.areaType === 'Rows') {
-            // Для типа Rows: проверяем только строки, все колонки (-1 означает все колонки)
-            if (row >= area.startRow && row <= area.endRow) {
+            if (logicalRow >= area.startRow && logicalRow <= area.endRow) {
                 matchingAreas.push(area);
             }
         } else if (area.areaType === 'Columns') {
-            // Для типа Columns: проверяем только колонки, все строки (-1 означает все строки)
-            if (col >= area.startCol && col <= area.endCol) {
+            if (logicalCol >= area.startCol && logicalCol <= area.endCol) {
                 matchingAreas.push(area);
             }
         } else {
-            // Для типа Rectangle: проверяем и строки, и колонки
-            if (row >= area.startRow && row <= area.endRow &&
-                col >= area.startCol && col <= area.endCol) {
+            if (logicalRow >= area.startRow && logicalRow <= area.endRow &&
+                logicalCol >= area.startCol && logicalCol <= area.endCol) {
                 matchingAreas.push(area);
             }
         }
@@ -694,27 +703,26 @@ export function findNamedAreaByPosition(
  * Получает именованную область типа "Rows" для указанной строки
  * Возвращает первую найденную область или null
  */
+/** Область без columnsID действует на все форматы строк, как в конфигураторе 1С. */
+export function namedAreaMatchesColumnsId(area: NamedArea, columnsID?: string): boolean {
+    if (!area.columnsID) {
+        return true;
+    }
+    return area.columnsID === columnsID;
+}
+
 export function getNamedAreaForRow(
     template: TemplateDocument,
     rowIndex: number,
     columnsID?: string
 ): NamedArea | null {
     const allAreas = getAllNamedAreas(template);
+    const logicalRow = toTemplateIndex(rowIndex, -1);
     
     for (const area of allAreas.values()) {
         if (area.areaType === 'Rows') {
-            if (rowIndex >= area.startRow && rowIndex <= area.endRow) {
-                // Проверяем соответствие columnsID
-                if (columnsID) {
-                    if (area.columnsID === columnsID) {
-                        return area;
-                    }
-                } else {
-                    // Если для строки нет columnsID, ищем области без columnsID
-                    if (!area.columnsID) {
-                        return area;
-                    }
-                }
+            if (logicalRow >= area.startRow && logicalRow <= area.endRow && namedAreaMatchesColumnsId(area, columnsID)) {
+                return area;
             }
         }
     }
@@ -732,21 +740,12 @@ export function getNamedAreaForColumn(
     columnsID?: string
 ): NamedArea | null {
     const allAreas = getAllNamedAreas(template);
+    const logicalCol = toTemplateIndex(colIndex, -1);
     
     for (const area of allAreas.values()) {
         if (area.areaType === 'Columns') {
-            if (colIndex >= area.startCol && colIndex <= area.endCol) {
-                // Проверяем соответствие columnsID
-                if (columnsID) {
-                    if (area.columnsID === columnsID) {
-                        return area;
-                    }
-                } else {
-                    // Если для строки нет columnsID, ищем области без columnsID
-                    if (!area.columnsID) {
-                        return area;
-                    }
-                }
+            if (logicalCol >= area.startCol && logicalCol <= area.endCol && namedAreaMatchesColumnsId(area, columnsID)) {
+                return area;
             }
         }
     }
@@ -766,23 +765,12 @@ export function getNamedAreasForRow(
 ): NamedArea[] {
     const allAreas = getAllNamedAreas(template);
     const result: NamedArea[] = [];
+    const logicalRow = toTemplateIndex(rowIndex, -1);
     
     for (const area of allAreas.values()) {
-        // Исключаем области типа "Rectangle"
         if (area.areaType === 'Rows') {
-            if (rowIndex >= area.startRow && rowIndex <= area.endRow) {
-                // Проверяем соответствие columnsID
-                if (columnsID) {
-                    // Если для строки задан columnsID, ищем области с таким же columnsID
-                    if (area.columnsID === columnsID) {
-                        result.push(area);
-                    }
-                } else {
-                    // Если для строки нет columnsID, ищем области без columnsID
-                    if (!area.columnsID) {
-                        result.push(area);
-                    }
-                }
+            if (logicalRow >= area.startRow && logicalRow <= area.endRow && namedAreaMatchesColumnsId(area, columnsID)) {
+                result.push(area);
             }
         }
     }
@@ -802,23 +790,12 @@ export function getNamedAreasForColumn(
 ): NamedArea[] {
     const allAreas = getAllNamedAreas(template);
     const result: NamedArea[] = [];
+    const logicalCol = toTemplateIndex(colIndex, -1);
     
     for (const area of allAreas.values()) {
-        // Исключаем области типа "Rectangle"
         if (area.areaType === 'Columns') {
-            if (colIndex >= area.startCol && colIndex <= area.endCol) {
-                // Проверяем соответствие columnsID
-                if (columnsID) {
-                    // Если для строки задан columnsID, ищем области с таким же columnsID
-                    if (area.columnsID === columnsID) {
-                        result.push(area);
-                    }
-                } else {
-                    // Если для строки нет columnsID, ищем области без columnsID
-                    if (!area.columnsID) {
-                        result.push(area);
-                    }
-                }
+            if (logicalCol >= area.startCol && logicalCol <= area.endCol && namedAreaMatchesColumnsId(area, columnsID)) {
+                result.push(area);
             }
         }
     }
@@ -876,13 +853,11 @@ export function isCellOnNamedAreaBoundary(
         // Для типа Columns верхняя и нижняя границы должны быть на всех строках
         // Но только на первой и последней колонке области
         if (result.left || result.right) {
-            // Определяем общее количество строк для определения верхней и нижней границы
-            const totalRows = template.rowsItem ? template.rowsItem.length : 0;
-            if (totalRows > 0) {
-                // Верхняя граница на первой строке (0), нижняя на последней строке
-                // Границы должны быть на всех строках для первой и последней колонки
-                result.top = rowIndex === 0;
-                result.bottom = rowIndex === totalRows - 1;
+            if (template.rowsItem && template.rowsItem.length > 0) {
+                const minRow = getMinRowIndex(template);
+                const maxRow = getMaxRowIndex(template);
+                result.top = toTemplateIndex(rowIndex, -1) === minRow;
+                result.bottom = toTemplateIndex(rowIndex, -1) === maxRow;
             } else {
                 result.top = false;
                 result.bottom = false;
@@ -2190,17 +2165,18 @@ export function calculateRowHeight(
     rowIndex: number
 ): string | number | undefined {
     const defaultHeight = (template.height ?? 20) / 3;
+    const logicalRow = toTemplateIndex(rowIndex, -1);
 
     if (!template.rowsItem || !template.format) {
         return defaultHeight;
     }
 
-    const templateRow = template.rowsItem.find(r => (r.index !== undefined ? r.index : template.rowsItem!.indexOf(r)) === rowIndex);
+    const templateRow = template.rowsItem.find((r, idx) => toTemplateIndex(r.index, idx) === logicalRow);
     if (!templateRow || !templateRow.row || templateRow.row.formatIndex === undefined) {
         return defaultHeight;
     }
 
-    const formatIndex = templateRow.row.formatIndex - 1;
+    const formatIndex = toTemplateIndex(templateRow.row.formatIndex, 0) - 1;
     if (formatIndex < 0 || formatIndex >= template.format.length) {
         return defaultHeight;
     }

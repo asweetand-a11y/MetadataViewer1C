@@ -513,6 +513,12 @@
     background-color: var(--vscode-sideBar-background); /* Убеждаемся, что background-color установлен */
 }
 
+.template-table-merge-placeholder {
+    padding: 0;
+    border: none;
+    height: inherit;
+}
+
 .template-table-named-area-cell .named-area-label,
 .template-table-named-area-column-header .named-area-label {
     font-size: calc(var(--vscode-font-size) - 2px);
