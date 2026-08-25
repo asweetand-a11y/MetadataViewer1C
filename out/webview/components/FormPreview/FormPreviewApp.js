@@ -59,23 +59,83 @@ function formatValue(value) {
         return String(value);
     }
 }
-function getCommandCaptionFromItem(item) {
+function getCommandCaptionFromItem(item, formCommands) {
     if (!item)
         return 'Команда';
     const props = (item.properties || {});
+    const title = getItemTitleFromProps(props);
+    if (title.trim()) {
+        return title.trim();
+    }
     const cmdName = extractScalarText(props.CommandName) ||
         extractScalarText(props.Command) ||
         extractScalarText(props.CommandRef) ||
         '';
     if (cmdName) {
-        return cmdName;
+        const formCmd = matchFormCommandTitle(cmdName, formCommands);
+        if (formCmd) {
+            return formCmd;
+        }
+        return humanizeCommandRef(cmdName);
     }
-    const fallback = getItemTitleFromProps(props) ||
-        props?.Representation ||
-        props?.Title ||
-        item.name ||
-        'Команда';
+    const fallback = extractScalarText(props.Representation) || item.name || 'Команда';
     return typeof fallback === 'string' ? fallback : formatValue(fallback);
+}
+const STANDARD_COMMAND_CAPTIONS = {
+    Add: 'Добавить',
+    Delete: 'Удалить',
+    Change: 'Изменить',
+    Copy: 'Скопировать',
+    MoveUp: 'Вверх',
+    MoveDown: 'Вниз',
+    Find: 'Найти',
+    Refresh: 'Обновить',
+    EndEdit: 'Закончить редактирование',
+    Pickup: 'Подобрать',
+    OutputList: 'Вывести список',
+};
+function matchFormCommandTitle(cmdName, formCommands) {
+    const m = String(cmdName).trim().match(/^Form\.Command\.(.+)$/i);
+    if (!m || !formCommands?.length) {
+        return '';
+    }
+    const cmd = formCommands.find((c) => c.name === m[1]);
+    if (!cmd?.properties) {
+        return '';
+    }
+    return getItemTitleFromProps(cmd.properties).trim();
+}
+function humanizeCommandRef(cmdName) {
+    const s = String(cmdName).trim();
+    const std = s.match(/StandardCommand\.([A-Za-z0-9_]+)$/);
+    if (std) {
+        return STANDARD_COMMAND_CAPTIONS[std[1]] || std[1];
+    }
+    const formCmd = s.match(/^Form\.Command\.(.+)$/i);
+    if (formCmd) {
+        return formCmd[1];
+    }
+    const last = s.split('.').filter(Boolean).pop();
+    return last || s;
+}
+function flattenCommandBarNodes(nodes) {
+    const out = [];
+    for (const n of nodes) {
+        const t = n.item.type;
+        if (t === 'ButtonGroup' || t === 'UsualGroup' || t === 'Popup') {
+            out.push(...flattenCommandBarNodes(n.children || []));
+        }
+        else if (t === 'Button') {
+            out.push(n);
+        }
+    }
+    return out;
+}
+function isCommandBarLocationNone(props) {
+    return extractScalarText(props?.CommandBarLocation).toLowerCase() === 'none';
+}
+function isPagesWithoutTabs(props) {
+    return extractScalarText(props?.PagesRepresentation).toLowerCase() === 'none';
 }
 /**
  * Для кнопки с ссылкой вида Form.Command.ИмяКоманды возвращает текст процедуры из Action соответствующей команды формы.
@@ -286,11 +346,16 @@ function buildTree(items, basePath = '') {
  * Пытается получить короткий заголовок для узла.
  */
 function getItemLabel(item) {
+    const title = getItemTitleFromProps(item.properties);
+    if (title.trim()) {
+        return title.trim();
+    }
     const name = item.name || item.properties?.name;
-    const id = item.id || item.properties?.id;
     const type = item.type || 'Unknown';
-    const suffix = name ? ` ${String(name)}` : id ? ` #${String(id)}` : '';
-    return `${type}${suffix}`;
+    if (name) {
+        return String(name);
+    }
+    return type;
 }
 /** Человекочитаемое название типа элемента для заголовка панели «Свойства». */
 const ELEMENT_TYPE_LABELS = {
@@ -1323,7 +1388,7 @@ const FormPreviewApp = ({ vscode }) => {
                         selectedItem ? (react_1.default.createElement("div", { className: "edt-bottom__hint" },
                             "\u0412\u044B\u0434\u0435\u043B\u0435\u043D\u043E: ",
                             react_1.default.createElement("b", null, getItemLabel(selectedItem)))) : null,
-                        react_1.default.createElement(DesignerPreview, { items: form.childItems || [], selectedPath: selectedPath, onSelect: onSelect })))),
+                        react_1.default.createElement(DesignerPreview, { items: form.childItems || [], formCommandBar: form.properties?.AutoCommandBar, formCommands: form.commands || [], selectedPath: selectedPath, onSelect: onSelect })))),
             propertiesPanelOpen && (react_1.default.createElement("div", { className: "edt-properties-panel", style: { width: 320, minWidth: 260, flexShrink: 0 } },
                 react_1.default.createElement(PropertiesPanel, { item: selectedItem, commands: form.commands || [], title: getPropertiesPanelTitle(selectedItem), formSchemaEnums: formSchemaEnums, onClose: () => setPropertiesPanelOpen(false), onPropertyChange: (key, nextValue) => {
                         if (!selectedPath)
@@ -2375,15 +2440,21 @@ function buildVisualTree(items, basePath = '') {
         return { path, item, children };
     });
 }
-const DesignerPreview = ({ items, selectedPath, onSelect }) => {
-    const nodes = (0, react_1.useMemo)(() => buildVisualTree(items), [items]);
+const DesignerPreview = ({ items, formCommandBar, formCommands, selectedPath, onSelect }) => {
+    const nodes = (0, react_1.useMemo)(() => {
+        const rootItems = [...items];
+        if (formCommandBar && typeof formCommandBar === 'object') {
+            rootItems.unshift(convertRawFormItem(formCommandBar, 'AutoCommandBar'));
+        }
+        return buildVisualTree(rootItems);
+    }, [items, formCommandBar]);
     const [activePages, setActivePages] = (0, react_1.useState)({});
     const setActivePage = (0, react_1.useCallback)((pagesPath, pagePath) => {
         setActivePages((prev) => ({ ...prev, [pagesPath]: pagePath }));
     }, []);
-    return (react_1.default.createElement("div", { className: "designer designer-edt" }, nodes.map((n) => (react_1.default.createElement(DesignerNode, { key: n.path, node: n, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage })))));
+    return (react_1.default.createElement("div", { className: "designer designer-edt" }, nodes.map((n) => (react_1.default.createElement(DesignerNode, { key: n.path, node: n, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands })))));
 };
-const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage }) => {
+const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage, formCommands }) => {
     const isSelected = node.path === selectedPath;
     const type = node.item.type || 'Unknown';
     const layoutProps = node.item.properties;
@@ -2408,19 +2479,16 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
     if (!showTitle) {
         if (isLayoutGroup) {
             const orientation = getOrientation(node.item.properties);
-            return (react_1.default.createElement("div", { className: `designer-group__content designer-group__content--${orientation}${hiddenClass}` }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage })))));
+            return (react_1.default.createElement("div", { className: `designer-group__content designer-group__content--${orientation}${hiddenClass}` }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands })))));
         }
-        return (react_1.default.createElement(react_1.default.Fragment, null, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage })))));
+        return (react_1.default.createElement(react_1.default.Fragment, null, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands })))));
     }
     if (type === 'Pages') {
         const pages = children.filter((c) => c.item.type === 'Page');
         const activeFromSelection = pages.find((p) => selectedPath.startsWith(p.path))?.path;
         const active = activeFromSelection || activePages[node.path] || pages[0]?.path || '';
         return (react_1.default.createElement("div", { className: `${baseClass} designer-node--pages`, onClick: onClickSelect, title: node.path },
-            react_1.default.createElement("div", { className: "designer-node__title" },
-                react_1.default.createElement("span", { className: "designer-node__type" }, "Pages"),
-                react_1.default.createElement("span", { className: "designer-node__name" }, title || node.item.name || '')),
-            pages.length > 0 ? (react_1.default.createElement("div", { className: "designer-tabs", onClick: (e) => e.stopPropagation() }, pages.map((p) => {
+            pages.length > 0 && !isPagesWithoutTabs(layoutProps) ? (react_1.default.createElement("div", { className: "designer-tabs", onClick: (e) => e.stopPropagation() }, pages.map((p) => {
                 const pTitle = getItemTitleFromProps(p.item.properties) || p.item.name || '';
                 const isActive = p.path === active;
                 return (react_1.default.createElement("button", { key: p.path, type: "button", className: `designer-tab ${isActive ? 'is-active' : ''}`, onClick: () => {
@@ -2432,15 +2500,11 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
                 const pageNode = pages.find((p) => p.path === active);
                 if (!pageNode)
                     return null;
-                return (react_1.default.createElement("div", { className: "designer-node__children designer-node__children--pages" }, pageNode.children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage })))));
+                return (react_1.default.createElement("div", { className: "designer-node__children designer-node__children--pages" }, pageNode.children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands })))));
             })()));
     }
     if (type === 'Page') {
-        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--page`, onClick: onClickSelect, title: node.path },
-            react_1.default.createElement("div", { className: "designer-node__title" },
-                react_1.default.createElement("span", { className: "designer-node__type" }, "Page"),
-                react_1.default.createElement("span", { className: "designer-node__name" }, title || node.item.name || '')),
-            children.length > 0 ? (react_1.default.createElement("div", { className: "designer-node__children" }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage }))))) : null));
+        return (react_1.default.createElement("div", { className: `${baseClass} designer-node--page`, onClick: onClickSelect, title: node.path }, children.length > 0 ? (react_1.default.createElement("div", { className: "designer-node__children" }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands }))))) : null));
     }
     if (type === 'UsualGroup' || type === 'ColumnGroup') {
         const orientation = getOrientation(node.item.properties);
@@ -2449,10 +2513,8 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
             showTitleVal !== 'false' &&
             (typeof showTitleVal !== 'string' || showTitleVal.toLowerCase() !== 'false');
         return (react_1.default.createElement("div", { className: `${baseClass} designer-node--group`, onClick: onClickSelect, title: node.path },
-            react_1.default.createElement("div", { className: "designer-node__title" },
-                react_1.default.createElement("span", { className: "designer-node__type" }, type),
-                react_1.default.createElement("span", { className: "designer-node__name" }, showTitle ? (title || node.item.name || '') : (node.item.name || ''))),
-            children.length > 0 ? (react_1.default.createElement("div", { className: `designer-group__content designer-group__content--${orientation}` }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage }))))) : (react_1.default.createElement("div", { className: "designer-node__props" }, dp ? react_1.default.createElement("span", { className: "designer-node__datapath" }, formatValue(dp)) : null))));
+            showTitle && (title || node.item.name) ? (react_1.default.createElement("div", { className: "designer-group__caption" }, title || node.item.name)) : null,
+            children.length > 0 ? (react_1.default.createElement("div", { className: `designer-group__content designer-group__content--${orientation}` }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands }))))) : (react_1.default.createElement("div", { className: "designer-node__props" }, dp ? react_1.default.createElement("span", { className: "designer-node__datapath" }, formatValue(dp)) : null))));
     }
     if (type === 'InputField' || type === 'SelectField') {
         const label = title || deriveLabelFromDataPath(dp) || node.item.name || '';
@@ -2468,7 +2530,8 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
         return (react_1.default.createElement("div", { className: `${baseClass} designer-node--field`, style: fieldBoxStyle, onClick: onClickSelect, title: node.path },
             react_1.default.createElement("div", { className: `${fieldLayoutClass}${readOnly ? ' designer-field--readonly' : ''}` },
                 react_1.default.createElement("div", { className: "designer-field__label" }, label),
-                react_1.default.createElement("div", { className: `designer-field__control ${multiline ? 'is-multiline' : ''}` }, dp ? react_1.default.createElement("span", { className: "designer-field__hint" }, dp) : react_1.default.createElement("span", { className: "designer-field__hint" }, "\u00A0")))));
+                react_1.default.createElement("div", { className: `designer-field__control ${multiline ? 'is-multiline' : ''}` },
+                    react_1.default.createElement("span", { className: "designer-field__hint" }, "\u00A0")))));
     }
     if (type === 'CheckBoxField') {
         const label = title || deriveLabelFromDataPath(dp) || node.item.name || '';
@@ -2495,20 +2558,16 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
         return (react_1.default.createElement("div", { className: `${baseClass} designer-node--picture`, onClick: onClickSelect, title: node.path },
             react_1.default.createElement("img", { src: resourceIconUrl, width: 16, height: 16, alt: "", className: "designer-picture-decoration" })));
     }
-    if (type === 'CommandBar') {
-        const buttons = children;
+    if (type === 'CommandBar' || type === 'AutoCommandBar') {
+        const buttons = flattenCommandBarNodes(children);
         return (react_1.default.createElement("div", { className: `${baseClass} designer-node--commandbar`, onClick: onClickSelect, title: node.path },
             react_1.default.createElement("div", { className: "designer-commandbar", onClick: (e) => e.stopPropagation() }, buttons.length === 0 ? (react_1.default.createElement("span", { className: "designer-commandbar__empty" }, "\u041A\u043E\u043C\u0430\u043D\u0434\u043D\u0430\u044F \u043F\u0430\u043D\u0435\u043B\u044C")) : (buttons.map((b) => {
-                const caption = getCommandCaptionFromItem(b.item);
-                return (react_1.default.createElement("button", { key: b.path, type: "button", className: "designer-button", onClick: () => onSelect(b.path) }, caption));
+                const caption = getCommandCaptionFromItem(b.item, formCommands);
+                return (react_1.default.createElement("button", { key: b.path, type: "button", className: "designer-button", title: caption, onClick: () => onSelect(b.path) }, caption));
             })))));
     }
     if (type === 'Button') {
-        const bTitle = getItemTitleFromProps(node.item.properties) ||
-            node.item.properties?.Representation ||
-            node.item.properties?.CommandName ||
-            node.item.name ||
-            'Кнопка';
+        const bTitle = getCommandCaptionFromItem(node.item, formCommands) || 'Кнопка';
         const btnBoxStyle = (0, formLayoutProps_1.buildFieldPreviewStyle)(layoutProps);
         return (react_1.default.createElement("div", { className: `${baseClass} designer-node--button`, style: btnBoxStyle, onClick: onClickSelect, title: node.path },
             react_1.default.createElement("button", { type: "button", className: "designer-button", onClick: (e) => {
@@ -2526,9 +2585,7 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
         const adds = (0, formLayoutProps_1.hasTableAdditionPlaceholder)(layoutProps);
         const tableBoxStyle = (0, formLayoutProps_1.buildTablePreviewStyle)(layoutProps);
         const panelNodes = children.filter((c) => isPanelItemType(c.item.type));
-        const contextPanel = panelNodes.find((c) => c.item.type === 'ContextMenu') || null;
         const autoPanel = panelNodes.find((c) => c.item.type === 'AutoCommandBar') || null;
-        const contextCommands = contextPanel ? contextPanel.children : [];
         const autoCommands = autoPanel ? autoPanel.children : [];
         const model = buildTableHeadModel(node.item);
         const gridStyle = {
@@ -2561,23 +2618,22 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
                 adds.search ? (react_1.default.createElement("div", { className: "designer-table__addition designer-table__addition--search", title: "SearchStringAddition" }, "\u0421\u0442\u0440\u043E\u043A\u0430 \u043F\u043E\u0438\u0441\u043A\u0430")) : null,
                 adds.status ? (react_1.default.createElement("div", { className: "designer-table__addition designer-table__addition--status", title: "ViewStatusAddition" }, "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430")) : null,
                 adds.control ? (react_1.default.createElement("div", { className: "designer-table__addition designer-table__addition--control", title: "SearchControlAddition" }, "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043F\u043E\u0438\u0441\u043A\u043E\u043C")) : null)) : null,
-            contextPanel || autoPanel ? (react_1.default.createElement("div", { className: "designer-table__bars" },
-                autoPanel ? (react_1.default.createElement("div", { className: "designer-table__bar", title: autoPanel.item.name || 'AutoCommandBar' },
-                    react_1.default.createElement("div", { className: "designer-table__barButtons" }, autoCommands.length === 0 ? (react_1.default.createElement("span", { className: "designer-table__barEmpty" }, "\u041D\u0435\u0442 \u043A\u043E\u043C\u0430\u043D\u0434")) : (autoCommands.map((cmd) => {
-                        const caption = getCommandCaptionFromItem(cmd.item);
-                        return (react_1.default.createElement("button", { key: cmd.path, type: "button", className: "designer-button", onClick: (e) => {
-                                e.stopPropagation();
-                                onSelect(cmd.path);
-                            } }, caption));
-                    }))))) : null,
-                contextPanel ? (react_1.default.createElement("div", { className: "designer-table__bar", title: contextPanel.item.name || 'ContextMenu' },
-                    react_1.default.createElement("div", { className: "designer-table__barButtons" }, contextCommands.length === 0 ? (react_1.default.createElement("span", { className: "designer-table__barEmpty" }, "\u041D\u0435\u0442 \u043A\u043E\u043C\u0430\u043D\u0434")) : (contextCommands.map((cmd) => {
-                        const caption = getCommandCaptionFromItem(cmd.item);
-                        return (react_1.default.createElement("button", { key: cmd.path, type: "button", className: "designer-button", onClick: (e) => {
-                                e.stopPropagation();
-                                onSelect(cmd.path);
-                            } }, caption));
-                    }))))) : null)) : null,
+            (() => {
+                const showAutoBar = Boolean(autoPanel) && !isCommandBarLocationNone(layoutProps);
+                const autoButtons = showAutoBar ? flattenCommandBarNodes(autoCommands) : [];
+                if (!showAutoBar || autoButtons.length === 0) {
+                    return null;
+                }
+                return (react_1.default.createElement("div", { className: "designer-table__bars" },
+                    react_1.default.createElement("div", { className: "designer-table__bar", title: autoPanel?.item.name || 'Командная панель' },
+                        react_1.default.createElement("div", { className: "designer-table__barButtons" }, autoButtons.map((cmd) => {
+                            const caption = getCommandCaptionFromItem(cmd.item, formCommands);
+                            return (react_1.default.createElement("button", { key: cmd.path, type: "button", className: "designer-button", title: caption, onClick: (e) => {
+                                    e.stopPropagation();
+                                    onSelect(cmd.path);
+                                } }, caption));
+                        })))));
+            })(),
             react_1.default.createElement("div", { className: tableSurfaceClass, style: gridStyle },
                 showHead && model.colCount > 0 ? (react_1.default.createElement("div", { className: "designer-table__headGrid", style: headStyle }, model.cells.map((c) => (react_1.default.createElement("div", { key: c.key, className: cellClass(c.kind), style: {
                         gridColumnStart: c.colStart,
@@ -2586,14 +2642,11 @@ const DesignerNode = ({ node, selectedPath, onSelect, activePages, setActivePage
                         gridRowEnd: `span ${c.rowSpan}`,
                     }, title: c.label }, c.label || '\u00A0'))))) : null,
                 react_1.default.createElement("div", { className: "designer-table__row" }, Array.from({ length: model.colCount }).map((_, i) => (react_1.default.createElement("div", { key: i, className: "designer-table__cell" }, "\u00A0")))),
-                react_1.default.createElement("div", { className: "designer-table__row" }, Array.from({ length: model.colCount }).map((_, i) => (react_1.default.createElement("div", { key: i, className: "designer-table__cell" }, "\u00A0"))))),
-            dp ? react_1.default.createElement("div", { className: "designer-node__props" },
-                react_1.default.createElement("span", { className: "designer-node__datapath" }, dp)) : null));
+                react_1.default.createElement("div", { className: "designer-table__row" }, Array.from({ length: model.colCount }).map((_, i) => (react_1.default.createElement("div", { key: i, className: "designer-table__cell" }, "\u00A0")))))));
     }
     return (react_1.default.createElement("div", { className: baseClass, onClick: onClickSelect, title: node.path },
         react_1.default.createElement("div", { className: "designer-node__title" },
-            react_1.default.createElement("span", { className: "designer-node__type" }, type),
-            react_1.default.createElement("span", { className: "designer-node__name" }, title || node.item.name || node.item.id || '')),
-        children.length > 0 ? (react_1.default.createElement("div", { className: "designer-node__children" }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage }))))) : (react_1.default.createElement("div", { className: "designer-node__props" }, dp ? react_1.default.createElement("div", { className: "designer-node__datapath" }, formatValue(dp)) : null))));
+            react_1.default.createElement("span", { className: "designer-node__name" }, title || node.item.name || '')),
+        children.length > 0 ? (react_1.default.createElement("div", { className: "designer-node__children" }, children.map((ch) => (react_1.default.createElement(DesignerNode, { key: ch.path, node: ch, selectedPath: selectedPath, onSelect: onSelect, activePages: activePages, setActivePage: setActivePage, formCommands: formCommands }))))) : (react_1.default.createElement("div", { className: "designer-node__props" }, dp ? react_1.default.createElement("div", { className: "designer-node__datapath" }, formatValue(dp)) : null))));
 };
 //# sourceMappingURL=FormPreviewApp.js.map

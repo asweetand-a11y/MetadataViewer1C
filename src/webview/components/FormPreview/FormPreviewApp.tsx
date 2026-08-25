@@ -23,6 +23,19 @@ type RightTab = 'attributes' | 'commands' | 'parameters';
 
 /** Специальный путь для выбора самой формы (корень) в панели свойств. */
 const FORM_ROOT_PATH = '__form__';
+/** Главная командная панель формы (AutoCommandBar в properties, не в childItems). */
+const FORM_COMMAND_BAR_PATH = '__acb__';
+
+function isFormCommandBarPath(path: string): boolean {
+  return path === FORM_COMMAND_BAR_PATH || path.startsWith(`${FORM_COMMAND_BAR_PATH}.`);
+}
+
+function formCommandBarRestPath(path: string): string {
+  if (path === FORM_COMMAND_BAR_PATH) {
+    return '';
+  }
+  return path.slice(FORM_COMMAND_BAR_PATH.length + 1);
+}
 
 type TreeNode = {
   /** Путь в дереве вида "0.1.2" */
@@ -50,6 +63,9 @@ import {
   hasTableAdditionPlaceholder,
   buildTablePreviewStyle,
   buildFieldPreviewStyle,
+  isHorizontalStretchFalse,
+  isVerticalStretchTrue,
+  buildNoHorizontalStretchStyle,
 } from './formLayoutProps';
 import {
   type FormSchemaEnumsPayload,
@@ -131,16 +147,119 @@ function humanizeCommandRef(cmdName: string): string {
   return last || s;
 }
 
-function flattenCommandBarNodes(nodes: TreeNode[]): TreeNode[] {
-  const out: TreeNode[] = [];
-  for (const n of nodes) {
-    const t = n.item.type;
-    if (t === 'ButtonGroup' || t === 'UsualGroup' || t === 'Popup') {
-      out.push(...flattenCommandBarNodes(n.children || []));
-    } else if (t === 'Button') {
-      out.push(n);
+function isPictureRepresentation(props: Record<string, unknown> | undefined): boolean {
+  const r = extractScalarText((props as any)?.Representation).toLowerCase();
+  return r === 'picture' || r === 'картинка';
+}
+
+/**
+ * Popup в командной панели 1С — одна кнопка; по клику выпадает меню дочерних команд.
+ */
+const DesignerPopupMenuButton: React.FC<{
+  node: TreeNode;
+  selectedPath: string;
+  onSelect: (path: string) => void;
+  formCommands?: FormCommand[];
+}> = ({ node, selectedPath, onSelect, formCommands }) => {
+  const [open, setOpen] = useState(false);
+  const props = node.item.properties as Record<string, unknown> | undefined;
+  const title = getItemTitleFromProps(props) || node.item.name || '';
+  const pictureOnly = isPictureRepresentation(props);
+  const items = (node.children || []).filter((c) => c.item.type === 'Button');
+  const selectedInside = selectedPath === node.path || selectedPath.startsWith(`${node.path}.`);
+  const showMenu = open || selectedInside;
+
+  return (
+    <div
+      className={`designer-popup${selectedPath === node.path ? ' is-selected' : ''}`}
+      data-path={node.path}
+    >
+      <button
+        type="button"
+        className={`designer-button designer-popup__trigger${pictureOnly ? ' designer-popup__trigger--picture' : ''}${
+          selectedPath === node.path ? ' is-selected' : ''
+        }`}
+        title={title}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(node.path);
+          setOpen((v) => !v);
+        }}
+      >
+        {pictureOnly ? <span className="designer-popup__icon" aria-hidden /> : title}
+        <span className="designer-popup__caret" aria-hidden>
+          ▾
+        </span>
+      </button>
+      {showMenu ? (
+        <div className="designer-popup__menu" role="menu">
+          {items.map((b) => {
+            const caption = getCommandCaptionFromItem(b.item, formCommands);
+            const itemSelected = selectedPath === b.path;
+            return (
+              <button
+                key={b.path}
+                type="button"
+                className={`designer-popup__item${itemSelected ? ' is-selected' : ''}`}
+                data-path={b.path}
+                role="menuitem"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(b.path);
+                  setOpen(false);
+                }}
+              >
+                {caption}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
+/** Кнопки панели: ButtonGroup разворачивается, Popup остаётся подменю. */
+function renderCommandBarVisuals(
+  nodes: TreeNode[],
+  selectedPath: string,
+  onSelect: (path: string) => void,
+  formCommands?: FormCommand[]
+): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  const walk = (list: TreeNode[]) => {
+    for (const n of list) {
+      const t = n.item.type;
+      if (t === 'ButtonGroup' || t === 'UsualGroup') {
+        walk(n.children || []);
+      } else if (t === 'Popup') {
+        out.push(
+          <DesignerPopupMenuButton
+            key={n.path}
+            node={n}
+            selectedPath={selectedPath}
+            onSelect={onSelect}
+            formCommands={formCommands}
+          />
+        );
+      } else if (t === 'Button') {
+        const caption = getCommandCaptionFromItem(n.item, formCommands);
+        out.push(
+          <button
+            key={n.path}
+            type="button"
+            className={`designer-button${selectedPath === n.path ? ' is-selected' : ''}`}
+            data-path={n.path}
+            title={caption}
+            onClick={() => onSelect(n.path)}
+          >
+            {caption}
+          </button>
+        );
+      }
     }
-  }
+  };
+  walk(nodes);
   return out;
 }
 
@@ -187,26 +306,99 @@ function resolveActionProcedureFromButtonCommandRefs(
   return extractScalarText((cmd.properties as any).Action).trim();
 }
 
+function getFormAutoCommandBarItem(form: ParsedFormFull | null | undefined): FormItem | null {
+  const raw = form?.properties?.AutoCommandBar;
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const item = convertRawFormItem(raw, 'AutoCommandBar');
+  if (!item.childItems?.length) {
+    const kids = convertRawChildItems((raw as { ChildItems?: unknown; childItems?: unknown }).ChildItems
+      ?? (raw as { childItems?: unknown }).childItems);
+    if (kids.length > 0) {
+      item.childItems = kids;
+    }
+  }
+  return item;
+}
+
+function buildElementsTree(form: ParsedFormFull | null | undefined): TreeNode[] {
+  const body = buildTree(form?.childItems);
+  const bar = getFormAutoCommandBarItem(form);
+  if (!bar) {
+    return body;
+  }
+  return [
+    {
+      path: FORM_COMMAND_BAR_PATH,
+      item: bar,
+      children: buildTree(bar.childItems, FORM_COMMAND_BAR_PATH),
+    },
+    ...body,
+  ];
+}
+
+function resolveFormItemAtPath(form: ParsedFormFull, path: string): FormItem | null {
+  if (path === FORM_ROOT_PATH) {
+    return { type: 'Form', name: form.name, properties: form.properties || {} };
+  }
+  if (isFormCommandBarPath(path)) {
+    const bar = getFormAutoCommandBarItem(form);
+    if (!bar) {
+      return null;
+    }
+    const rest = formCommandBarRestPath(path);
+    if (!rest) {
+      return bar;
+    }
+    const idxs = rest.split('.').map(s => Number(s));
+    let current: FormItem | null = null;
+    let list: FormItem[] | undefined = bar.childItems;
+    for (const idx of idxs) {
+      if (!Array.isArray(list) || !Number.isFinite(idx) || idx < 0 || idx >= list.length) {
+        return null;
+      }
+      current = list[idx];
+      list = current?.childItems;
+    }
+    return current;
+  }
+  if (!path) {
+    return null;
+  }
+  const idxs = path.split('.').map(s => Number(s));
+  let current: FormItem | null = null;
+  let list: FormItem[] | undefined = form.childItems;
+  for (const idx of idxs) {
+    if (!Array.isArray(list) || !Number.isFinite(idx) || idx < 0 || idx >= list.length) {
+      return null;
+    }
+    current = list[idx];
+    list = current?.childItems;
+  }
+  return current;
+}
+
 /**
- * Иммутабельно обновляет элемент формы по пути вида "0.1.2".
- * Нужно для редактирования свойств в webview без потери ссылочной целостности React-состояния.
+ * Иммутабельно обновляет элемент в списке по числовому пути "0.1.2".
  */
-function updateFormItemAtPath(form: ParsedFormFull, path: string, updater: (item: FormItem) => FormItem): ParsedFormFull {
+function updateItemsAtNumericPath(
+  items: FormItem[],
+  path: string,
+  updater: (item: FormItem) => FormItem
+): FormItem[] | null {
   const idxs = String(path || '').split('.').map(s => Number(s)).filter(n => Number.isFinite(n));
-  if (idxs.length === 0) return form;
+  if (idxs.length === 0) {
+    return null;
+  }
 
-  const rootItems = Array.isArray(form.childItems) ? form.childItems : [];
-  const nextForm: ParsedFormFull = {
-    ...form,
-    childItems: [...rootItems],
-  };
-
-  let list: FormItem[] = nextForm.childItems;
+  const nextItems = [...items];
+  let list: FormItem[] = nextItems;
 
   for (let depth = 0; depth < idxs.length; depth++) {
     const idx = idxs[depth];
     if (!Array.isArray(list) || idx < 0 || idx >= list.length) {
-      return form;
+      return null;
     }
 
     const current = list[idx];
@@ -218,14 +410,71 @@ function updateFormItemAtPath(form: ParsedFormFull, path: string, updater: (item
 
     if (depth === idxs.length - 1) {
       list[idx] = updater(cloned);
-      return nextForm;
+      return nextItems;
     }
 
     list[idx] = cloned;
     list = cloned.childItems || (cloned.childItems = []);
   }
 
-  return nextForm;
+  return nextItems;
+}
+
+/**
+ * Иммутабельно обновляет элемент формы по пути вида "0.1.2" или "__acb__.0".
+ * Нужно для редактирования свойств в webview без потери ссылочной целостности React-состояния.
+ */
+function updateFormItemAtPath(form: ParsedFormFull, path: string, updater: (item: FormItem) => FormItem): ParsedFormFull {
+  if (isFormCommandBarPath(path)) {
+    const raw = form.properties?.AutoCommandBar;
+    if (!raw || typeof raw !== 'object') {
+      return form;
+    }
+    const bar = getFormAutoCommandBarItem(form);
+    if (!bar) {
+      return form;
+    }
+    const rest = formCommandBarRestPath(path);
+    let nextBar: FormItem;
+    if (!rest) {
+      nextBar = updater({
+        ...bar,
+        properties: { ...(bar.properties || {}) },
+        childItems: Array.isArray(bar.childItems) ? [...bar.childItems] : undefined,
+      });
+    } else {
+      const nextChildren = updateItemsAtNumericPath(bar.childItems || [], rest, updater);
+      if (!nextChildren) {
+        return form;
+      }
+      nextBar = { ...bar, childItems: nextChildren };
+    }
+    return {
+      ...form,
+      properties: {
+        ...(form.properties || {}),
+        AutoCommandBar: {
+          ...raw,
+          name: nextBar.name ?? (raw as { name?: string }).name,
+          id: nextBar.id ?? (raw as { id?: string }).id,
+          ChildItems: nextBar.childItems ?? (raw as { ChildItems?: FormItem[] }).ChildItems,
+        },
+      },
+    };
+  }
+
+  const idxs = String(path || '').split('.').map(s => Number(s)).filter(n => Number.isFinite(n));
+  if (idxs.length === 0) return form;
+
+  const rootItems = Array.isArray(form.childItems) ? form.childItems : [];
+  const nextChildren = updateItemsAtNumericPath(rootItems, path, updater);
+  if (!nextChildren) {
+    return form;
+  }
+  return {
+    ...form,
+    childItems: nextChildren,
+  };
 }
 
 /**
@@ -311,11 +560,33 @@ function updateCommandNameRefsInForm(form: ParsedFormFull, oldCommandName: strin
 
   const items = Array.isArray(form.childItems) ? form.childItems : [];
   const nextItems = items.map((it) => updateCommandNameRefsInItem(it, oldCommandName, newCommandName));
+  const itemsChanged = nextItems.some((it, i) => it !== items[i]);
 
-  const changed = nextItems.some((it, i) => it !== items[i]);
-  if (!changed) return form;
+  const raw = form.properties?.AutoCommandBar;
+  let nextProperties = form.properties;
+  if (raw && typeof raw === 'object') {
+    const bar = getFormAutoCommandBarItem(form);
+    if (bar) {
+      const nextBar = updateCommandNameRefsInItem(bar, oldCommandName, newCommandName);
+      if (nextBar !== bar) {
+        nextProperties = {
+          ...(form.properties || {}),
+          AutoCommandBar: {
+            ...raw,
+            ChildItems: nextBar.childItems ?? (raw as { ChildItems?: FormItem[] }).ChildItems,
+          },
+        };
+      }
+    }
+  }
 
-  return { ...form, childItems: nextItems };
+  if (!itemsChanged && nextProperties === form.properties) return form;
+
+  return {
+    ...form,
+    childItems: itemsChanged ? nextItems : form.childItems,
+    properties: nextProperties,
+  };
 }
 
 
@@ -378,6 +649,15 @@ function findCommandNameUsagesInForm(form: ParsedFormFull, commandName: string, 
   };
 
   walk(form.childItems, '');
+  const bar = getFormAutoCommandBarItem(form);
+  if (bar) {
+    findCommandNameUsagesInAny(bar.properties || {}, commandName, 'properties', out, {
+      itemPath: FORM_COMMAND_BAR_PATH,
+      itemType: bar.type || 'AutoCommandBar',
+      itemName: bar.name || 'Командная панель',
+    }, limit);
+    walk(bar.childItems, FORM_COMMAND_BAR_PATH);
+  }
   return out;
 }
 
@@ -398,6 +678,10 @@ function buildTree(items: FormItem[] | undefined, basePath = ''): TreeNode[] {
  * Пытается получить короткий заголовок для узла.
  */
 function getItemLabel(item: FormItem): string {
+  if (item.type === 'AutoCommandBar' || item.type === 'CommandBar') {
+    const title = getItemTitleFromProps(item.properties);
+    return title.trim() || 'Командная панель';
+  }
   const title = getItemTitleFromProps(item.properties);
   if (title.trim()) {
     return title.trim();
@@ -418,6 +702,9 @@ const ELEMENT_TYPE_LABELS: Record<string, string> = {
   CheckBoxField: 'Поле флажка',
   LabelField: 'Поле надписи',
   Button: 'Кнопка',
+  AutoCommandBar: 'Командная панель',
+  CommandBar: 'Командная панель',
+  ButtonGroup: 'Группа кнопок',
   UsualGroup: 'Группа',
   ColumnGroup: 'Группа колонок',
   Table: 'Таблица',
@@ -1212,28 +1499,12 @@ export const FormPreviewApp: React.FC<FormPreviewAppProps> = ({ vscode }) => {
     vscode.postMessage({ type: 'saveForm', payload: form });
   };
 
-  const tree = useMemo(() => buildTree(form?.childItems), [form]);
+  const tree = useMemo(() => buildElementsTree(form), [form]);
   const filteredTree = useMemo(() => filterTree(tree, treeQuery), [tree, treeQuery]);
 
   const selectedItem = useMemo((): FormItem | null => {
-    if (!form) return null;
-    if (selectedPath === FORM_ROOT_PATH) {
-      return { type: 'Form', name: form.name, properties: form.properties || {} };
-    }
-    if (!selectedPath) return null;
-    const idxs = selectedPath.split('.').map(s => Number(s));
-    let current: FormItem | null = null;
-    let list: FormItem[] | undefined = form.childItems;
-
-    for (const idx of idxs) {
-      if (!Array.isArray(list) || !Number.isFinite(idx) || idx < 0 || idx >= list.length) {
-        return null;
-      }
-      current = list[idx];
-      list = current?.childItems;
-    }
-
-    return current;
+    if (!form || !selectedPath) return null;
+    return resolveFormItemAtPath(form, selectedPath);
   }, [form, selectedPath]);
 
   const onSelect = useCallback((path: string) => {
@@ -3232,20 +3503,44 @@ const DesignerPreview: React.FC<{
   onSelect: (path: string) => void;
 }> = ({ items, formCommandBar, formCommands, selectedPath, onSelect }) => {
   const nodes = useMemo(() => {
-    const rootItems = [...items];
-    if (formCommandBar && typeof formCommandBar === 'object') {
-      rootItems.unshift(convertRawFormItem(formCommandBar, 'AutoCommandBar'));
+    const body = buildVisualTree(items);
+    if (!formCommandBar || typeof formCommandBar !== 'object') {
+      return body;
     }
-    return buildVisualTree(rootItems);
+    const barItem = convertRawFormItem(formCommandBar, 'AutoCommandBar');
+    const barNode: TreeNode = {
+      path: FORM_COMMAND_BAR_PATH,
+      item: barItem,
+      children: buildVisualTree(barItem.childItems || [], FORM_COMMAND_BAR_PATH),
+    };
+    return [barNode, ...body];
   }, [items, formCommandBar]);
   const [activePages, setActivePages] = useState<Record<string, string>>({});
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   const setActivePage = useCallback((pagesPath: string, pagePath: string) => {
     setActivePages((prev) => ({ ...prev, [pagesPath]: pagePath }));
   }, []);
 
+  useEffect(() => {
+    if (!selectedPath) return;
+    const root = canvasRef.current;
+    if (!root) return;
+    const frame = window.requestAnimationFrame(() => {
+      const marked = root.querySelectorAll('[data-path]');
+      let target: HTMLElement | null = null;
+      marked.forEach((n) => {
+        if ((n as HTMLElement).getAttribute('data-path') === selectedPath) {
+          target = n as HTMLElement;
+        }
+      });
+      target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedPath]);
+
   return (
-    <div className="designer designer-edt">
+    <div className="designer designer-edt" ref={canvasRef}>
       {nodes.map((n) => (
         <DesignerNode
           key={n.path}
@@ -3275,6 +3570,10 @@ const DesignerNode: React.FC<{
   const layoutProps = node.item.properties as Record<string, unknown> | undefined;
   const layoutHidden = isLayoutInvisible(layoutProps);
   const hiddenClass = layoutHidden ? ' designer-node--layout-hidden' : '';
+  const selectedDescendant = selectedPath.startsWith(`${node.path}.`);
+  if (layoutHidden && !isSelected && !selectedDescendant) {
+    return null;
+  }
 
   const title = getItemTitleFromProps(node.item.properties);
   const dp = getDataPath(node.item.properties);
@@ -3300,7 +3599,14 @@ const DesignerNode: React.FC<{
     if (isLayoutGroup) {
       const orientation = getOrientation(node.item.properties);
       return (
-        <div className={`designer-group__content designer-group__content--${orientation}${hiddenClass}`}>
+        <div
+          className={`designer-group__content designer-group__content--${orientation}${hiddenClass}${
+            isSelected ? ' is-selected' : ''
+          }`}
+          data-path={node.path}
+          onClick={onClickSelect}
+          title={node.path}
+        >
           {children.map((ch) => (
             <DesignerNode
               key={ch.path}
@@ -3336,9 +3642,15 @@ const DesignerNode: React.FC<{
     const pages = children.filter((c) => c.item.type === 'Page');
     const activeFromSelection = pages.find((p) => selectedPath.startsWith(p.path))?.path;
     const active = activeFromSelection || activePages[node.path] || pages[0]?.path || '';
+    const noTabs = isPagesWithoutTabs(layoutProps);
+    const noHStretch = isHorizontalStretchFalse(layoutProps);
+    const pagesStyle = noHStretch ? buildNoHorizontalStretchStyle(layoutProps) : undefined;
+    const pagesClass = `${baseClass} designer-node--pages${noTabs ? ' designer-node--pages-notabs' : ''}${
+      noHStretch ? ' designer-node--no-hstretch' : ''
+    }`;
 
     return (
-      <div className={`${baseClass} designer-node--pages`} onClick={onClickSelect} title={node.path}>
+      <div className={pagesClass} style={pagesStyle} data-path={node.path} onClick={onClickSelect} title={node.path}>
         {pages.length > 0 && !isPagesWithoutTabs(layoutProps) ? (
           <div className="designer-tabs" onClick={(e) => e.stopPropagation()}>
             {pages.map((p) => {
@@ -3365,7 +3677,12 @@ const DesignerNode: React.FC<{
           const pageNode = pages.find((p) => p.path === active);
           if (!pageNode) return null;
           return (
-            <div className="designer-node__children designer-node__children--pages">
+            <div
+              className={`designer-node__children designer-node__children--pages${
+                selectedPath === pageNode.path ? ' is-selected' : ''
+              }`}
+              data-path={pageNode.path}
+            >
               {pageNode.children.map((ch) => (
                 <DesignerNode
                   key={ch.path}
@@ -3386,7 +3703,7 @@ const DesignerNode: React.FC<{
 
   if (type === 'Page') {
     return (
-      <div className={`${baseClass} designer-node--page`} onClick={onClickSelect} title={node.path}>
+      <div className={`${baseClass} designer-node--page`} data-path={node.path} onClick={onClickSelect} title={node.path}>
         {children.length > 0 ? (
           <div className="designer-node__children">
             {children.map((ch) => (
@@ -3415,7 +3732,7 @@ const DesignerNode: React.FC<{
       (typeof showTitleVal !== 'string' || showTitleVal.toLowerCase() !== 'false');
 
     return (
-      <div className={`${baseClass} designer-node--group`} onClick={onClickSelect} title={node.path}>
+      <div className={`${baseClass} designer-node--group`} data-path={node.path} onClick={onClickSelect} title={node.path}>
         {showTitle && (title || node.item.name) ? (
           <div className="designer-group__caption">{title || node.item.name}</div>
         ) : null}
@@ -3442,6 +3759,7 @@ const DesignerNode: React.FC<{
 
   if (type === 'InputField' || type === 'SelectField') {
     const label = title || deriveLabelFromDataPath(dp) || node.item.name || '';
+    const inputHint = extractTitle((layoutProps as any)?.InputHint).trim();
     const multiline = Boolean((node.item.properties as any)?.MultiLine);
     const titleLoc = parseTitleLocation(layoutProps);
     const fieldLayoutClass =
@@ -3452,18 +3770,19 @@ const DesignerNode: React.FC<{
           : 'designer-field designer-field--title-left';
     const readOnly = isLayoutReadOnly(layoutProps);
     const fieldBoxStyle = buildFieldPreviewStyle(layoutProps) as React.CSSProperties;
+    const noTitle = titleLoc === 'none';
 
     return (
       <div
-        className={`${baseClass} designer-node--field`}
+        className={`${baseClass} designer-node--field${noTitle ? ' designer-node--field-notitle' : ''}`}
         style={fieldBoxStyle}
-        onClick={onClickSelect}
+        data-path={node.path} onClick={onClickSelect}
         title={node.path}
       >
         <div className={`${fieldLayoutClass}${readOnly ? ' designer-field--readonly' : ''}`}>
           <div className="designer-field__label">{label}</div>
           <div className={`designer-field__control ${multiline ? 'is-multiline' : ''}`}>
-            <span className="designer-field__hint">&nbsp;</span>
+            <span className="designer-field__hint">{inputHint || '\u00A0'}</span>
           </div>
         </div>
       </div>
@@ -3478,7 +3797,7 @@ const DesignerNode: React.FC<{
       <div
         className={`${baseClass} designer-node--checkbox`}
         style={cbStyle}
-        onClick={onClickSelect}
+        data-path={node.path} onClick={onClickSelect}
         title={node.path}
       >
         <div className={`designer-checkbox${readOnly ? ' designer-checkbox--readonly' : ''}`}>
@@ -3493,7 +3812,7 @@ const DesignerNode: React.FC<{
     const label = title || node.item.name || '';
     const lfStyle = buildFieldPreviewStyle(layoutProps) as React.CSSProperties;
     return (
-      <div className={`${baseClass} designer-node--label`} style={lfStyle} onClick={onClickSelect} title={node.path}>
+      <div className={`${baseClass} designer-node--label`} style={lfStyle} data-path={node.path} onClick={onClickSelect} title={node.path}>
         <div className="designer-label">{label}</div>
       </div>
     );
@@ -3501,9 +3820,20 @@ const DesignerNode: React.FC<{
 
   if (type === 'LabelDecoration') {
     const labelText = getItemTitleFromProps(node.item.properties) || '';
+    const isSpacer = !labelText.trim();
+    if (isSpacer) {
+      const grow = isVerticalStretchTrue(layoutProps);
+      return (
+        <div
+          className={`${baseClass} designer-node--spacer${grow ? ' designer-node--spacer-grow' : ' designer-node--spacer-gap'}`}
+          data-path={node.path} onClick={onClickSelect}
+          title={node.path}
+        />
+      );
+    }
     return (
-      <div className={`${baseClass} designer-node--label`} onClick={onClickSelect} title={node.path}>
-        <div className="designer-label">{labelText || '\u00A0'}</div>
+      <div className={`${baseClass} designer-node--label`} data-path={node.path} onClick={onClickSelect} title={node.path}>
+        <div className="designer-label">{labelText}</div>
       </div>
     );
   }
@@ -3512,34 +3842,21 @@ const DesignerNode: React.FC<{
     const resourceIconUrl =
       (typeof window !== 'undefined' && (window as any).__FORM_PREVIEW_RESOURCE_ICON__) || '';
     return (
-      <div className={`${baseClass} designer-node--picture`} onClick={onClickSelect} title={node.path}>
+      <div className={`${baseClass} designer-node--picture`} data-path={node.path} onClick={onClickSelect} title={node.path}>
         <img src={resourceIconUrl} width={16} height={16} alt="" className="designer-picture-decoration" />
       </div>
     );
   }
 
   if (type === 'CommandBar' || type === 'AutoCommandBar') {
-    const buttons = flattenCommandBarNodes(children);
+    const visuals = renderCommandBarVisuals(children, selectedPath, onSelect, formCommands);
     return (
-      <div className={`${baseClass} designer-node--commandbar`} onClick={onClickSelect} title={node.path}>
+      <div className={`${baseClass} designer-node--commandbar`} data-path={node.path} onClick={onClickSelect} title={node.path}>
         <div className="designer-commandbar" onClick={(e) => e.stopPropagation()}>
-          {buttons.length === 0 ? (
+          {visuals.length === 0 ? (
             <span className="designer-commandbar__empty">Командная панель</span>
           ) : (
-            buttons.map((b) => {
-              const caption = getCommandCaptionFromItem(b.item, formCommands);
-              return (
-                <button
-                  key={b.path}
-                  type="button"
-                  className="designer-button"
-                  title={caption}
-                  onClick={() => onSelect(b.path)}
-                >
-                  {caption}
-                </button>
-              );
-            })
+            visuals
           )}
         </div>
       </div>
@@ -3550,7 +3867,7 @@ const DesignerNode: React.FC<{
     const bTitle = getCommandCaptionFromItem(node.item, formCommands) || 'Кнопка';
     const btnBoxStyle = buildFieldPreviewStyle(layoutProps) as React.CSSProperties;
     return (
-      <div className={`${baseClass} designer-node--button`} style={btnBoxStyle} onClick={onClickSelect} title={node.path}>
+      <div className={`${baseClass} designer-node--button`} style={btnBoxStyle} data-path={node.path} onClick={onClickSelect} title={node.path}>
         <button
           type="button"
           className="designer-button"
@@ -3610,7 +3927,7 @@ const DesignerNode: React.FC<{
       <div
         className={`${baseClass} designer-node--table${readOnly ? ' designer-node--table-readonly' : ''}`}
         style={tableBoxStyle}
-        onClick={onClickSelect}
+        data-path={node.path} onClick={onClickSelect}
         title={node.path}
       >
         {showTableTitle ? <div className="designer-table__title">{tTitle}</div> : null}
@@ -3618,17 +3935,41 @@ const DesignerNode: React.FC<{
         {adds.search || adds.status || adds.control ? (
           <div className="designer-table__additions" onClick={(e) => e.stopPropagation()}>
             {adds.search ? (
-              <div className="designer-table__addition designer-table__addition--search" title="SearchStringAddition">
+              <div
+                className={`designer-table__addition designer-table__addition--search${
+                  children.some((c) => c.item.type === 'SearchStringAddition' && c.path === selectedPath)
+                    ? ' is-selected'
+                    : ''
+                }`}
+                data-path={children.find((c) => c.item.type === 'SearchStringAddition')?.path}
+                title="SearchStringAddition"
+              >
                 Строка поиска
               </div>
             ) : null}
             {adds.status ? (
-              <div className="designer-table__addition designer-table__addition--status" title="ViewStatusAddition">
+              <div
+                className={`designer-table__addition designer-table__addition--status${
+                  children.some((c) => c.item.type === 'ViewStatusAddition' && c.path === selectedPath)
+                    ? ' is-selected'
+                    : ''
+                }`}
+                data-path={children.find((c) => c.item.type === 'ViewStatusAddition')?.path}
+                title="ViewStatusAddition"
+              >
                 Состояние просмотра
               </div>
             ) : null}
             {adds.control ? (
-              <div className="designer-table__addition designer-table__addition--control" title="SearchControlAddition">
+              <div
+                className={`designer-table__addition designer-table__addition--control${
+                  children.some((c) => c.item.type === 'SearchControlAddition' && c.path === selectedPath)
+                    ? ' is-selected'
+                    : ''
+                }`}
+                data-path={children.find((c) => c.item.type === 'SearchControlAddition')?.path}
+                title="SearchControlAddition"
+              >
                 Управление поиском
               </div>
             ) : null}
@@ -3637,31 +3978,17 @@ const DesignerNode: React.FC<{
 
         {(() => {
           const showAutoBar = Boolean(autoPanel) && !isCommandBarLocationNone(layoutProps);
-          const autoButtons = showAutoBar ? flattenCommandBarNodes(autoCommands) : [];
-          if (!showAutoBar || autoButtons.length === 0) {
+          const autoVisuals = showAutoBar
+            ? renderCommandBarVisuals(autoCommands, selectedPath, onSelect, formCommands)
+            : [];
+          if (!showAutoBar || autoVisuals.length === 0) {
             return null;
           }
           return (
             <div className="designer-table__bars">
               <div className="designer-table__bar" title={autoPanel?.item.name || 'Командная панель'}>
-                <div className="designer-table__barButtons">
-                  {autoButtons.map((cmd) => {
-                    const caption = getCommandCaptionFromItem(cmd.item, formCommands);
-                    return (
-                      <button
-                        key={cmd.path}
-                        type="button"
-                        className="designer-button"
-                        title={caption}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelect(cmd.path);
-                        }}
-                      >
-                        {caption}
-                      </button>
-                    );
-                  })}
+                <div className="designer-table__barButtons" onClick={(e) => e.stopPropagation()}>
+                  {autoVisuals}
                 </div>
               </div>
             </div>
@@ -3705,7 +4032,7 @@ const DesignerNode: React.FC<{
   }
 
   return (
-    <div className={baseClass} onClick={onClickSelect} title={node.path}>
+    <div className={baseClass} data-path={node.path} onClick={onClickSelect} title={node.path}>
       <div className="designer-node__title">
         <span className="designer-node__name">{title || node.item.name || ''}</span>
       </div>

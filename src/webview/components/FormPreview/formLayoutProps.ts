@@ -146,6 +146,35 @@ export function isHorizontalStretchTrue(props: Record<string, unknown> | null | 
   return isExplicitlyTrueOneC((props as any).HorizontalStretch);
 }
 
+/** Явно HorizontalStretch=false — колонка не делит ширину с соседями (кнопки «>»/«<»). */
+export function isHorizontalStretchFalse(props: Record<string, unknown> | null | undefined): boolean {
+  if (!props) return false;
+  return isExplicitlyFalseOneC((props as any).HorizontalStretch);
+}
+
+/** Явно VerticalStretch=true — декорация-распорка растягивается по высоте. */
+export function isVerticalStretchTrue(props: Record<string, unknown> | null | undefined): boolean {
+  if (!props) return false;
+  return isExplicitlyTrueOneC((props as any).VerticalStretch);
+}
+
+/** Ширина элемента формы 1С задаётся в символах, не в px. */
+export const DESIGNER_CHAR_WIDTH_PX = 8;
+
+/** Перевод ширины «в символах» в условные px превью. */
+export function formCharsToPx(chars: number): number {
+  return Math.min(Math.max(0, Math.round(chars * DESIGNER_CHAR_WIDTH_PX)), DESIGNER_LAYOUT_MAX_PX);
+}
+
+/** Стиль узкой колонки: Width в символах при HorizontalStretch=false. */
+export function buildNoHorizontalStretchStyle(
+  props: Record<string, unknown> | null | undefined
+): { width?: string } {
+  const w = readLayoutNumber(props, 'Width');
+  if (w === undefined) return {};
+  return { width: `${formCharsToPx(w)}px` };
+}
+
 /** Стили корневой карточки таблицы в превью (условные px, не 1:1 с платформой). */
 export function buildTablePreviewStyle(
   props: Record<string, unknown> | null | undefined
@@ -165,22 +194,25 @@ export function buildTablePreviewStyle(
   return out;
 }
 
-/** Стили превью поля: ширина и растягивание по горизонтали. */
+/** Стили превью поля: Width 1С — в символах; без HorizontalStretch=false поле тянется в ряду. */
 export function buildFieldPreviewStyle(
   props: Record<string, unknown> | null | undefined
-): { maxWidth?: string; width?: string; flex?: string } {
+): { maxWidth?: string; width?: string; flex?: string; minWidth?: string } {
   if (!props) return {};
-  const w = readLayoutPx(props, 'Width');
-  const maxW = readLayoutPx(props, 'MaxWidth');
-  const stretch = isHorizontalStretchTrue(props);
-  const out: { maxWidth?: string; width?: string; flex?: string } = {};
+  const wNum = readLayoutNumber(props, 'Width');
+  const maxNum = readLayoutNumber(props, 'MaxWidth');
+  const w = wNum !== undefined ? formCharsToPx(wNum) : undefined;
+  const maxW = maxNum !== undefined ? formCharsToPx(maxNum) : undefined;
+  const noStretch = isHorizontalStretchFalse(props);
+  const out: { maxWidth?: string; width?: string; flex?: string; minWidth?: string } = {};
   if (maxW !== undefined) out.maxWidth = `${maxW}px`;
-  else if (w !== undefined) out.maxWidth = `${w}px`;
-  if (stretch) {
-    out.flex = '1 1 200px';
+  if (noStretch) {
+    out.flex = '0 0 auto';
+    if (w !== undefined) out.width = `${w}px`;
+  } else {
+    out.flex = '1 1 auto';
     out.width = '100%';
-  } else if (w !== undefined) {
-    out.width = `${w}px`;
+    if (w !== undefined) out.minWidth = `${w}px`;
   }
   return out;
 }

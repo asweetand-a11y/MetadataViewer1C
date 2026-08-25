@@ -2567,6 +2567,20 @@ body.edt-resizing-props-cols {
   color: var(--vscode-list-activeSelectionForeground);
 }
 
+.designer-group__content.is-selected,
+.designer-node__children--pages.is-selected,
+.designer-table__addition.is-selected {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+.designer-button.is-selected,
+.designer-popup__item.is-selected,
+.designer-popup__trigger.is-selected {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
 .designer-node__title {
   display: flex;
   gap: 8px;
@@ -2620,6 +2634,59 @@ body.edt-resizing-props-cols {
   padding-left: 0;
 }
 
+/* PagesRepresentation=None: колонка переноса между списками (>, <<, <) */
+.designer-node--pages-notabs {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  min-height: 0;
+}
+
+.designer-node--pages-notabs .designer-node__children--pages {
+  flex: 1 1 auto;
+  margin-top: 0;
+  padding-left: 0;
+  gap: 4px;
+  min-height: 0;
+  height: 100%;
+  align-items: stretch;
+}
+
+.designer-node--spacer {
+  border: none;
+  padding: 0;
+  background: transparent;
+  min-width: 0;
+  border-radius: 0;
+}
+
+.designer-node--spacer-grow {
+  flex: 1 1 auto;
+  min-height: 8px;
+}
+
+.designer-node--spacer-gap {
+  flex: 0 0 8px;
+  height: 8px;
+}
+
+.designer-node--pages-notabs .designer-node--button {
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+}
+
+.designer-node--pages-notabs .designer-button {
+  max-width: none;
+  min-width: 28px;
+  padding: 0 6px;
+}
+
 .designer-tabs {
   display: flex;
   gap: 6px;
@@ -2660,12 +2727,110 @@ body.edt-resizing-props-cols {
   flex-direction: row;
   flex-wrap: nowrap;
   overflow-x: auto;
+  align-items: stretch;
 }
 
 .designer-group__content--horizontalAlways > .designer-node {
   /* Колонки: дети делят ширину контейнера (как в EDT), порядок — как в XML */
   flex: 1 1 0;
   min-width: 0;
+}
+
+/* ShowTitle=false: группа — сам flex-контейнер, без .designer-node */
+.designer-group__content--horizontalAlways > .designer-group__content {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.designer-group__content--horizontalAlways > .designer-node--commandbar {
+  flex: 0 0 auto;
+  align-self: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.designer-group__content--horizontalAlways > .designer-node--field-notitle {
+  flex: 1 1 auto;
+  min-width: 160px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.designer-popup {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.designer-popup__trigger--picture {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 32px;
+  padding: 0 4px;
+}
+
+.designer-popup__icon {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  position: relative;
+  display: inline-block;
+  box-sizing: border-box;
+}
+
+.designer-popup__icon::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 2px;
+  background: currentColor;
+  right: -5px;
+  bottom: -1px;
+  transform: rotate(45deg);
+}
+
+.designer-popup__caret {
+  font-size: 9px;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.designer-popup__menu {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  z-index: 30;
+  min-width: 240px;
+  max-width: 360px;
+  padding: 4px 0;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 3px;
+  background: var(--vscode-menu-background, var(--vscode-editor-background));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+.designer-popup__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--vscode-foreground);
+  font-size: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.designer-popup__item:hover {
+  background: var(--vscode-list-hoverBackground);
 }
 
 .designer-group__content--horizontalIfPossible {
@@ -2803,8 +2968,8 @@ body.edt-resizing-props-cols {
   display: flex;
   gap: 4px;
   flex-wrap: nowrap;
-  overflow-x: auto;
-  padding: 2px 0 8px;
+  overflow: visible;
+  padding: 0;
   align-items: center;
 }
 
