@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TemplateDocument, TemplateRow, TemplateCell, CellPosition, CellRange, TemplateColumns } from '../../../templatInterfaces';
-import { calculateColumnWidth, calculateRowHeight, getMinRowIndex, getMaxRowIndex, toTemplateIndex, namedAreaMatchesColumnsId } from '../../../utils/templateUtils';
+import { calculateColumnWidth, calculateRowHeight, getMinRowIndex, getMaxRowIndex, toTemplateIndex, namedAreaMatchesColumnsId, DEFAULT_ROW_HEIGHT_PX } from '../../../utils/templateUtils';
 import { findCellByPosition, getCellFillPattern, extractTextFromTemplateTextData, extractStringValue, getEffectiveFormat, getEffectiveFont, formatBorderLineCode, getAllNamedAreas, findNamedAreaByPosition, getNamedAreaForRow, getNamedAreaForColumn, getNamedAreasForRow, getNamedAreasForColumn, isCellOnNamedAreaBoundary, resolveTemplateBorderColorForCss } from '../../../utils/templateUtils';
 import { buildCellBorderCss } from '../../../utils/spreadsheetCellLineType';
 import { NamedArea } from '../../../templatInterfaces';
@@ -242,9 +242,7 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
         const height = calculateRowHeight(templateDocument, rowIndex);
         
         if (height === undefined) {
-            const baseHeight = templateDocument.height ?? 20;
-            const defaultHeight = typeof baseHeight === 'number' ? baseHeight / 3 : 20 / 3;
-            return `${Math.round(defaultHeight)}px`;
+            return `${DEFAULT_ROW_HEIGHT_PX}px`;
         }
         
         if (typeof height === 'number') {
@@ -283,18 +281,22 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
         if (templateDocument.columns && templateDocument.columns.length > 0) {
             templateDocument.columns.forEach((columnsGroup: { size?: number; columnsItem?: Array<{ index?: number }> }) => {
                 if (columnsGroup.size !== undefined) {
-                    max = Math.max(max, columnsGroup.size);
+                    max = Math.max(max, toTemplateIndex(columnsGroup.size, max));
                 }
                 if (columnsGroup.columnsItem) {
                     columnsGroup.columnsItem.forEach(item => {
-                        if (item.index !== undefined && item.index >= max) {
-                            max = item.index + 1;
+                        if (item.index !== undefined) {
+                            const colIdx = toTemplateIndex(item.index, 0);
+                            if (colIdx >= max) {
+                                max = colIdx + 1;
+                            }
                         }
                     });
                 }
             });
         }
-        return Math.max(max, 10);
+        // Несколько пустых колонок справа, как в конфигураторе; не раздуваем сетку до фиксированных 10
+        return Math.max(max + 5, max, 1);
     }, [templateDocument]);
 
     /** Диапазон «вся строка» (клик по номеру строки / Shift): подсвечиваем все строки диапазона */

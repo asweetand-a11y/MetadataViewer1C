@@ -1084,6 +1084,8 @@ export class MetadataView {
             'topBorder',
             'rightBorder',
             'bottomBorder',
+            'width',
+            'height',
           ];
           numProps.forEach(prop => {
             const val = format[prop] ?? format[prop.charAt(0).toUpperCase() + prop.slice(1)];

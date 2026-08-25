@@ -1112,8 +1112,9 @@ export function resolveColumnsGroupForRow(template: TemplateDocument, rowIndex: 
     if (!template.columns?.length) {
         return null;
     }
+    const logicalRow = toTemplateIndex(rowIndex, -1);
     const templateRow = template.rowsItem?.find(
-        (r) => (r.index !== undefined ? r.index : template.rowsItem!.indexOf(r)) === rowIndex
+        (r, idx) => toTemplateIndex(r.index, idx) === logicalRow
     );
     const rowColumnsID = templateRow?.row.columnsID;
     if (rowColumnsID) {
@@ -1128,17 +1129,19 @@ export function resolveColumnsGroupForRow(template: TemplateDocument, rowIndex: 
  */
 export function getEffectiveFormat(
     template: TemplateDocument,
-    row: number,
+    row: number, 
     col: number
 ): TemplateFormat | null {
     const layers: Array<TemplateFormat | null> = [];
+    const logicalRow = toTemplateIndex(row, -1);
+    const logicalCol = toTemplateIndex(col, -1);
 
     layers.push(getFormatLayerByOneBasedIndex(template, template.defaultFormatIndex));
 
-    const columnsGroup = resolveColumnsGroupForRow(template, row);
+    const columnsGroup = resolveColumnsGroupForRow(template, logicalRow);
     if (columnsGroup) {
         layers.push(getFormatLayerByOneBasedIndex(template, columnsGroup.formatIndex));
-        const colItem = columnsGroup.columnsItem?.find((item) => item.index === col);
+        const colItem = findColumnItem(columnsGroup, logicalCol);
         const colFi =
             colItem?.column?.formatIndex ??
             (colItem as { formatIndex?: number } | undefined)?.formatIndex;
@@ -1146,13 +1149,13 @@ export function getEffectiveFormat(
     }
 
     const templateRow = template.rowsItem?.find(
-        (r) => (r.index !== undefined ? r.index : template.rowsItem!.indexOf(r)) === row
+        (r, idx) => toTemplateIndex(r.index, idx) === logicalRow
     );
     if (templateRow?.row) {
         layers.push(getFormatLayerByOneBasedIndex(template, templateRow.row.formatIndex));
     }
 
-    const cell = findCellByPosition(template, row, col);
+    const cell = findCellByPosition(template, logicalRow, logicalCol);
     if (cell?.c?.f !== undefined) {
         layers.push(getFormatLayerByOneBasedIndex(template, cell.c.f));
     }
@@ -2086,69 +2089,98 @@ export function addColumn(
  * @param columnsGroup - Группа колонок (TemplateColumns)
  * @returns Ширина колонки в пикселях (строка с "px" или число)
  */
+/** Ширина колонки по умолчанию в табличном документе 1С. */
+export const DEFAULT_COLUMN_WIDTH_PX = 72;
+
+/** Высота строки по умолчанию (px). document.height в XML — это число строк, не пиксели. */
+export const DEFAULT_ROW_HEIGHT_PX = 20;
+
+function normalizeSpreadsheetSize(value: unknown, fallback: number): number {
+    if (value === undefined || value === null || value === '') {
+        return fallback;
+    }
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+        return value;
+    }
+    const n = parseFloat(String(value).replace(/px$/i, ''));
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+function spreadsheetFontHeightPx(font: TemplateFont | null): number {
+    if (!font) {
+        return 0;
+    }
+    const raw = font.$_height ?? (font as { height?: unknown }).height;
+    const pt = Number(raw);
+    if (!Number.isFinite(pt) || pt <= 0) {
+        return 0;
+    }
+    return pt * (96 / 72);
+}
+
+function findColumnItem(
+    columnsGroup: { columnsItem?: Array<{ index: number; column: { formatIndex?: number }; formatIndex?: number }> } | null,
+    col: number
+): { index: number; column: { formatIndex?: number }; formatIndex?: number } | undefined {
+    if (!columnsGroup?.columnsItem) {
+        return undefined;
+    }
+    const logicalCol = toTemplateIndex(col, -1);
+    return columnsGroup.columnsItem.find(item => toTemplateIndex(item.index, -1) === logicalCol);
+}
+
+function maxFontSizePxInRow(template: TemplateDocument, rowIndex: number): number {
+    const templateRow = template.rowsItem?.find(
+        (r, idx) => toTemplateIndex(r.index, idx) === rowIndex
+    );
+    if (!templateRow?.row?.c) {
+        return 0;
+    }
+    let maxPx = 0;
+    let currentColIndex = 0;
+    for (const cell of templateRow.row.c) {
+        const colIndex = cell.i !== undefined ? toTemplateIndex(cell.i, currentColIndex) : currentColIndex;
+        currentColIndex = colIndex + 1;
+        const px = spreadsheetFontHeightPx(getEffectiveFont(template, rowIndex, colIndex));
+        if (px > maxPx) {
+            maxPx = px;
+        }
+    }
+    return maxPx;
+}
+
 export function calculateColumnWidth(
     template: TemplateDocument,
     col: number,
-    columnsGroup: { columnsItem?: Array<{ index: number; column: { formatIndex?: number } }> } | null
+    columnsGroup: { size?: number; columnsItem?: Array<{ index: number; column: { formatIndex?: number } }> } | null
 ): string | number {
-    const DEFAULT_WIDTH = 72; // Ширина по умолчанию в 1С
-    
+    const logicalCol = toTemplateIndex(col, 0);
+    const size = columnsGroup?.size !== undefined ? toTemplateIndex(columnsGroup.size, logicalCol + 1) : undefined;
+    if (size !== undefined && logicalCol >= size) {
+        return DEFAULT_COLUMN_WIDTH_PX;
+    }
+
     if (!columnsGroup || !columnsGroup.columnsItem || !template.format) {
-        return DEFAULT_WIDTH;
+        return DEFAULT_COLUMN_WIDTH_PX;
     }
-    
-    // Ищем все колонки с индексом <= col, которые имеют формат с width
-    // Сортируем по индексу колонки (от меньшего к большему)
-    const columnsWithWidth: Array<{ index: number; width: string | number }> = [];
-    
-    for (let i = 0; i <= col; i++) {
-        const columnItem = columnsGroup.columnsItem.find(item => item.index === i);
-        const formatIndexVal = columnItem?.column?.formatIndex ?? (columnItem as any)?.formatIndex;
-        if (columnItem && formatIndexVal !== undefined) {
-            const formatIndex = formatIndexVal - 1; // formatIndex начинается с 1
-            if (formatIndex >= 0 && formatIndex < template.format.length) {
-                const format = template.format[formatIndex];
-                if (format && format.width !== undefined && format.width !== null) {
-                    columnsWithWidth.push({
-                        index: i,
-                        width: format.width
-                    });
-                }
-            }
-        }
+
+    const columnItem = findColumnItem(columnsGroup, logicalCol);
+    const formatIndexVal = columnItem?.column?.formatIndex ?? (columnItem as { formatIndex?: number } | undefined)?.formatIndex;
+    if (formatIndexVal === undefined || formatIndexVal === null) {
+        return DEFAULT_COLUMN_WIDTH_PX;
     }
-    
-    // Если не найдено ни одного формата с width, возвращаем ширину по умолчанию
-    if (columnsWithWidth.length === 0) {
-        return DEFAULT_WIDTH;
+
+    const formatIndex = toTemplateIndex(formatIndexVal, 0) - 1;
+    if (formatIndex < 0 || formatIndex >= template.format.length) {
+        return DEFAULT_COLUMN_WIDTH_PX;
     }
-    
-    // Берем последний найденный width (последняя колонка с измененной шириной)
-    const lastWidth = columnsWithWidth[columnsWithWidth.length - 1].width;
-    
-    // Если width=72, это ширина по умолчанию
-    if (lastWidth === 72 || lastWidth === '72' || lastWidth === '72px') {
-        return DEFAULT_WIDTH;
+
+    const format = template.format[formatIndex];
+    if (!format || format.width === undefined || format.width === null) {
+        return DEFAULT_COLUMN_WIDTH_PX;
     }
-    
-    // Нормализуем значение: если число, возвращаем как есть, иначе возвращаем строку
-    if (typeof lastWidth === 'number') {
-        return lastWidth;
-    }
-    
-    // Если строка, проверяем, содержит ли она "px"
-    if (typeof lastWidth === 'string') {
-        if (lastWidth.includes('px')) {
-            return lastWidth;
-        }
-        // Если число в строке, преобразуем в число
-        const numValue = parseFloat(lastWidth);
-        if (!isNaN(numValue)) {
-            return numValue;
-        }
-    }
-    
-    return DEFAULT_WIDTH;
+
+    return normalizeSpreadsheetSize(format.width, DEFAULT_COLUMN_WIDTH_PX);
 }
 
 /**
@@ -2164,37 +2196,38 @@ export function calculateRowHeight(
     template: TemplateDocument,
     rowIndex: number
 ): string | number | undefined {
-    const defaultHeight = (template.height ?? 20) / 3;
     const logicalRow = toTemplateIndex(rowIndex, -1);
+    const autoHeight = Math.max(
+        DEFAULT_ROW_HEIGHT_PX,
+        Math.ceil(maxFontSizePxInRow(template, logicalRow) * 1.2 + 8)
+    );
 
     if (!template.rowsItem || !template.format) {
-        return defaultHeight;
+        return autoHeight;
     }
 
     const templateRow = template.rowsItem.find((r, idx) => toTemplateIndex(r.index, idx) === logicalRow);
     if (!templateRow || !templateRow.row || templateRow.row.formatIndex === undefined) {
-        return defaultHeight;
+        return autoHeight;
     }
 
     const formatIndex = toTemplateIndex(templateRow.row.formatIndex, 0) - 1;
     if (formatIndex < 0 || formatIndex >= template.format.length) {
-        return defaultHeight;
+        return autoHeight;
     }
 
     const format = template.format[formatIndex];
     if (!format || format.height === undefined || format.height === null) {
-        return defaultHeight;
+        return autoHeight;
     }
 
-    const h = format.height;
-    if (h === 0 || h === '0' || h === '0px') {
-        return defaultHeight;
+    const h = normalizeSpreadsheetSize(format.height, 0);
+    // 0 в 1С — автовысота по содержимому, не «нулевая строка»
+    if (h <= 0) {
+        return autoHeight;
     }
 
-    if (typeof h === 'number') return h;
-    if (typeof h === 'string' && h.includes('px')) return h;
-    const num = parseFloat(String(h));
-    return !isNaN(num) && num !== 0 ? num : defaultHeight;
+    return h;
 }
 
 /**
