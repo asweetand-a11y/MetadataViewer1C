@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { Modal } from './Modal';
+import { UiButton } from '../../ui';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -28,16 +29,12 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
   const footer = (
     <>
-      <button className="btn-secondary" onClick={onCancel}>
+      <UiButton secondary onClick={onCancel}>
         {cancelLabel}
-      </button>
-      <button
-        className="btn-primary"
-        style={{ background: 'var(--vscode-errorForeground)' }}
-        onClick={handleConfirm}
-      >
+      </UiButton>
+      <UiButton onClick={handleConfirm}>
         {confirmLabel}
-      </button>
+      </UiButton>
     </>
   );
 

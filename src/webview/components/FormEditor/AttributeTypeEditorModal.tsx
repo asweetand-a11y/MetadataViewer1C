@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Modal } from './Modal';
+import { UiButton } from '../../ui';
 import { TypeWidget } from '../../widgets/TypeWidget';
 
 interface AttributeTypeEditorModalProps {
@@ -28,7 +29,7 @@ export const AttributeTypeEditorModal: React.FC<AttributeTypeEditorModalProps> =
   onSave
 }) => {
   const footer = (
-    <button className="btn-secondary" onClick={onClose}>Закрыть</button>
+    <UiButton secondary onClick={onClose}>Закрыть</UiButton>
   );
 
   return (

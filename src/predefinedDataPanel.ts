@@ -12,6 +12,7 @@ import { loadChartOfCalculationTypesEditorContext } from './metadata_utils/Chart
 import { CommitFileLogger } from './utils/commitFileLogger';
 import { insertItemUnderParent } from './utils/predefinedTreeMutations';
 import { statusBarProgress, contextStatusBar } from './extension';
+import { getCodiconStylesheetUri, getMetadataEditorScriptUri, getWebviewLocalResourceRoots } from './utils/webviewAssets';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -202,7 +203,7 @@ export class PredefinedDataPanel {
                 {
                     enableScripts: true,
                     retainContextWhenHidden: true,
-                    localResourceRoots: [vscode.Uri.joinPath(extensionUri, "media")]
+                    localResourceRoots: getWebviewLocalResourceRoots(extensionUri)
                 }
             );
 
@@ -620,9 +621,8 @@ export class PredefinedDataPanel {
     }
 
     private getHtmlForWebview(webview: vscode.Webview): string {
-        const scriptUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this.extensionUri, "media", "metadataEditor.bundle.js")
-        );
+        const scriptUri = getMetadataEditorScriptUri(webview, this.extensionUri);
+        const codiconUri = getCodiconStylesheetUri(webview, this.extensionUri);
         // ВАЖНО: CSS инлайнится в bundle через style-loader, отдельный файл не нужен
 
         const nonce = getNonce();
@@ -640,7 +640,7 @@ export class PredefinedDataPanel {
                  worker-src ${webview.cspSource} blob:;
                  script-src ${webview.cspSource} 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- CSS инлайнится в bundle через style-loader -->
+  <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
   <title>Предопределенные элементы</title>
   <script nonce="${nonce}">
     // КРИТИЧНО: Перехватываем загрузку динамических чанков ДО загрузки bundle

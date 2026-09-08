@@ -13,6 +13,7 @@ import { validateXmlStructure, summarizeStructureValidationErrors } from './vali
 import { scanMetadataRoot, MetadataFileRef } from './metadata_utils/MetadataScanner';
 import { CommitFileLogger } from './utils/commitFileLogger';
 import { statusBarProgress, contextStatusBar } from './extension';
+import { getCodiconStylesheetUri, getMetadataEditorScriptUri, getWebviewLocalResourceRoots } from './utils/webviewAssets';
 
 /** Нonce для CSP */
 function getNonce(): string {
@@ -161,7 +162,7 @@ export class RoleEditorPanel {
         {
           enableScripts: true,
           retainContextWhenHidden: true,
-          localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
+          localResourceRoots: getWebviewLocalResourceRoots(extensionUri),
         }
       );
 
@@ -321,9 +322,8 @@ export class RoleEditorPanel {
    * Генерирует HTML для webview
    */
   private getHtmlForWebview(webview: vscode.Webview): string {
-    const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, 'media', 'metadataEditor.bundle.js')
-    );
+    const scriptUri = getMetadataEditorScriptUri(webview, this.extensionUri);
+    const codiconUri = getCodiconStylesheetUri(webview, this.extensionUri);
 
     const nonce = getNonce();
 
@@ -340,6 +340,7 @@ export class RoleEditorPanel {
                  worker-src ${webview.cspSource} blob:;
                  script-src ${webview.cspSource} 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
   <title>Редактор прав роли</title>
   <script nonce="${nonce}">
     (function() {

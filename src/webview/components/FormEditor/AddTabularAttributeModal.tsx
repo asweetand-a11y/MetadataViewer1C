@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { Modal } from './Modal';
+import { UiButton } from '../../ui';
 import { TypeWidget } from '../../widgets/TypeWidget';
 import { SimpleMultilingualEditor } from './SimpleMultilingualEditor';
 
@@ -41,8 +42,8 @@ export const AddTabularAttributeModal: React.FC<AddTabularAttributeModalProps> =
 }) => {
   const footer = (
     <>
-      <button className="btn-secondary" onClick={onClose}>Отмена</button>
-      <button className="btn-primary" onClick={onSave}>Создать</button>
+      <UiButton secondary onClick={onClose}>Отмена</UiButton>
+      <UiButton onClick={onSave}>Создать</UiButton>
     </>
   );
 

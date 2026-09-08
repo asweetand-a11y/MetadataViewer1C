@@ -2,20 +2,18 @@ const path = require('path');
 const webpack = require('webpack');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-module.exports = {
-  entry: './src/webview/index.tsx',
+const shared = {
   mode: 'production',
   devtool: 'source-map',
-  plugins: [
-    // Принудительно инлайним все чанки в один bundle
-    new webpack.optimize.LimitChunkCountPlugin({
-      maxChunks: 1
-    }),
-    // Анализатор bundle (запускается только при флаге --analyze)
-    ...(process.env.ANALYZE ? [new BundleAnalyzerPlugin()] : [])
-  ],
   module: {
     rules: [
+      {
+        test: /\.m?js$/,
+        include: /node_modules[\\/](@vscode-elements|@lit)[\\/]/,
+        resolve: {
+          fullySpecified: false,
+        },
+      },
       {
         test: /\.tsx?$/,
         use: [
@@ -23,7 +21,6 @@ module.exports = {
             loader: 'ts-loader',
             options: {
               configFile: 'tsconfig.webview.json',
-              // Отключаем трансформацию динамических импортов
               compilerOptions: {
                 module: 'esnext',
                 target: 'es2020',
@@ -41,35 +38,54 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
-    alias: {
-      // Исключаем файлы, которые не должны быть в webview bundle
-    }
-  },
-  output: {
-    filename: 'metadataEditor.bundle.js',
-    path: path.resolve(__dirname, 'media'),
-    library: 'MetadataEditor',
-    libraryTarget: 'umd',
-  },
-  externals: {
-    vscode: 'commonjs vscode', // Исключаем vscode из bundle
-    'fast-glob': 'commonjs fast-glob', // Используется только в extension host
+    fullySpecified: false,
   },
   optimization: {
-    minimize: true, // Включаем минификацию для уменьшения размера bundle
-    minimizer: [
-      '...', // Используем дефолтный TerserPlugin
-    ],
-    usedExports: true, // Включаем tree-shaking
-    sideEffects: false, // Указываем, что нет side effects для tree-shaking
-    splitChunks: false, // Полностью отключаем code splitting
-    // Инлайним все динамические импорты в один bundle
+    minimize: true,
+    minimizer: ['...'],
+    usedExports: true,
+    // Lit custom elements регистрируются через side effects
+    sideEffects: true,
+    splitChunks: false,
     moduleIds: 'deterministic',
     runtimeChunk: false,
   },
-  // Отключаем создание отдельных чанков для динамических импортов
   experiments: {
     topLevelAwait: true,
   },
 };
 
+module.exports = [
+  {
+    ...shared,
+    entry: './src/webview/index.tsx',
+    plugins: [
+      new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
+      ...(process.env.ANALYZE ? [new BundleAnalyzerPlugin()] : [])
+    ],
+    output: {
+      filename: 'metadataEditor.bundle.js',
+      path: path.resolve(__dirname, 'media'),
+      library: 'MetadataEditor',
+      libraryTarget: 'umd',
+    },
+    externals: {
+      vscode: 'commonjs vscode',
+      'fast-glob': 'commonjs fast-glob',
+    },
+  },
+  {
+    ...shared,
+    entry: './src/webview/configWebview.ts',
+    plugins: [
+      new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
+    ],
+    output: {
+      filename: 'configWebview.bundle.js',
+      path: path.resolve(__dirname, 'media'),
+    },
+    externals: {
+      vscode: 'commonjs vscode',
+    },
+  },
+];

@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Modal } from './Modal';
+import { UiButton } from '../../ui';
 import { SimpleMultilingualEditor } from './SimpleMultilingualEditor';
 
 interface EnumValueEditorModalProps {
@@ -34,8 +35,8 @@ export const EnumValueEditorModal: React.FC<EnumValueEditorModalProps> = ({
 }) => {
   const footer = (
     <>
-      <button className="btn-secondary" onClick={onClose}>Отмена</button>
-      <button className="btn-primary" onClick={onSave} disabled={!name.trim()}>Сохранить</button>
+      <UiButton secondary onClick={onClose}>Отмена</UiButton>
+      <UiButton onClick={onSave} disabled={!name.trim()}>Сохранить</UiButton>
     </>
   );
 

@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { Modal } from '../../FormEditor/Modal';
+import { UiButton } from '../../../ui';
 import { TypeWidget } from '../../../widgets/TypeWidget';
 import { formatTypeForDisplay } from '../../../utils/typeUtils';
 import { EditColumnModal } from './EditColumnModal';
@@ -109,10 +110,10 @@ export const EditAttributeModal: React.FC<EditAttributeModalProps> = ({
 
   const footer = (
     <>
-      <button className="btn-secondary" onClick={onClose}>Отмена</button>
-      <button className="btn-primary" onClick={handleSave}>
+      <UiButton secondary onClick={onClose}>Отмена</UiButton>
+      <UiButton onClick={handleSave}>
         {mode === 'add' ? 'Создать' : 'Сохранить'}
-      </button>
+      </UiButton>
     </>
   );
 

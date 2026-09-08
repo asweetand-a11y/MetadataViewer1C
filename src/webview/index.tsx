@@ -32,6 +32,7 @@ import { TemplateEditorApp } from './components/TemplateEditor/TemplateEditorApp
 import { PredefinedEditorApp } from './components/PredefinedEditor/PredefinedEditorApp';
 import { RoleEditorApp } from './components/RoleEditor/RoleEditorApp';
 import '../webview/styles/editor.css';
+import './ui/ui.css';
 
 // Получаем vscode API
 declare const acquireVsCodeApi: () => any;

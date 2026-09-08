@@ -29,6 +29,7 @@ const path = __importStar(require("path"));
 const fileUtils_1 = require("../utils/fileUtils");
 const templateXmlSaver_1 = require("../utils/templateXmlSaver");
 const extension_1 = require("../extension");
+const webviewAssets_1 = require("../utils/webviewAssets");
 function getNonce() {
     let text = '';
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -78,7 +79,7 @@ class TemplateEditorPanel {
         const panel = vscode.window.createWebviewPanel(TemplateEditorPanel.viewType, `Макет: ${templateName}`, column || vscode.ViewColumn.One, {
             enableScripts: true,
             retainContextWhenHidden: true,
-            localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')]
+            localResourceRoots: (0, webviewAssets_1.getWebviewLocalResourceRoots)(extensionUri)
         });
         extension_1.contextStatusBar.text = `1С: Макет — ${templateName}`;
         extension_1.contextStatusBar.show();
@@ -163,7 +164,8 @@ class TemplateEditorPanel {
     getHtmlForWebview(webview) {
         // Используем общий bundle, который собирается webpack из src/webview/index.tsx
         // index.tsx автоматически выбирает нужный компонент на основе __APP_MODE__
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'metadataEditor.bundle.js'));
+        const scriptUri = (0, webviewAssets_1.getMetadataEditorScriptUri)(webview, this.extensionUri);
+        const codiconUri = (0, webviewAssets_1.getCodiconStylesheetUri)(webview, this.extensionUri);
         const nonce = getNonce();
         return `<!DOCTYPE html>
 <html lang="ru">
@@ -177,6 +179,7 @@ class TemplateEditorPanel {
                  connect-src ${webview.cspSource};
                  script-src ${webview.cspSource} 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
   <title>Редактор макетов 1С</title>
 </head>
 <body>

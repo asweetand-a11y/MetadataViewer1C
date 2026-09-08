@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal';
+import { UiButton } from '../../ui';
 import { SimpleMultilingualEditor } from './SimpleMultilingualEditor';
 
 interface AccountingFlagEditorModalProps {
@@ -60,8 +61,8 @@ export const AccountingFlagEditorModal: React.FC<AccountingFlagEditorModalProps>
 
   const footer = (
     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-      <button className="btn-secondary" onClick={onClose}>Отмена</button>
-      <button className="btn-primary" onClick={handleSave}>Сохранить</button>
+      <UiButton secondary onClick={onClose}>Отмена</UiButton>
+      <UiButton onClick={handleSave}>Сохранить</UiButton>
     </div>
   );
 

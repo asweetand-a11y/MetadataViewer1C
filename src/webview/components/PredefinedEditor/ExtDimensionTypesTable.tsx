@@ -4,6 +4,7 @@
 
 import React, { useMemo } from 'react';
 import { PredefinedDataItem } from '../../../predefinedDataInterfaces';
+import { UiButton } from '../../ui';
 
 interface ExtDimensionTypesTableProps {
   dimensionTypes: Array<{
@@ -136,27 +137,13 @@ export const ExtDimensionTypesTable: React.FC<ExtDimensionTypesTableProps> = ({
     <div style={{ marginTop: '12px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <label style={{ fontWeight: 'bold', fontSize: '13px' }}>Виды субконто:</label>
-        <button
-          type="button"
-          onClick={handleAddDimensionType}
+        <UiButton
+          icon="add"
           disabled={availablePredefinedItems.length === 0}
-          style={{
-            padding: '4px 8px',
-            fontSize: '12px',
-            background: availablePredefinedItems.length === 0 
-              ? 'var(--vscode-button-secondaryBackground)' 
-              : 'var(--vscode-button-background)',
-            color: availablePredefinedItems.length === 0 
-              ? 'var(--vscode-button-secondaryForeground)' 
-              : 'var(--vscode-button-foreground)',
-            border: 'none',
-            borderRadius: '3px',
-            cursor: availablePredefinedItems.length === 0 ? 'not-allowed' : 'pointer',
-            opacity: availablePredefinedItems.length === 0 ? 0.5 : 1
-          }}
+          onClick={handleAddDimensionType}
         >
-          + Добавить
-        </button>
+          Добавить
+        </UiButton>
       </div>
       {extDimTypes.length === 0 ? (
         <div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', fontStyle: 'italic' }}>
@@ -235,21 +222,12 @@ export const ExtDimensionTypesTable: React.FC<ExtDimensionTypesTableProps> = ({
                     );
                   })}
                   <td style={{ padding: '6px', textAlign: 'center' }}>
-                    <button
-                      type="button"
+                    <UiButton
+                      icon="close"
+                      danger
+                      title="Удалить"
                       onClick={() => handleRemoveDimensionType(index)}
-                      style={{
-                        padding: '2px 6px',
-                        fontSize: '12px',
-                        background: 'var(--vscode-errorForeground)',
-                        color: 'var(--vscode-button-foreground)',
-                        border: 'none',
-                        borderRadius: '3px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      ×
-                    </button>
+                    />
                   </td>
                 </tr>
                 );

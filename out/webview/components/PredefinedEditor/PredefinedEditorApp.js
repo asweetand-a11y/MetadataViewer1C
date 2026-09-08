@@ -35,6 +35,7 @@ const AccountingFlagsTable_1 = require("./AccountingFlagsTable");
 const ExtDimensionTypesTable_1 = require("./ExtDimensionTypesTable");
 require("../../styles/editor.css");
 require("./PredefinedEditorApp.css");
+const ui_1 = require("../../ui");
 /** Рекурсивно разворачивает дерево Item в плоский список с путём и глубиной */
 function pathsEqual(a, b) {
     return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -221,8 +222,9 @@ const PredefinedTable = ({ rows, isChartOfAccounts, isChartOfCharacteristicTypes
                         react_1.default.createElement("td", { className: "col-order" }, item.Order || '—'))),
                     react_1.default.createElement("td", { className: "col-folder" }, item.IsFolder ? 'Да' : 'Нет'),
                     react_1.default.createElement("td", { className: "col-actions" },
-                        react_1.default.createElement("button", { type: "button", className: "btn-edit-type predefined-table-action", onClick: () => onEditPath(path), title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", "aria-label": "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C" }, "\u270E"),
-                        react_1.default.createElement("button", { type: "button", className: "btn-edit-type predefined-table-action predefined-table-action-delete", onClick: () => onDeletePath(path), title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C" }, "\u00D7"))));
+                        react_1.default.createElement("div", { className: "ui-row-actions" },
+                            react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", onClick: () => onEditPath(path) }),
+                            react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: () => onDeletePath(path) })))));
             })))));
 };
 const PredefinedEditorApp = ({ vscode }) => {
@@ -621,8 +623,8 @@ const PredefinedEditorApp = ({ vscode }) => {
                         items.length,
                         ")")),
                 react_1.default.createElement("div", { className: "header-actions" },
-                    react_1.default.createElement("button", { className: "btn-add", onClick: () => setShowAddModal(true) }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C"),
-                    react_1.default.createElement("button", { className: "btn-save", onClick: handleSave }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C"))),
+                    react_1.default.createElement(ui_1.UiButton, { secondary: true, icon: "add", onClick: () => setShowAddModal(true) }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C"),
+                    react_1.default.createElement(ui_1.UiButton, { icon: "save", onClick: handleSave }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C"))),
             react_1.default.createElement("div", { className: "editor-content" },
                 showAddModal && (react_1.default.createElement("div", { className: "modal-overlay", onClick: () => {
                         setShowAddModal(false);
@@ -664,15 +666,7 @@ const PredefinedEditorApp = ({ vscode }) => {
                                 "\u0422\u0438\u043F:",
                                 react_1.default.createElement("div", { style: { display: 'flex', gap: '8px', alignItems: 'center' } },
                                     react_1.default.createElement("input", { type: "text", value: newItem.Type || '', readOnly: true, placeholder: "\u041D\u0430\u0436\u043C\u0438\u0442\u0435 \u043A\u043D\u043E\u043F\u043A\u0443 \u0434\u043B\u044F \u0432\u044B\u0431\u043E\u0440\u0430 \u0442\u0438\u043F\u0430", style: { flex: 1 } }),
-                                    react_1.default.createElement("button", { type: "button", onClick: () => handleOpenTypeModal('add', newItem.Type || ''), title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", "aria-label": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", style: {
-                                            padding: '6px 12px',
-                                            background: 'var(--vscode-button-secondaryBackground)',
-                                            color: 'var(--vscode-button-secondaryForeground)',
-                                            border: '1px solid var(--vscode-button-border)',
-                                            borderRadius: '3px',
-                                            cursor: 'pointer',
-                                            fontSize: '12px'
-                                        } }, "\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0442\u0438\u043F")))),
+                                    react_1.default.createElement(ui_1.UiButton, { secondary: true, icon: "edit", title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", onClick: () => handleOpenTypeModal('add', newItem.Type || '') }, "\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0442\u0438\u043F")))),
                             isChartOfCalculationTypes && (react_1.default.createElement(react_1.default.Fragment, null,
                                 react_1.default.createElement("label", { className: "checkbox-label" },
                                     react_1.default.createElement("input", { type: "checkbox", checked: newItem.ActionPeriodIsBase === true, onChange: (e) => setNewItem({ ...newItem, ActionPeriodIsBase: e.target.checked }) }),
@@ -701,8 +695,7 @@ const PredefinedEditorApp = ({ vscode }) => {
                                 react_1.default.createElement("input", { type: "checkbox", checked: newItem.IsFolder || false, onChange: (e) => setNewItem({ ...newItem, IsFolder: e.target.checked }) }),
                                 "\u041F\u0430\u043F\u043A\u0430")),
                         react_1.default.createElement("div", { className: "modal-actions" },
-                            react_1.default.createElement("button", { className: "btn-primary", onClick: handleAdd }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C"),
-                            react_1.default.createElement("button", { className: "btn-secondary", onClick: () => {
+                            react_1.default.createElement(ui_1.UiButton, { secondary: true, onClick: () => {
                                     setShowAddModal(false);
                                     setAddParentPath([]);
                                     setNewItem({
@@ -721,7 +714,8 @@ const PredefinedEditorApp = ({ vscode }) => {
                                         Leading: undefined,
                                         Base: undefined
                                     });
-                                } }, "\u041E\u0442\u043C\u0435\u043D\u0430"))))),
+                                } }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                            react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: handleAdd }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C"))))),
                 items.length === 0 ? (react_1.default.createElement("div", { className: "empty-state" }, "\u0414\u043B\u044F \u0434\u0430\u043D\u043D\u043E\u0433\u043E \u043E\u0431\u044A\u0435\u043A\u0442\u0430 \u043F\u0440\u0435\u0434\u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u044B \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u044B")) : (react_1.default.createElement(PredefinedTable, { rows: flatRows, isChartOfAccounts: isChartOfAccounts, isChartOfCharacteristicTypes: isChartOfCharacteristicTypes, collapsedPathKeys: collapsedPathKeys, onToggleBranch: toggleBranchCollapsed, onEditPath: handleEditByPath, onDeletePath: handleDeleteByPath })),
                 showTypeModal && (react_1.default.createElement(PredefinedTypeEditorModal_1.PredefinedTypeEditorModal, { isOpen: showTypeModal, typeValue: typeModalContext.currentType || null, metadata: metadata, onClose: () => setShowTypeModal(false), onSave: handleTypeSave })),
                 editingChild && editingItem && (react_1.default.createElement("div", { className: "modal-overlay", onClick: handleCancelEdit },
@@ -741,8 +735,8 @@ const PredefinedEditorApp = ({ vscode }) => {
                         react_1.default.createElement("div", { className: "modal-content" },
                             react_1.default.createElement("p", null, "\u0412\u044B \u0443\u0432\u0435\u0440\u0435\u043D\u044B, \u0447\u0442\u043E \u0445\u043E\u0442\u0438\u0442\u0435 \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u044D\u0442\u043E\u0442 \u044D\u043B\u0435\u043C\u0435\u043D\u0442?")),
                         react_1.default.createElement("div", { className: "modal-actions" },
-                            react_1.default.createElement("button", { className: "btn-primary", onClick: handleConfirmDelete, style: { background: 'var(--vscode-errorForeground)' } }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C"),
-                            react_1.default.createElement("button", { className: "btn-secondary", onClick: handleCancelDelete }, "\u041E\u0442\u043C\u0435\u043D\u0430")))))))));
+                            react_1.default.createElement(ui_1.UiButton, { secondary: true, onClick: handleCancelDelete }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                            react_1.default.createElement(ui_1.UiButton, { onClick: handleConfirmDelete }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C")))))))));
 };
 exports.PredefinedEditorApp = PredefinedEditorApp;
 const EditItemCard = ({ item, isChartOfCharacteristicTypes, isChartOfAccounts, isChartOfCalculationTypes = false, chartOfAccountsData, chartOfCalculationTypesData, onSave, onCancel, onChange, onOpenTypeModal, showInModal = false }) => {
@@ -778,25 +772,9 @@ const EditItemCard = ({ item, isChartOfCharacteristicTypes, isChartOfAccounts, i
         } },
         react_1.default.createElement("div", { className: "attribute-header" },
             !showInModal && react_1.default.createElement("h4", null, "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u0430"),
-            react_1.default.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-                react_1.default.createElement("button", { className: "btn-edit-type", type: "button", onClick: handleSave, title: "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C", "aria-label": "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C", style: {
-                        padding: '4px 8px',
-                        fontSize: '12px',
-                        background: 'var(--vscode-button-background)',
-                        color: 'var(--vscode-button-foreground)',
-                        border: 'none',
-                        borderRadius: '3px',
-                        cursor: 'pointer'
-                    } }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C"),
-                react_1.default.createElement("button", { className: "btn-edit-type", type: "button", onClick: onCancel, title: "\u041E\u0442\u043C\u0435\u043D\u0430", "aria-label": "\u041E\u0442\u043C\u0435\u043D\u0430", style: {
-                        padding: '4px 8px',
-                        fontSize: '12px',
-                        background: 'var(--vscode-button-secondaryBackground)',
-                        color: 'var(--vscode-button-secondaryForeground)',
-                        border: '1px solid var(--vscode-button-border)',
-                        borderRadius: '3px',
-                        cursor: 'pointer'
-                    } }, "\u041E\u0442\u043C\u0435\u043D\u0430"))),
+            react_1.default.createElement("div", { className: "ui-row-actions" },
+                react_1.default.createElement(ui_1.UiButton, { secondary: true, onClick: onCancel }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                react_1.default.createElement(ui_1.UiButton, { icon: "save", onClick: handleSave }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C"))),
         react_1.default.createElement("div", { className: "attribute-properties" },
             react_1.default.createElement("div", { className: "property-row" },
                 react_1.default.createElement("span", { className: "property-name" }, "\u0418\u043C\u044F: *"),
@@ -872,16 +850,7 @@ const EditItemCard = ({ item, isChartOfCharacteristicTypes, isChartOfAccounts, i
                             flex: 1,
                             fontFamily: 'monospace'
                         } }),
-                    react_1.default.createElement("button", { type: "button", onClick: () => onOpenTypeModal('edit', item.Type || ''), title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", "aria-label": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", style: {
-                            padding: '4px 8px',
-                            background: 'var(--vscode-button-secondaryBackground)',
-                            color: 'var(--vscode-button-secondaryForeground)',
-                            border: '1px solid var(--vscode-button-border)',
-                            borderRadius: '3px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            whiteSpace: 'nowrap'
-                        } }, "\u0412\u044B\u0431\u0440\u0430\u0442\u044C")))),
+                    react_1.default.createElement(ui_1.UiButton, { secondary: true, icon: "edit", title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", onClick: () => onOpenTypeModal('edit', item.Type || '') }, "\u0412\u044B\u0431\u0440\u0430\u0442\u044C")))),
             isChartOfAccounts && (react_1.default.createElement(react_1.default.Fragment, null,
                 item.Parent && (react_1.default.createElement("div", { className: "property-row" },
                     react_1.default.createElement("span", { className: "property-name" }, "\u0420\u043E\u0434\u0438\u0442\u0435\u043B\u044C:"),

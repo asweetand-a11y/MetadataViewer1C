@@ -37,6 +37,7 @@ const ChartOfCalculationTypesDataLoader_1 = require("./metadata_utils/ChartOfCal
 const commitFileLogger_1 = require("./utils/commitFileLogger");
 const predefinedTreeMutations_1 = require("./utils/predefinedTreeMutations");
 const extension_1 = require("./extension");
+const webviewAssets_1 = require("./utils/webviewAssets");
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 class PredefinedDataPanel {
@@ -184,7 +185,7 @@ class PredefinedDataPanel {
             const panel = vscode.window.createWebviewPanel(PredefinedDataPanel.viewType, `Предопределенные элементы (${metadataName})`, column || vscode.ViewColumn.One, {
                 enableScripts: true,
                 retainContextWhenHidden: true,
-                localResourceRoots: [vscode.Uri.joinPath(extensionUri, "media")]
+                localResourceRoots: (0, webviewAssets_1.getWebviewLocalResourceRoots)(extensionUri)
             });
             const predefinedPanel = new PredefinedDataPanel(panel, extensionUri, {
                 items,
@@ -568,7 +569,8 @@ class PredefinedDataPanel {
         }
     }
     getHtmlForWebview(webview) {
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", "metadataEditor.bundle.js"));
+        const scriptUri = (0, webviewAssets_1.getMetadataEditorScriptUri)(webview, this.extensionUri);
+        const codiconUri = (0, webviewAssets_1.getCodiconStylesheetUri)(webview, this.extensionUri);
         // ВАЖНО: CSS инлайнится в bundle через style-loader, отдельный файл не нужен
         const nonce = getNonce();
         return `<!DOCTYPE html>
@@ -584,7 +586,7 @@ class PredefinedDataPanel {
                  worker-src ${webview.cspSource} blob:;
                  script-src ${webview.cspSource} 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- CSS инлайнится в bundle через style-loader -->
+  <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
   <title>Предопределенные элементы</title>
   <script nonce="${nonce}">
     // КРИТИЧНО: Перехватываем загрузку динамических чанков ДО загрузки bundle

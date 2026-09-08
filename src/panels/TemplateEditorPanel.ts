@@ -5,6 +5,7 @@ import { TemplateDocument } from '../templatInterfaces';
 import { validatePath } from '../utils/fileUtils';
 import { saveTemplateToXml } from '../utils/templateXmlSaver';
 import { contextStatusBar } from '../extension';
+import { getCodiconStylesheetUri, getMetadataEditorScriptUri, getWebviewLocalResourceRoots } from '../utils/webviewAssets';
 
 function getNonce() {
     let text = '';
@@ -80,7 +81,7 @@ export class TemplateEditorPanel {
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
-                localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')]
+                localResourceRoots: getWebviewLocalResourceRoots(extensionUri)
             }
         );
 
@@ -180,9 +181,8 @@ export class TemplateEditorPanel {
     private getHtmlForWebview(webview: vscode.Webview): string {
         // Используем общий bundle, который собирается webpack из src/webview/index.tsx
         // index.tsx автоматически выбирает нужный компонент на основе __APP_MODE__
-        const scriptUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this.extensionUri, 'media', 'metadataEditor.bundle.js')
-        );
+        const scriptUri = getMetadataEditorScriptUri(webview, this.extensionUri);
+        const codiconUri = getCodiconStylesheetUri(webview, this.extensionUri);
 
         const nonce = getNonce();
 
@@ -198,6 +198,7 @@ export class TemplateEditorPanel {
                  connect-src ${webview.cspSource};
                  script-src ${webview.cspSource} 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
   <title>Редактор макетов 1С</title>
 </head>
 <body>

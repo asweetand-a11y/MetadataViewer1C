@@ -11,6 +11,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ParsedFormFull, FormAttribute, FormCommand, FormItem } from '../../../xmlParsers/formParser';
+import { UiButton } from '../../ui';
 
 interface FormPreviewAppProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1756,16 +1757,14 @@ export const FormPreviewApp: React.FC<FormPreviewAppProps> = ({ vscode }) => {
         </div>
         <div className="edt-header__path" title={form.sourcePath}>{form.sourcePath}</div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button
-            type="button"
-            className="edt-icon-btn"
+          <UiButton
+            icon="save"
             title={isDirty ? 'Сохранить форму' : 'Нет несохранённых изменений'}
             onClick={handleSave}
             disabled={!isDirty}
-            style={{ width: 'auto', padding: '0 10px' }}
           >
             Сохранить
-          </button>
+          </UiButton>
         </div>
       </div>
 

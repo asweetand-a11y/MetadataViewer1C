@@ -28,6 +28,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExtDimensionTypesTable = void 0;
 const react_1 = __importStar(require("react"));
+const ui_1 = require("../../ui");
 const ExtDimensionTypesTable = ({ dimensionTypes, extDimensionAccountingFlags, item, onChange }) => {
     const extDimTypes = item.ExtDimensionTypes || [];
     // Собираем все доступные предопределенные элементы из всех видов субконто
@@ -134,20 +135,7 @@ const ExtDimensionTypesTable = ({ dimensionTypes, extDimensionAccountingFlags, i
     return (react_1.default.createElement("div", { style: { marginTop: '12px' } },
         react_1.default.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' } },
             react_1.default.createElement("label", { style: { fontWeight: 'bold', fontSize: '13px' } }, "\u0412\u0438\u0434\u044B \u0441\u0443\u0431\u043A\u043E\u043D\u0442\u043E:"),
-            react_1.default.createElement("button", { type: "button", onClick: handleAddDimensionType, disabled: availablePredefinedItems.length === 0, style: {
-                    padding: '4px 8px',
-                    fontSize: '12px',
-                    background: availablePredefinedItems.length === 0
-                        ? 'var(--vscode-button-secondaryBackground)'
-                        : 'var(--vscode-button-background)',
-                    color: availablePredefinedItems.length === 0
-                        ? 'var(--vscode-button-secondaryForeground)'
-                        : 'var(--vscode-button-foreground)',
-                    border: 'none',
-                    borderRadius: '3px',
-                    cursor: availablePredefinedItems.length === 0 ? 'not-allowed' : 'pointer',
-                    opacity: availablePredefinedItems.length === 0 ? 0.5 : 1
-                } }, "+ \u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")),
+            react_1.default.createElement(ui_1.UiButton, { icon: "add", disabled: availablePredefinedItems.length === 0, onClick: handleAddDimensionType }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")),
         extDimTypes.length === 0 ? (react_1.default.createElement("div", { style: { fontSize: '12px', color: 'var(--vscode-descriptionForeground)', fontStyle: 'italic' } }, "\u041D\u0435\u0442 \u0432\u0438\u0434\u043E\u0432 \u0441\u0443\u0431\u043A\u043E\u043D\u0442\u043E")) : (react_1.default.createElement("div", { style: { overflowX: 'auto' } },
             react_1.default.createElement("table", { style: { width: '100%', borderCollapse: 'collapse', fontSize: '12px', minWidth: '600px' } },
                 react_1.default.createElement("thead", null,
@@ -186,15 +174,7 @@ const ExtDimensionTypesTable = ({ dimensionTypes, extDimensionAccountingFlags, i
                                 react_1.default.createElement("input", { type: "checkbox", checked: isChecked, onChange: (e) => handleFlagChange(index, flagName, e.target.checked), style: { cursor: 'pointer' } })));
                         }),
                         react_1.default.createElement("td", { style: { padding: '6px', textAlign: 'center' } },
-                            react_1.default.createElement("button", { type: "button", onClick: () => handleRemoveDimensionType(index), style: {
-                                    padding: '2px 6px',
-                                    fontSize: '12px',
-                                    background: 'var(--vscode-errorForeground)',
-                                    color: 'var(--vscode-button-foreground)',
-                                    border: 'none',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer'
-                                } }, "\u00D7"))));
+                            react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: () => handleRemoveDimensionType(index) }))));
                 })))))));
 };
 exports.ExtDimensionTypesTable = ExtDimensionTypesTable;

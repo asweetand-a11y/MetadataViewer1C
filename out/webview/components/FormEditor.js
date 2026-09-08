@@ -48,6 +48,7 @@ const EnumValueEditorModal_1 = require("./FormEditor/EnumValueEditorModal");
 const SimpleMultilingualEditor_1 = require("./FormEditor/SimpleMultilingualEditor");
 const CharacteristicTypeEditorModal_1 = require("./FormEditor/CharacteristicTypeEditorModal");
 const AccountingFlagEditorModal_1 = require("./FormEditor/AccountingFlagEditorModal");
+const ui_1 = require("../ui");
 const field_values_1 = require("../../metadata/field-values");
 const widgets = {
     TypeWidget: TypeWidget_1.TypeWidget,
@@ -310,6 +311,7 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
     const [newEnumValueComment, setNewEnumValueComment] = (0, react_1.useState)(null);
     // Подтверждение опасных действий (удаление) — делаем модалкой, т.к. window.confirm в webview часто неудобен/неочевиден
     const [confirmModal, setConfirmModal] = (0, react_1.useState)(null);
+    const [listFilter, setListFilter] = (0, react_1.useState)('');
     const calculationTypePlanOptions = (0, react_1.useMemo)(() => mergeChartOfCalculationPlanOptionLists(collectChartOfCalculationPlanOptions(metadata.referenceTypes), collectChartOfCalculationPlanOptionsFromRegisters(metadata.registers)), [metadata.referenceTypes, metadata.registers]);
     const chartOfAccountsPlanOptions = (0, react_1.useMemo)(() => collectChartOfAccountsPlanOptions(metadata.referenceTypes), [metadata.referenceTypes]);
     const documentSelectOptions = (0, react_1.useMemo)(() => collectDocumentSelectOptions(metadata.referenceTypes), [metadata.referenceTypes]);
@@ -1200,151 +1202,38 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     ")"),
                 react_1.default.createElement("div", { style: { display: 'flex', gap: '8px', alignItems: 'center' } },
                     isRegister && (react_1.default.createElement(react_1.default.Fragment, null,
-                        react_1.default.createElement("button", { className: "btn-add-attribute", type: "button", onClick: () => openAddObjectChildModal('Dimension'), style: {
-                                padding: '6px 12px',
-                                background: 'var(--vscode-button-background)',
-                                color: 'var(--vscode-button-foreground)',
-                                border: 'none',
-                                borderRadius: '3px',
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            } },
-                            react_1.default.createElement("span", null, "\u2795"),
-                            react_1.default.createElement("span", null, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u0435")),
-                        react_1.default.createElement("button", { className: "btn-add-attribute", type: "button", onClick: () => openAddObjectChildModal('Resource'), style: {
-                                padding: '6px 12px',
-                                background: 'var(--vscode-button-background)',
-                                color: 'var(--vscode-button-foreground)',
-                                border: 'none',
-                                borderRadius: '3px',
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            } },
-                            react_1.default.createElement("span", null, "\u2795"),
-                            react_1.default.createElement("span", null, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u0441\u0443\u0440\u0441")))),
-                    react_1.default.createElement("button", { className: "btn-add-attribute", type: "button", onClick: () => openAddObjectChildModal('Attribute'), style: {
-                            padding: '6px 12px',
-                            background: 'var(--vscode-button-background)',
-                            color: 'var(--vscode-button-foreground)',
-                            border: 'none',
-                            borderRadius: '3px',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                        } },
-                        react_1.default.createElement("span", null, "\u2795"),
-                        react_1.default.createElement("span", null, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442")))),
-            react_1.default.createElement("div", { className: "attributes-list" }, attributes.map((attr, index) => {
+                        react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: () => openAddObjectChildModal('Dimension') }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u0435"),
+                        react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: () => openAddObjectChildModal('Resource') }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u0441\u0443\u0440\u0441"))),
+                    react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: () => openAddObjectChildModal('Attribute') }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442"))),
+            react_1.default.createElement("div", { className: "ui-toolbar" },
+                react_1.default.createElement(ui_1.UiTextField, { className: "ui-filter", value: listFilter, onChange: setListFilter, placeholder: "\u0424\u0438\u043B\u044C\u0442\u0440 \u043F\u043E \u0438\u043C\u0435\u043D\u0438\u2026" })),
+            react_1.default.createElement(ui_1.UiTable, { columns: ['Вид', 'Имя', 'Тип', ''] }, attributes
+                .map((attr, index) => ({ attr, index }))
+                .filter(({ attr }) => {
                 if (!attr)
-                    return null;
-                return (react_1.default.createElement("div", { key: index, className: "attribute-card" },
-                    react_1.default.createElement("div", { className: "attribute-header" },
-                        react_1.default.createElement("h4", null,
-                            (attr.childObjectKind === 'Resource'
-                                ? '[Ресурс] '
-                                : attr.childObjectKind === 'Dimension'
-                                    ? '[Измерение] '
-                                    : ''),
-                            typeof attr.name === 'string' ? attr.name : (attr.name?.content || attr.name?.['v8:content'] || attr.properties?.Name || 'Без имени')),
-                        react_1.default.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-                            react_1.default.createElement("span", { className: "attribute-type" }, (0, typeUtils_1.formatTypeForDisplay)(attr.type)),
-                            react_1.default.createElement("button", { className: "btn-edit-type", type: "button", onClick: (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setEditingAttributeType(index);
-                                }, title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", "aria-label": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", style: {
-                                    padding: '4px 8px',
-                                    fontSize: '16px',
-                                    background: 'var(--vscode-button-secondaryBackground)',
-                                    color: 'var(--vscode-button-secondaryForeground)',
-                                    border: '1px solid var(--vscode-button-border)',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer',
-                                    lineHeight: '1'
-                                } }, "\u270E"),
-                            react_1.default.createElement("button", { className: "btn-edit-type", type: "button", onClick: (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleDeleteObjectAttribute(index);
-                                }, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", style: {
-                                    padding: '4px 8px',
-                                    fontSize: '16px',
-                                    background: 'var(--vscode-errorForeground)',
-                                    color: 'var(--vscode-button-foreground)',
-                                    border: '1px solid var(--vscode-button-border)',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer',
-                                    lineHeight: '1'
-                                } }, "\u00D7"))),
-                    react_1.default.createElement("div", { className: "attribute-properties" },
-                        attr.properties?.Synonym && (react_1.default.createElement("div", { className: "property-row" },
-                            react_1.default.createElement("span", { className: "property-name" }, "Synonym:"),
-                            react_1.default.createElement("div", { className: "property-value-inline" },
-                                react_1.default.createElement(SimpleMultilingualEditor_1.SimpleMultilingualEditor, { value: attr.properties.Synonym, onChange: (newValue) => {
-                                        const updatedAttributes = selectedObject.attributes.map((a, i) => i === index ? { ...a, properties: { ...a.properties, Synonym: newValue } } : a);
-                                        handleChange({
-                                            formData: {
-                                                ...formData,
-                                                attributes: updatedAttributes
-                                            }
-                                        });
-                                    } })))),
-                        attr.properties?.Comment && (react_1.default.createElement("div", { className: "property-row" },
-                            react_1.default.createElement("span", { className: "property-name" }, "Comment:"),
-                            react_1.default.createElement("div", { className: "property-value-inline" },
-                                react_1.default.createElement(SimpleMultilingualEditor_1.SimpleMultilingualEditor, { value: attr.properties.Comment, onChange: (newValue) => {
-                                        const updatedAttributes = selectedObject.attributes.map((a, i) => i === index ? { ...a, properties: { ...a.properties, Comment: newValue } } : a);
-                                        handleChange({
-                                            formData: {
-                                                ...formData,
-                                                attributes: updatedAttributes
-                                            }
-                                        });
-                                    } })))),
-                        Object.entries(attr.properties || {}).slice(0, 5).map(([key, value]) => {
-                            // Пропускаем поле Type, Synonym и Comment - они обрабатываются отдельно
-                            if (key === 'Type' || key === 'Synonym' || key === 'Comment') {
-                                return null;
-                            }
-                            // Если это простое значение (не объект), показываем редактируемое поле
-                            if (typeof value !== 'object' || value === null) {
-                                return (react_1.default.createElement("div", { key: key, className: "property-row" },
-                                    react_1.default.createElement("span", { className: "property-name" },
-                                        key,
-                                        ":"),
-                                    react_1.default.createElement("div", { className: "property-value-inline" },
-                                        react_1.default.createElement(FieldInput, { field: key, value: value, onChange: (newValue) => {
-                                                const updatedAttributes = selectedObject.attributes.map((a, i) => i === index ? { ...a, properties: { ...a.properties, [key]: newValue } } : a);
-                                                handleChange({
-                                                    formData: {
-                                                        ...formData,
-                                                        attributes: updatedAttributes
-                                                    }
-                                                });
-                                            }, objectType: objectType, label: key }))));
-                            }
-                            // Для объектов показываем JSON или пустую строку
-                            return (react_1.default.createElement("div", { key: key, className: "property-row" },
-                                react_1.default.createElement("span", { className: "property-name" },
-                                    key,
-                                    ":"),
-                                react_1.default.createElement("span", { className: "property-value" }, (() => {
-                                    try {
-                                        return JSON.stringify(value).substring(0, 50);
-                                    }
-                                    catch {
-                                        return '';
-                                    }
-                                })())));
-                        }))));
+                    return false;
+                const name = typeof attr.name === 'string'
+                    ? attr.name
+                    : (attr.name?.content || attr.name?.['v8:content'] || attr.properties?.Name || '');
+                return String(name).toLowerCase().includes(listFilter.toLowerCase());
+            })
+                .map(({ attr, index }) => {
+                const kind = attr.childObjectKind === 'Resource'
+                    ? 'Ресурс'
+                    : attr.childObjectKind === 'Dimension'
+                        ? 'Измерение'
+                        : 'Реквизит';
+                const name = typeof attr.name === 'string'
+                    ? attr.name
+                    : (attr.name?.content || attr.name?.['v8:content'] || attr.properties?.Name || 'Без имени');
+                return (react_1.default.createElement(ui_1.UiTableRow, { key: index },
+                    react_1.default.createElement(ui_1.UiTableCell, null, kind),
+                    react_1.default.createElement(ui_1.UiTableCell, null, name),
+                    react_1.default.createElement(ui_1.UiTableCell, null, (0, typeUtils_1.formatTypeForDisplay)(attr.type)),
+                    react_1.default.createElement(ui_1.UiTableCell, null,
+                        react_1.default.createElement("div", { className: "ui-row-actions" },
+                            react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u0422\u0438\u043F", onClick: () => setEditingAttributeType(index) }),
+                            react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: () => handleDeleteObjectAttribute(index) })))));
             }))));
     }
     else if (activeTab === 'tabular' && (selectedObject?.tabularSections || formData?.tabularSections)) {
@@ -1356,9 +1245,7 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     "\u0422\u0430\u0431\u043B\u0438\u0447\u043D\u044B\u0435 \u0447\u0430\u0441\u0442\u0438 (",
                     tabularSections.length,
                     ")"),
-                react_1.default.createElement("button", { className: "btn-primary btn-add-tabular", onClick: () => setShowAddTabularModal(true) },
-                    react_1.default.createElement("span", { className: "btn-icon" }, "\u2795"),
-                    react_1.default.createElement("span", null, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0442\u0430\u0431\u043B\u0438\u0447\u043D\u0443\u044E \u0447\u0430\u0441\u0442\u044C"))),
+                react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: () => setShowAddTabularModal(true) }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0442\u0430\u0431\u043B\u0438\u0447\u043D\u0443\u044E \u0447\u0430\u0441\u0442\u044C")),
             react_1.default.createElement("div", { className: "tabular-list" }, tabularSections.map((ts, tsIndex) => {
                 if (!ts)
                     return null;
@@ -1416,19 +1303,11 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                             react_1.default.createElement("span", { className: "tabular-attributes-count" },
                                 "\u0420\u0435\u043A\u0432\u0438\u0437\u0438\u0442\u043E\u0432: ",
                                 ts.attributes?.length || 0),
-                            react_1.default.createElement("button", { className: "btn-edit-type", type: "button", onClick: (e) => {
+                            react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: (e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     handleDeleteTabularSection(tsIndex);
-                                }, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", style: {
-                                    padding: '4px 8px',
-                                    fontSize: '12px',
-                                    background: 'var(--vscode-errorForeground)',
-                                    color: 'var(--vscode-button-foreground)',
-                                    border: '1px solid var(--vscode-button-border)',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer'
-                                } }, "\u00D7"))),
+                                } }))),
                     ts.attributes && Array.isArray(ts.attributes) && ts.attributes.length > 0 && (react_1.default.createElement("div", { className: "tabular-attributes-list" }, ts.attributes.map((attr, attrIndex) => {
                         if (!attr)
                             return null;
@@ -1484,29 +1363,19 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                                     return '';
                                 })())),
                                 react_1.default.createElement("span", { className: "attribute-type" }, (0, typeUtils_1.formatTypeForDisplay)(attr.type))),
-                            react_1.default.createElement("div", { style: { display: 'flex', gap: '8px' } },
-                                react_1.default.createElement("button", { className: "btn-edit-type", type: "button", onClick: (e) => {
+                            react_1.default.createElement("div", { className: "ui-row-actions" },
+                                react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", onClick: (e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         handleEditAttributeType(tsIndex, attrIndex);
-                                    }, title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", "aria-label": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432" }, "\u270E"),
-                                react_1.default.createElement("button", { className: "btn-edit-type", type: "button", onClick: (e) => {
+                                    } }),
+                                react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: (e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         handleDeleteTabularAttribute(tsIndex, attrIndex);
-                                    }, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", style: {
-                                        padding: '4px 8px',
-                                        fontSize: '12px',
-                                        background: 'var(--vscode-errorForeground)',
-                                        color: 'var(--vscode-button-foreground)',
-                                        border: '1px solid var(--vscode-button-border)',
-                                        borderRadius: '3px',
-                                        cursor: 'pointer'
-                                    } }, "\u00D7"))));
+                                    } }))));
                     }))),
-                    react_1.default.createElement("button", { className: "btn-add-attribute", onClick: () => setShowAddAttributeModal(tsIndex) },
-                        react_1.default.createElement("span", { className: "btn-icon" }, "\u2795"),
-                        react_1.default.createElement("span", null, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442"))));
+                    react_1.default.createElement(ui_1.UiButton, { secondary: true, block: true, icon: "add", onClick: () => setShowAddAttributeModal(tsIndex) }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442")));
             }))));
     }
     else if (activeTab === 'enumValues') {
@@ -1518,7 +1387,7 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     "\u0417\u043D\u0430\u0447\u0435\u043D\u0438\u044F \u043F\u0435\u0440\u0435\u0447\u0438\u0441\u043B\u0435\u043D\u0438\u044F (",
                     enumValues.length,
                     ")"),
-                react_1.default.createElement("button", { type: "button", className: "btn-add", onClick: handleAddEnumValue, title: "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435" }, "+ \u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")),
+                react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: handleAddEnumValue, title: "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435" }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")),
             react_1.default.createElement("div", { className: "attributes-list" }, enumValues.map((ev, index) => {
                 const name = ev.name || ev.properties?.Name || `Значение ${index + 1}`;
                 const synonym = ev.properties?.Synonym ?? ev.properties?.synonym;
@@ -1527,15 +1396,12 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                 return (react_1.default.createElement("div", { key: ev.uuid || index, className: "attribute-card" },
                     react_1.default.createElement("div", { className: "attribute-header" },
                         react_1.default.createElement("span", { className: "attribute-name" }, name),
-                        react_1.default.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                        react_1.default.createElement("div", { className: "ui-row-actions" },
                             react_1.default.createElement("span", { className: "attribute-index" },
                                 "#",
                                 index + 1),
-                            react_1.default.createElement("button", { type: "button", className: "btn-edit-type", onClick: () => handleEditEnumValue(index), title: "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C", "aria-label": "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C" }, "\u270E"),
-                            react_1.default.createElement("button", { type: "button", className: "btn-edit-type", onClick: () => handleDeleteEnumValue(index), title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", style: {
-                                    background: 'var(--vscode-errorForeground)',
-                                    color: 'var(--vscode-button-foreground)'
-                                } }, "\u00D7"))),
+                            react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C", onClick: () => handleEditEnumValue(index) }),
+                            react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: () => handleDeleteEnumValue(index) }))),
                     (synonymStr || comment) && (react_1.default.createElement("div", { className: "attribute-meta" },
                         synonymStr && react_1.default.createElement("span", null, synonymStr),
                         comment && react_1.default.createElement("span", { className: "attribute-comment" }, comment)))));
@@ -1549,8 +1415,9 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     "\u0424\u043E\u0440\u043C\u044B (",
                     selectedObject.forms.length,
                     ")")),
-            react_1.default.createElement("div", { className: "forms-list" }, selectedObject.forms.map((form, index) => (react_1.default.createElement("div", { key: index, className: "form-card" },
-                react_1.default.createElement("h4", null, form.name || `Форма ${index + 1}`)))))));
+            react_1.default.createElement("div", { className: "forms-list" },
+                react_1.default.createElement(ui_1.UiTable, { columns: ['Имя'] }, selectedObject.forms.map((form, index) => (react_1.default.createElement(ui_1.UiTableRow, { key: index },
+                    react_1.default.createElement(ui_1.UiTableCell, null, form.name || `Форма ${index + 1}`))))))));
     }
     else if (activeTab === 'commands' && selectedObject?.commands) {
         content = (react_1.default.createElement("div", { className: "form-editor" },
@@ -1559,8 +1426,9 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     "\u041A\u043E\u043C\u0430\u043D\u0434\u044B (",
                     selectedObject.commands.length,
                     ")")),
-            react_1.default.createElement("div", { className: "commands-list" }, selectedObject.commands.map((cmd, index) => (react_1.default.createElement("div", { key: index, className: "command-card" },
-                react_1.default.createElement("h4", null, cmd.name || `Команда ${index + 1}`)))))));
+            react_1.default.createElement("div", { className: "commands-list" },
+                react_1.default.createElement(ui_1.UiTable, { columns: ['Имя'] }, selectedObject.commands.map((cmd, index) => (react_1.default.createElement(ui_1.UiTableRow, { key: index },
+                    react_1.default.createElement(ui_1.UiTableCell, null, cmd.name || `Команда ${index + 1}`))))))));
     }
     else if (activeTab === 'properties' && formData) {
         // Группируем свойства
@@ -2141,13 +2009,11 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                         "(",
                         registerRecords ? (Array.isArray(registerRecords) ? registerRecords.length : 1) : 0,
                         ")"),
-                    react_1.default.createElement("button", { className: "btn-primary btn-add-tabular", onClick: () => {
+                    react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: () => {
                             setNewRegisterRecord('');
                             setEditingRegisterRecordIndex(null);
                             setShowRegisterRecordsEditor(true);
-                        } },
-                        react_1.default.createElement("span", { className: "btn-icon" }, "\u2795"),
-                        react_1.default.createElement("span", null, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u0433\u0438\u0441\u0442\u0440"))),
+                        } }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u0433\u0438\u0441\u0442\u0440")),
                 registerRecords ? (react_1.default.createElement("div", { className: "register-records-list" }, Array.isArray(registerRecords) ? (registerRecords.map((record, index) => {
                     // Обрабатываем разные форматы RegisterRecords
                     const recordName = record.Item?.text ||
@@ -2159,8 +2025,8 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     return (react_1.default.createElement("div", { key: index, className: "register-record-card" },
                         react_1.default.createElement("div", { className: "record-header" },
                             react_1.default.createElement("h4", null, recordName),
-                            react_1.default.createElement("div", { style: { display: 'flex', gap: '8px' } },
-                                react_1.default.createElement("button", { className: "btn-edit-type", onClick: () => {
+                            react_1.default.createElement("div", { className: "ui-row-actions" },
+                                react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", onClick: () => {
                                         const currentRegister = record.Item?.text ||
                                             record.Item?.['#text'] ||
                                             record.Item ||
@@ -2169,16 +2035,8 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                                         setNewRegisterRecord(currentRegister);
                                         setEditingRegisterRecordIndex(index);
                                         setShowRegisterRecordsEditor(true);
-                                    }, title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", "aria-label": "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", style: {
-                                        padding: '4px 8px',
-                                        fontSize: '12px',
-                                        background: 'var(--vscode-button-secondaryBackground)',
-                                        color: 'var(--vscode-button-secondaryForeground)',
-                                        border: '1px solid var(--vscode-button-border)',
-                                        borderRadius: '3px',
-                                        cursor: 'pointer'
-                                    } }, "\u270E"),
-                                react_1.default.createElement("button", { className: "btn-edit-type", onClick: () => {
+                                    } }),
+                                react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: () => {
                                         const updatedRecords = [...registerRecords];
                                         updatedRecords.splice(index, 1);
                                         handleChange({
@@ -2187,15 +2045,7 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                                                 RegisterRecords: updatedRecords.length > 0 ? updatedRecords : undefined
                                             }
                                         });
-                                    }, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", style: {
-                                        padding: '4px 8px',
-                                        fontSize: '12px',
-                                        background: 'var(--vscode-errorForeground)',
-                                        color: 'var(--vscode-button-foreground)',
-                                        border: '1px solid var(--vscode-button-border)',
-                                        borderRadius: '3px',
-                                        cursor: 'pointer'
-                                    } }, "\u00D7"))),
+                                    } }))),
                         react_1.default.createElement("div", { className: "record-content" }, record.Item && typeof record.Item === 'object' ? (react_1.default.createElement("div", { className: "property-row" },
                             react_1.default.createElement("span", { className: "property-name" }, "\u0422\u0438\u043F:"),
                             react_1.default.createElement("span", { className: "property-value" }, record.Item['xsi:type'] || record.Item.type || 'Не указан'))) : record.name || record.Name ? (react_1.default.createElement("div", { className: "property-row" },
@@ -2205,7 +2055,7 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                 })) : (react_1.default.createElement("div", { className: "register-record-card" },
                     react_1.default.createElement("div", { className: "record-header" },
                         react_1.default.createElement("h4", null, "\u0414\u0432\u0438\u0436\u0435\u043D\u0438\u0435 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430"),
-                        react_1.default.createElement("button", { className: "btn-edit-type", onClick: () => {
+                        react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", onClick: () => {
                                 const currentRegister = registerRecords.Item?.text ||
                                     registerRecords.Item?.['#text'] ||
                                     registerRecords.Item ||
@@ -2214,15 +2064,7 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                                 setNewRegisterRecord(currentRegister);
                                 setEditingRegisterRecordIndex(0);
                                 setShowRegisterRecordsEditor(true);
-                            }, title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", "aria-label": "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", style: {
-                                padding: '4px 8px',
-                                fontSize: '12px',
-                                background: 'var(--vscode-button-secondaryBackground)',
-                                color: 'var(--vscode-button-secondaryForeground)',
-                                border: '1px solid var(--vscode-button-border)',
-                                borderRadius: '3px',
-                                cursor: 'pointer'
-                            } }, "\u270E")),
+                            } })),
                     react_1.default.createElement("div", { className: "record-content" }, typeof registerRecords === 'object' ? (react_1.default.createElement("div", { className: "property-row" },
                         react_1.default.createElement("span", { className: "property-name" }, "\u0414\u0430\u043D\u043D\u044B\u0435:"),
                         react_1.default.createElement("span", { className: "property-value" }, JSON.stringify(registerRecords, null, 2).substring(0, 200)))) : (react_1.default.createElement("span", { className: "property-value" }, String(registerRecords).substring(0, 100)))))))) : (react_1.default.createElement("div", { className: "register-records-empty", style: { padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' } }, "\u041D\u0435\u0442 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0439 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u0430. \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \"+ \u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u0433\u0438\u0441\u0442\u0440\" \u0434\u043B\u044F \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0438\u044F.")))),
@@ -2360,23 +2202,10 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                         "\u0422\u0438\u043F\u044B \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F \u0445\u0430\u0440\u0430\u043A\u0442\u0435\u0440\u0438\u0441\u0442\u0438\u043A (",
                         characteristicTypes.length,
                         ")"),
-                    react_1.default.createElement("button", { className: "btn-primary btn-add-characteristic-type", type: "button", onClick: () => {
+                    react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: () => {
                             setEditingCharacteristicTypeIndex(null);
                             setShowCharacteristicTypeModal(true);
-                        }, style: {
-                            padding: '6px 12px',
-                            background: 'var(--vscode-button-background)',
-                            color: 'var(--vscode-button-foreground)',
-                            border: 'none',
-                            borderRadius: '3px',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                        } },
-                        react_1.default.createElement("span", null, "\u2795"),
-                        react_1.default.createElement("span", null, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0442\u0438\u043F \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F"))),
+                        } }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0442\u0438\u043F \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F")),
                 react_1.default.createElement("div", { className: "characteristic-types-list" }, characteristicTypes.length === 0 ? (react_1.default.createElement("div", { className: "characteristic-types-empty", style: { padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' } }, "\u041D\u0435\u0442 \u0442\u0438\u043F\u043E\u0432 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F \u0445\u0430\u0440\u0430\u043A\u0442\u0435\u0440\u0438\u0441\u0442\u0438\u043A. \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \"\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0442\u0438\u043F \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F\" \u0434\u043B\u044F \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0438\u044F.")) : (characteristicTypes.map((typeValue, index) => (react_1.default.createElement("div", { key: index, className: "characteristic-type-card", style: {
                         padding: '12px',
                         marginBottom: '8px',
@@ -2388,36 +2217,18 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                         react_1.default.createElement("div", null,
                             react_1.default.createElement("h4", { style: { margin: 0, fontSize: '14px', fontWeight: '500' } }, (0, typeUtils_1.formatTypeForDisplay)({ kind: typeValue })),
                             react_1.default.createElement("div", { style: { fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' } }, typeValue)),
-                        react_1.default.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-                            react_1.default.createElement("button", { className: "btn-edit-type", type: "button", onClick: (e) => {
+                        react_1.default.createElement("div", { className: "ui-row-actions" },
+                            react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", onClick: (e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     setEditingCharacteristicTypeIndex(index);
                                     setShowCharacteristicTypeModal(true);
-                                }, title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", "aria-label": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", style: {
-                                    padding: '4px 8px',
-                                    fontSize: '16px',
-                                    background: 'var(--vscode-button-secondaryBackground)',
-                                    color: 'var(--vscode-button-secondaryForeground)',
-                                    border: '1px solid var(--vscode-button-border)',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer',
-                                    lineHeight: '1'
-                                } }, "\u270E"),
-                            react_1.default.createElement("button", { className: "btn-delete-type", type: "button", onClick: (e) => {
+                                } }),
+                            react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: (e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     handleDeleteCharacteristicType(index);
-                                }, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", style: {
-                                    padding: '4px 8px',
-                                    fontSize: '16px',
-                                    background: 'var(--vscode-errorForeground)',
-                                    color: 'var(--vscode-button-foreground)',
-                                    border: '1px solid var(--vscode-button-border)',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer',
-                                    lineHeight: '1'
-                                } }, "\u00D7"))))))))));
+                                } }))))))))));
         }
     }
     else if (activeTab === 'accountingFlags') {
@@ -2439,24 +2250,11 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                             "\u041F\u043E \u0441\u0447\u0435\u0442\u0430\u043C (",
                             accountingFlags.length,
                             ")"),
-                        react_1.default.createElement("button", { className: "btn-primary", type: "button", onClick: () => {
+                        react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: () => {
                                 setEditingAccountingFlag(null);
                                 setAddingAccountingFlagType('accountingFlag');
                                 setShowAccountingFlagModal(true);
-                            }, style: {
-                                padding: '6px 12px',
-                                background: 'var(--vscode-button-background)',
-                                color: 'var(--vscode-button-foreground)',
-                                border: 'none',
-                                borderRadius: '3px',
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            } },
-                            react_1.default.createElement("span", null, "\u2795"),
-                            react_1.default.createElement("span", null, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0440\u0438\u0437\u043D\u0430\u043A \u0443\u0447\u0435\u0442\u0430"))),
+                            } }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0440\u0438\u0437\u043D\u0430\u043A \u0443\u0447\u0435\u0442\u0430")),
                     react_1.default.createElement("div", { className: "accounting-flags-list" }, accountingFlags.length === 0 ? (react_1.default.createElement("div", { style: { padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' } }, "\u041D\u0435\u0442 \u043F\u0440\u0438\u0437\u043D\u0430\u043A\u043E\u0432 \u0443\u0447\u0435\u0442\u0430 \u043F\u043E \u0441\u0447\u0435\u0442\u0430\u043C. \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \"\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0440\u0438\u0437\u043D\u0430\u043A \u0443\u0447\u0435\u0442\u0430\" \u0434\u043B\u044F \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0438\u044F.")) : (accountingFlags.map((flag, index) => (react_1.default.createElement("div", { key: index, className: "accounting-flag-card", style: {
                             padding: '12px',
                             marginBottom: '8px',
@@ -2478,54 +2276,23 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                                     return '';
                                 })())),
                                 react_1.default.createElement("div", { style: { fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' } }, "\u0422\u0438\u043F: xs:boolean")),
-                            react_1.default.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-                                react_1.default.createElement("button", { type: "button", onClick: () => {
+                            react_1.default.createElement("div", { className: "ui-row-actions" },
+                                react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", onClick: () => {
                                         setEditingAccountingFlag({ type: 'accountingFlag', index });
                                         setShowAccountingFlagModal(true);
-                                    }, title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", "aria-label": "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", style: {
-                                        padding: '4px 8px',
-                                        fontSize: '16px',
-                                        background: 'var(--vscode-button-secondaryBackground)',
-                                        color: 'var(--vscode-button-secondaryForeground)',
-                                        border: '1px solid var(--vscode-button-border)',
-                                        borderRadius: '3px',
-                                        cursor: 'pointer',
-                                        lineHeight: '1'
-                                    } }, "\u270E"),
-                                react_1.default.createElement("button", { type: "button", onClick: () => handleDeleteAccountingFlag('accountingFlag', index), title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", style: {
-                                        padding: '4px 8px',
-                                        fontSize: '16px',
-                                        background: 'var(--vscode-errorForeground)',
-                                        color: 'var(--vscode-button-foreground)',
-                                        border: '1px solid var(--vscode-button-border)',
-                                        borderRadius: '3px',
-                                        cursor: 'pointer',
-                                        lineHeight: '1'
-                                    } }, "\u00D7"))))))))),
+                                    } }),
+                                react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: () => handleDeleteAccountingFlag('accountingFlag', index) }))))))))),
                 react_1.default.createElement("div", { className: "properties-group" },
                     react_1.default.createElement("div", { className: "section-header", style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
                         react_1.default.createElement("h3", null,
                             "\u041F\u043E \u0441\u0443\u0431\u043A\u043E\u043D\u0442\u043E (",
                             extDimensionAccountingFlags.length,
                             ")"),
-                        react_1.default.createElement("button", { className: "btn-primary", type: "button", onClick: () => {
+                        react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: () => {
                                 setEditingAccountingFlag(null);
                                 setAddingAccountingFlagType('extDimensionAccountingFlag');
                                 setShowAccountingFlagModal(true);
-                            }, style: {
-                                padding: '6px 12px',
-                                background: 'var(--vscode-button-background)',
-                                color: 'var(--vscode-button-foreground)',
-                                border: 'none',
-                                borderRadius: '3px',
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            } },
-                            react_1.default.createElement("span", null, "\u2795"),
-                            react_1.default.createElement("span", null, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0440\u0438\u0437\u043D\u0430\u043A \u0443\u0447\u0435\u0442\u0430"))),
+                            } }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0440\u0438\u0437\u043D\u0430\u043A \u0443\u0447\u0435\u0442\u0430")),
                     react_1.default.createElement("div", { className: "accounting-flags-list" }, extDimensionAccountingFlags.length === 0 ? (react_1.default.createElement("div", { style: { padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' } }, "\u041D\u0435\u0442 \u043F\u0440\u0438\u0437\u043D\u0430\u043A\u043E\u0432 \u0443\u0447\u0435\u0442\u0430 \u043F\u043E \u0441\u0443\u0431\u043A\u043E\u043D\u0442\u043E. \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \"\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0440\u0438\u0437\u043D\u0430\u043A \u0443\u0447\u0435\u0442\u0430\" \u0434\u043B\u044F \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0438\u044F.")) : (extDimensionAccountingFlags.map((flag, index) => (react_1.default.createElement("div", { key: index, className: "accounting-flag-card", style: {
                             padding: '12px',
                             marginBottom: '8px',
@@ -2547,30 +2314,12 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                                     return '';
                                 })())),
                                 react_1.default.createElement("div", { style: { fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' } }, "\u0422\u0438\u043F: xs:boolean")),
-                            react_1.default.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-                                react_1.default.createElement("button", { type: "button", onClick: () => {
+                            react_1.default.createElement("div", { className: "ui-row-actions" },
+                                react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", onClick: () => {
                                         setEditingAccountingFlag({ type: 'extDimensionAccountingFlag', index });
                                         setShowAccountingFlagModal(true);
-                                    }, title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", "aria-label": "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C", style: {
-                                        padding: '4px 8px',
-                                        fontSize: '16px',
-                                        background: 'var(--vscode-button-secondaryBackground)',
-                                        color: 'var(--vscode-button-secondaryForeground)',
-                                        border: '1px solid var(--vscode-button-border)',
-                                        borderRadius: '3px',
-                                        cursor: 'pointer',
-                                        lineHeight: '1'
-                                    } }, "\u270E"),
-                                react_1.default.createElement("button", { type: "button", onClick: () => handleDeleteAccountingFlag('extDimensionAccountingFlag', index), title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", style: {
-                                        padding: '4px 8px',
-                                        fontSize: '16px',
-                                        background: 'var(--vscode-errorForeground)',
-                                        color: 'var(--vscode-button-foreground)',
-                                        border: '1px solid var(--vscode-button-border)',
-                                        borderRadius: '3px',
-                                        cursor: 'pointer',
-                                        lineHeight: '1'
-                                    } }, "\u00D7")))))))))));
+                                    } }),
+                                react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: () => handleDeleteAccountingFlag('extDimensionAccountingFlag', index) })))))))))));
         }
     }
     else {
@@ -2770,19 +2519,14 @@ function getFieldTypeAndOptions(field, objectType) {
 // Компонент для отображения поля с выбором значения
 const FieldInput = ({ field, value, onChange, objectType, label }) => {
     const fieldInfo = getFieldTypeAndOptions(field, objectType);
-    // Числовое поле
     if (fieldInfo.type === 'number') {
         const strVal = value === null || value === undefined ? '' : String(value);
-        return (react_1.default.createElement("input", { type: "number", min: 0, value: strVal, onChange: (e) => onChange(e.target.value), className: "property-input", placeholder: "0" }));
+        return (react_1.default.createElement(ui_1.UiTextField, { type: "number", value: strVal, onChange: onChange, placeholder: "0" }));
     }
-    // Boolean поле
     if (fieldInfo.type === 'boolean') {
         const boolValue = value === true || value === 'true' || value === 'True';
-        return (react_1.default.createElement("select", { value: String(boolValue), onChange: (e) => onChange(e.target.value === 'true'), className: "property-select" },
-            react_1.default.createElement("option", { value: "true" }, "\u0414\u0430 (true)"),
-            react_1.default.createElement("option", { value: "false" }, "\u041D\u0435\u0442 (false)")));
+        return (react_1.default.createElement(ui_1.UiCheckbox, { checked: boolValue, onChange: onChange, label: boolValue ? 'Да' : 'Нет' }));
     }
-    // Enum поле
     if (fieldInfo.type === 'enum' && fieldInfo.options) {
         const stringValue = value !== null && value !== undefined ? String(value) : '';
         const isAccumulationRegisterRegisterType = field === 'RegisterType' &&
@@ -2799,11 +2543,11 @@ const FieldInput = ({ field, value, onChange, objectType, label }) => {
                 return c === 'Turnovers' || c === 'Balances' ? c : '';
             })()
             : stringValue;
-        return (react_1.default.createElement("select", { value: selectValue, onChange: (e) => onChange(e.target.value), className: "property-select" },
-            react_1.default.createElement("option", { value: "" }, "-- \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435 --"),
-            opts.map((option) => (react_1.default.createElement("option", { key: option, value: option }, (0, field_values_1.getEnumValueLabel)(option, field))))));
+        return (react_1.default.createElement(ui_1.UiSelect, { value: selectValue, placeholder: "-- \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435 --", onChange: onChange, options: opts.map((option) => ({
+                value: option,
+                label: (0, field_values_1.getEnumValueLabel)(option, field),
+            })) }));
     }
-    // Строковое поле (по умолчанию)
-    return (react_1.default.createElement("input", { type: "text", value: typeof value === 'string' ? value : '', onChange: (e) => onChange(e.target.value), className: "property-input", placeholder: `Введите ${label.toLowerCase()}...` }));
+    return (react_1.default.createElement(ui_1.UiTextField, { value: typeof value === 'string' ? value : '', onChange: onChange, placeholder: `Введите ${label.toLowerCase()}...` }));
 };
 //# sourceMappingURL=FormEditor.js.map

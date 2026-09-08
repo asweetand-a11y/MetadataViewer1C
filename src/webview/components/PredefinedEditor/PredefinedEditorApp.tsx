@@ -11,6 +11,7 @@ import { AccountingFlagsTable } from './AccountingFlagsTable';
 import { ExtDimensionTypesTable } from './ExtDimensionTypesTable';
 import '../../styles/editor.css';
 import './PredefinedEditorApp.css';
+import { UiButton } from '../../ui';
 
 interface PredefinedEditorAppProps {
   vscode: any;
@@ -359,24 +360,10 @@ const PredefinedTable: React.FC<PredefinedTableProps> = ({
                 )}
                 <td className="col-folder">{item.IsFolder ? 'Да' : 'Нет'}</td>
                 <td className="col-actions">
-                  <button
-                    type="button"
-                    className="btn-edit-type predefined-table-action"
-                    onClick={() => onEditPath(path)}
-                    title="Редактировать"
-                    aria-label="Редактировать"
-                  >
-                    ✎
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-edit-type predefined-table-action predefined-table-action-delete"
-                    onClick={() => onDeletePath(path)}
-                    title="Удалить"
-                    aria-label="Удалить"
-                  >
-                    ×
-                  </button>
+                  <div className="ui-row-actions">
+                    <UiButton icon="edit" title="Редактировать" onClick={() => onEditPath(path)} />
+                    <UiButton icon="close" danger title="Удалить" onClick={() => onDeletePath(path)} />
+                  </div>
                 </td>
               </tr>
             );
@@ -804,8 +791,8 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
           </span>
         </div>
         <div className="header-actions">
-          <button className="btn-add" onClick={() => setShowAddModal(true)}>Добавить</button>
-          <button className="btn-save" onClick={handleSave}>Сохранить</button>
+          <UiButton secondary icon="add" onClick={() => setShowAddModal(true)}>Добавить</UiButton>
+          <UiButton icon="save" onClick={handleSave}>Сохранить</UiButton>
         </div>
       </div>
 
@@ -873,23 +860,14 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
                         placeholder="Нажмите кнопку для выбора типа"
                         style={{ flex: 1 }}
                       />
-                      <button 
-                        type="button"
-                        onClick={() => handleOpenTypeModal('add', newItem.Type || '')}
+                      <UiButton
+                        secondary
+                        icon="edit"
                         title="Открыть редактор типов"
-                        aria-label="Открыть редактор типов"
-                        style={{
-                          padding: '6px 12px',
-                          background: 'var(--vscode-button-secondaryBackground)',
-                          color: 'var(--vscode-button-secondaryForeground)',
-                          border: '1px solid var(--vscode-button-border)',
-                          borderRadius: '3px',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                        }}
+                        onClick={() => handleOpenTypeModal('add', newItem.Type || '')}
                       >
                         Выбрать тип
-                      </button>
+                      </UiButton>
                     </div>
                   </label>
                 )}
@@ -972,10 +950,7 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
                 </label>
               </div>
               <div className="modal-actions">
-                <button className="btn-primary" onClick={handleAdd}>Добавить</button>
-                <button 
-                  className="btn-secondary" 
-                  onClick={() => { 
+                <UiButton secondary onClick={() => { 
                     setShowAddModal(false); 
                     setAddParentPath([]);
                     setNewItem({ 
@@ -994,10 +969,8 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
                       Leading: undefined,
                       Base: undefined
                     }); 
-                  }}
-                >
-                  Отмена
-                </button>
+                  }}>Отмена</UiButton>
+                <UiButton icon="add" onClick={handleAdd}>Добавить</UiButton>
               </div>
             </div>
           </div>
@@ -1069,14 +1042,8 @@ export const PredefinedEditorApp: React.FC<PredefinedEditorAppProps> = ({ vscode
                 <p>Вы уверены, что хотите удалить этот элемент?</p>
               </div>
               <div className="modal-actions">
-                <button 
-                  className="btn-primary" 
-                  onClick={handleConfirmDelete} 
-                  style={{ background: 'var(--vscode-errorForeground)' }}
-                >
-                  Удалить
-                </button>
-                <button className="btn-secondary" onClick={handleCancelDelete}>Отмена</button>
+                <UiButton secondary onClick={handleCancelDelete}>Отмена</UiButton>
+                <UiButton onClick={handleConfirmDelete}>Удалить</UiButton>
               </div>
             </div>
           </div>
@@ -1158,43 +1125,9 @@ const EditItemCard: React.FC<EditItemCardProps> = ({
     >
       <div className="attribute-header">
         {!showInModal && <h4>Редактирование элемента</h4>}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            className="btn-edit-type"
-            type="button"
-            onClick={handleSave}
-            title="Сохранить"
-            aria-label="Сохранить"
-            style={{ 
-              padding: '4px 8px', 
-              fontSize: '12px',
-              background: 'var(--vscode-button-background)',
-              color: 'var(--vscode-button-foreground)',
-              border: 'none',
-              borderRadius: '3px',
-              cursor: 'pointer'
-            }}
-          >
-            Сохранить
-          </button>
-          <button
-            className="btn-edit-type"
-            type="button"
-            onClick={onCancel}
-            title="Отмена"
-            aria-label="Отмена"
-            style={{
-              padding: '4px 8px',
-              fontSize: '12px',
-              background: 'var(--vscode-button-secondaryBackground)',
-              color: 'var(--vscode-button-secondaryForeground)',
-              border: '1px solid var(--vscode-button-border)',
-              borderRadius: '3px',
-              cursor: 'pointer'
-            }}
-          >
-            Отмена
-          </button>
+        <div className="ui-row-actions">
+          <UiButton secondary onClick={onCancel}>Отмена</UiButton>
+          <UiButton icon="save" onClick={handleSave}>Сохранить</UiButton>
         </div>
       </div>
       <div className="attribute-properties">
@@ -1344,24 +1277,14 @@ const EditItemCard: React.FC<EditItemCardProps> = ({
                   fontFamily: 'monospace'
                 }}
               />
-              <button 
-                type="button"
-                onClick={() => onOpenTypeModal('edit', item.Type || '')}
+              <UiButton
+                secondary
+                icon="edit"
                 title="Открыть редактор типов"
-                aria-label="Открыть редактор типов"
-                style={{
-                  padding: '4px 8px',
-                  background: 'var(--vscode-button-secondaryBackground)',
-                  color: 'var(--vscode-button-secondaryForeground)',
-                  border: '1px solid var(--vscode-button-border)',
-                  borderRadius: '3px',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  whiteSpace: 'nowrap'
-                }}
+                onClick={() => onOpenTypeModal('edit', item.Type || '')}
               >
                 Выбрать
-              </button>
+              </UiButton>
             </div>
           </div>
         )}

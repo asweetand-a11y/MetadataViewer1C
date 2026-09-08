@@ -35,6 +35,7 @@ const TemplateEditorApp_1 = require("./components/TemplateEditor/TemplateEditorA
 const PredefinedEditorApp_1 = require("./components/PredefinedEditor/PredefinedEditorApp");
 const RoleEditorApp_1 = require("./components/RoleEditor/RoleEditorApp");
 require("../webview/styles/editor.css");
+require("./ui/ui.css");
 const vscode = acquireVsCodeApi();
 // Инициализация React приложения
 const rootElement = document.getElementById('root');

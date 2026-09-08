@@ -30,6 +30,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PredefinedTypeEditorModal = void 0;
 const react_1 = __importStar(require("react"));
 const Modal_1 = require("../FormEditor/Modal");
+const ui_1 = require("../../ui");
 const TypeWidget_1 = require("../../widgets/TypeWidget");
 const PredefinedTypeEditorModal = ({ isOpen, typeValue, metadata, onClose, onSave }) => {
     // Преобразуем строку типа в объект для TypeWidget
@@ -150,7 +151,7 @@ const PredefinedTypeEditorModal = ({ isOpen, typeValue, metadata, onClose, onSav
         }
         onClose();
     };
-    const footer = (react_1.default.createElement("button", { className: "btn-secondary", onClick: onClose }, "\u0417\u0430\u043A\u0440\u044B\u0442\u044C"));
+    const footer = (react_1.default.createElement(ui_1.UiButton, { secondary: true, onClick: onClose }, "\u0417\u0430\u043A\u0440\u044B\u0442\u044C"));
     return (react_1.default.createElement(Modal_1.Modal, { isOpen: isOpen, title: typeValue ? "Редактировать тип" : "Выбрать тип", onClose: onClose, footer: footer },
         react_1.default.createElement("div", { className: "form-field" },
             react_1.default.createElement("label", null, "\u0422\u0438\u043F"),

@@ -24,10 +24,20 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--vscode-panel-border);
   background-color: var(--vscode-editor-background);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.metadata-editor vscode-tabs {
+  flex: 1;
+  min-height: 0;
+  display: block;
+}
+
+.editor-tab-body {
+  height: calc(100vh - 88px);
+  overflow: auto;
 }
 
 .header-actions {

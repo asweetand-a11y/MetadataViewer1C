@@ -5,6 +5,7 @@
 
 import React, { useMemo } from 'react';
 import { Modal } from './Modal';
+import { UiButton } from '../../ui';
 import { TypeWidget } from '../../widgets/TypeWidget';
 
 interface CharacteristicTypeEditorModalProps {
@@ -76,7 +77,7 @@ export const CharacteristicTypeEditorModal: React.FC<CharacteristicTypeEditorMod
   };
 
   const footer = (
-    <button className="btn-secondary" onClick={onClose}>Закрыть</button>
+    <UiButton secondary onClick={onClose}>Закрыть</UiButton>
   );
 
   return (

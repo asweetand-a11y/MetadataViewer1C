@@ -21,6 +21,7 @@ import { EnumValueEditorModal } from './FormEditor/EnumValueEditorModal';
 import { SimpleMultilingualEditor } from './FormEditor/SimpleMultilingualEditor';
 import { CharacteristicTypeEditorModal } from './FormEditor/CharacteristicTypeEditorModal';
 import { AccountingFlagEditorModal } from './FormEditor/AccountingFlagEditorModal';
+import { UiButton, UiTextField, UiCheckbox, UiSelect, UiTable, UiTableRow, UiTableCell } from '../ui';
 import {
   getFieldLabel,
   getEnumValueLabel,
@@ -328,6 +329,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
 
   // Подтверждение опасных действий (удаление) — делаем модалкой, т.к. window.confirm в webview часто неудобен/неочевиден
   const [confirmModal, setConfirmModal] = useState<null | { message: string; onConfirm: () => void }>(null);
+  const [listFilter, setListFilter] = useState('');
 
   const calculationTypePlanOptions = useMemo(
     () =>
@@ -1338,234 +1340,64 @@ export const FormEditor: React.FC<FormEditorProps> = ({
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {isRegister && (
               <>
-                <button
-                  className="btn-add-attribute"
-                  type="button"
-                  onClick={() => openAddObjectChildModal('Dimension')}
-                  style={{
-                    padding: '6px 12px',
-                    background: 'var(--vscode-button-background)',
-                    color: 'var(--vscode-button-foreground)',
-                    border: 'none',
-                    borderRadius: '3px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <span>➕</span>
-                  <span>Добавить измерение</span>
-                </button>
-                <button
-                  className="btn-add-attribute"
-                  type="button"
-                  onClick={() => openAddObjectChildModal('Resource')}
-                  style={{
-                    padding: '6px 12px',
-                    background: 'var(--vscode-button-background)',
-                    color: 'var(--vscode-button-foreground)',
-                    border: 'none',
-                    borderRadius: '3px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <span>➕</span>
-                  <span>Добавить ресурс</span>
-                </button>
+                <UiButton icon="add" onClick={() => openAddObjectChildModal('Dimension')}>
+                  Добавить измерение
+                </UiButton>
+                <UiButton icon="add" onClick={() => openAddObjectChildModal('Resource')}>
+                  Добавить ресурс
+                </UiButton>
               </>
             )}
-            <button
-              className="btn-add-attribute"
-              type="button"
-              onClick={() => openAddObjectChildModal('Attribute')}
-              style={{
-                padding: '6px 12px',
-                background: 'var(--vscode-button-background)',
-                color: 'var(--vscode-button-foreground)',
-                border: 'none',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              <span>➕</span>
-              <span>Добавить реквизит</span>
-            </button>
+            <UiButton icon="add" onClick={() => openAddObjectChildModal('Attribute')}>
+              Добавить реквизит
+            </UiButton>
           </div>
         </div>
-        <div className="attributes-list">
-          {attributes.map((attr: any, index: number) => {
-            if (!attr) return null;
-            return (
-              <div key={index} className="attribute-card">
-                <div className="attribute-header">
-                  <h4>
-                    {(attr.childObjectKind === 'Resource'
-                      ? '[Ресурс] '
-                      : attr.childObjectKind === 'Dimension'
-                      ? '[Измерение] '
-                      : '')}
-                    {typeof attr.name === 'string' ? attr.name : (attr.name?.content || attr.name?.['v8:content'] || attr.properties?.Name || 'Без имени')}
-                  </h4>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="attribute-type">
-                      {formatTypeForDisplay(attr.type)}
-                    </span>
-                    <button
-                      className="btn-edit-type"
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setEditingAttributeType(index);
-                      }}
-                      title="Открыть редактор типов"
-                      aria-label="Открыть редактор типов"
-                      style={{ 
-                        padding: '4px 8px', 
-                        fontSize: '16px',
-                        background: 'var(--vscode-button-secondaryBackground)',
-                        color: 'var(--vscode-button-secondaryForeground)',
-                        border: '1px solid var(--vscode-button-border)',
-                        borderRadius: '3px',
-                        cursor: 'pointer',
-                        lineHeight: '1'
-                      }}
-                    >
-                      ✎
-                    </button>
-                    <button
-                      className="btn-edit-type"
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleDeleteObjectAttribute(index);
-                      }}
-                      title="Удалить"
-                      aria-label="Удалить"
-                      style={{
-                        padding: '4px 8px',
-                        fontSize: '16px',
-                        background: 'var(--vscode-errorForeground)',
-                        color: 'var(--vscode-button-foreground)',
-                        border: '1px solid var(--vscode-button-border)',
-                        borderRadius: '3px',
-                        cursor: 'pointer',
-                        lineHeight: '1'
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-                <div className="attribute-properties">
-                  {attr.properties?.Synonym && (
-                    <div className="property-row">
-                      <span className="property-name">Synonym:</span>
-                      <div className="property-value-inline">
-                        <SimpleMultilingualEditor
-                          value={attr.properties.Synonym}
-                          onChange={(newValue) => {
-                            const updatedAttributes = selectedObject.attributes.map((a: any, i: number) => 
-                              i === index ? { ...a, properties: { ...a.properties, Synonym: newValue } } : a
-                            );
-                            handleChange({ 
-                              formData: { 
-                                ...formData, 
-                                attributes: updatedAttributes
-                              } 
-                            });
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {attr.properties?.Comment && (
-                    <div className="property-row">
-                      <span className="property-name">Comment:</span>
-                      <div className="property-value-inline">
-                        <SimpleMultilingualEditor
-                          value={attr.properties.Comment}
-                          onChange={(newValue) => {
-                            const updatedAttributes = selectedObject.attributes.map((a: any, i: number) => 
-                              i === index ? { ...a, properties: { ...a.properties, Comment: newValue } } : a
-                            );
-                            handleChange({ 
-                              formData: { 
-                                ...formData, 
-                                attributes: updatedAttributes
-                              } 
-                            });
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                {Object.entries(attr.properties || {}).slice(0, 5).map(([key, value]: [string, any]) => {
-                  // Пропускаем поле Type, Synonym и Comment - они обрабатываются отдельно
-                  if (key === 'Type' || key === 'Synonym' || key === 'Comment') {
-                    return null;
-                  }
-                  
-                  // Если это простое значение (не объект), показываем редактируемое поле
-                  if (typeof value !== 'object' || value === null) {
-                    return (
-                      <div key={key} className="property-row">
-                        <span className="property-name">{key}:</span>
-                        <div className="property-value-inline">
-                          <FieldInput
-                            field={key}
-                            value={value}
-                            onChange={(newValue) => {
-                              const updatedAttributes = selectedObject.attributes.map((a: any, i: number) => 
-                                i === index ? { ...a, properties: { ...a.properties, [key]: newValue } } : a
-                              );
-                              handleChange({ 
-                                formData: { 
-                                  ...formData, 
-                                  attributes: updatedAttributes
-                                } 
-                              });
-                            }}
-                            objectType={objectType}
-                            label={key}
-                          />
-                        </div>
-                      </div>
-                    );
-                  }
-                  
-                  // Для объектов показываем JSON или пустую строку
-                  return (
-                    <div key={key} className="property-row">
-                      <span className="property-name">{key}:</span>
-                      <span className="property-value">
-                        {(() => {
-                          try {
-                            return JSON.stringify(value).substring(0, 50);
-                          } catch {
-                            return '';
-                          }
-                        })()}
-                      </span>
-                    </div>
-                  );
-                })}
-                </div>
-              </div>
-            );
-          })}
+        <div className="ui-toolbar">
+          <UiTextField
+            className="ui-filter"
+            value={listFilter}
+            onChange={setListFilter}
+            placeholder="Фильтр по имени…"
+          />
         </div>
+        <UiTable columns={['Вид', 'Имя', 'Тип', '']}>
+          {attributes
+            .map((attr: any, index: number) => ({ attr, index }))
+            .filter(({ attr }) => {
+              if (!attr) return false;
+              const name =
+                typeof attr.name === 'string'
+                  ? attr.name
+                  : (attr.name?.content || attr.name?.['v8:content'] || attr.properties?.Name || '');
+              return String(name).toLowerCase().includes(listFilter.toLowerCase());
+            })
+            .map(({ attr, index }) => {
+              const kind =
+                attr.childObjectKind === 'Resource'
+                  ? 'Ресурс'
+                  : attr.childObjectKind === 'Dimension'
+                  ? 'Измерение'
+                  : 'Реквизит';
+              const name =
+                typeof attr.name === 'string'
+                  ? attr.name
+                  : (attr.name?.content || attr.name?.['v8:content'] || attr.properties?.Name || 'Без имени');
+              return (
+                <UiTableRow key={index}>
+                  <UiTableCell>{kind}</UiTableCell>
+                  <UiTableCell>{name}</UiTableCell>
+                  <UiTableCell>{formatTypeForDisplay(attr.type)}</UiTableCell>
+                  <UiTableCell>
+                    <div className="ui-row-actions">
+                      <UiButton icon="edit" title="Тип" onClick={() => setEditingAttributeType(index)} />
+                      <UiButton icon="close" danger title="Удалить" onClick={() => handleDeleteObjectAttribute(index)} />
+                    </div>
+                  </UiTableCell>
+                </UiTableRow>
+              );
+            })}
+        </UiTable>
       </div>
     );
   } else if (activeTab === 'tabular' && (selectedObject?.tabularSections || formData?.tabularSections)) {
@@ -1575,13 +1407,9 @@ export const FormEditor: React.FC<FormEditorProps> = ({
       <div className="form-editor">
         <div className="section-header">
           <h3>Табличные части ({tabularSections.length})</h3>
-          <button 
-            className="btn-primary btn-add-tabular"
-            onClick={() => setShowAddTabularModal(true)}
-          >
-            <span className="btn-icon">➕</span>
-            <span>Добавить табличную часть</span>
-          </button>
+          <UiButton icon="add" onClick={() => setShowAddTabularModal(true)}>
+            Добавить табличную часть
+          </UiButton>
         </div>
         
         <div className="tabular-list">
@@ -1643,28 +1471,16 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                     <span className="tabular-attributes-count">
                       Реквизитов: {ts.attributes?.length || 0}
                     </span>
-                    <button
-                      className="btn-edit-type"
-                      type="button"
+                    <UiButton
+                      icon="close"
+                      danger
+                      title="Удалить"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         handleDeleteTabularSection(tsIndex);
                       }}
-                      title="Удалить"
-                      aria-label="Удалить"
-                      style={{
-                        padding: '4px 8px',
-                        fontSize: '12px',
-                        background: 'var(--vscode-errorForeground)',
-                        color: 'var(--vscode-button-foreground)',
-                        border: '1px solid var(--vscode-button-border)',
-                        borderRadius: '3px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      ×
-                    </button>
+                    />
                   </div>
                 </div>
                 
@@ -1728,42 +1544,26 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                               {formatTypeForDisplay(attr.type)}
                             </span>
                           </div>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                              className="btn-edit-type"
-                              type="button"
+                          <div className="ui-row-actions">
+                            <UiButton
+                              icon="edit"
+                              title="Открыть редактор типов"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 handleEditAttributeType(tsIndex, attrIndex);
                               }}
-                              title="Открыть редактор типов"
-                              aria-label="Открыть редактор типов"
-                            >
-                              ✎
-                            </button>
-                            <button
-                              className="btn-edit-type"
-                              type="button"
+                            />
+                            <UiButton
+                              icon="close"
+                              danger
+                              title="Удалить"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 handleDeleteTabularAttribute(tsIndex, attrIndex);
                               }}
-                              title="Удалить"
-                              aria-label="Удалить"
-                              style={{
-                                padding: '4px 8px',
-                                fontSize: '12px',
-                                background: 'var(--vscode-errorForeground)',
-                                color: 'var(--vscode-button-foreground)',
-                                border: '1px solid var(--vscode-button-border)',
-                                borderRadius: '3px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              ×
-                            </button>
+                            />
                           </div>
                         </div>
                       );
@@ -1771,13 +1571,9 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                   </div>
                 )}
                 
-                <button
-                  className="btn-add-attribute"
-                  onClick={() => setShowAddAttributeModal(tsIndex)}
-                >
-                  <span className="btn-icon">➕</span>
-                  <span>Добавить реквизит</span>
-                </button>
+                <UiButton secondary block icon="add" onClick={() => setShowAddAttributeModal(tsIndex)}>
+                  Добавить реквизит
+                </UiButton>
               </div>
             );
           })}
@@ -1791,9 +1587,9 @@ export const FormEditor: React.FC<FormEditorProps> = ({
       <div className="form-editor">
         <div className="section-header">
           <h3>Значения перечисления ({enumValues.length})</h3>
-          <button type="button" className="btn-add" onClick={handleAddEnumValue} title="Добавить значение">
-            + Добавить
-          </button>
+          <UiButton icon="add" onClick={handleAddEnumValue} title="Добавить значение">
+            Добавить
+          </UiButton>
         </div>
         <div className="attributes-list">
           {enumValues.map((ev: any, index: number) => {
@@ -1805,30 +1601,10 @@ export const FormEditor: React.FC<FormEditorProps> = ({
               <div key={ev.uuid || index} className="attribute-card">
                 <div className="attribute-header">
                   <span className="attribute-name">{name}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="ui-row-actions">
                     <span className="attribute-index">#{index + 1}</span>
-                    <button
-                      type="button"
-                      className="btn-edit-type"
-                      onClick={() => handleEditEnumValue(index)}
-                      title="Изменить"
-                      aria-label="Изменить"
-                    >
-                      ✎
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-edit-type"
-                      onClick={() => handleDeleteEnumValue(index)}
-                      title="Удалить"
-                      aria-label="Удалить"
-                      style={{
-                        background: 'var(--vscode-errorForeground)',
-                        color: 'var(--vscode-button-foreground)'
-                      }}
-                    >
-                      ×
-                    </button>
+                    <UiButton icon="edit" title="Изменить" onClick={() => handleEditEnumValue(index)} />
+                    <UiButton icon="close" danger title="Удалить" onClick={() => handleDeleteEnumValue(index)} />
                   </div>
                 </div>
                 {(synonymStr || comment) && (
@@ -1862,11 +1638,13 @@ export const FormEditor: React.FC<FormEditorProps> = ({
           <h3>Формы ({selectedObject.forms.length})</h3>
         </div>
         <div className="forms-list">
-          {selectedObject.forms.map((form: any, index: number) => (
-            <div key={index} className="form-card">
-              <h4>{form.name || `Форма ${index + 1}`}</h4>
-            </div>
-          ))}
+          <UiTable columns={['Имя']}>
+            {selectedObject.forms.map((form: any, index: number) => (
+              <UiTableRow key={index}>
+                <UiTableCell>{form.name || `Форма ${index + 1}`}</UiTableCell>
+              </UiTableRow>
+            ))}
+          </UiTable>
         </div>
       </div>
     );
@@ -1877,11 +1655,13 @@ export const FormEditor: React.FC<FormEditorProps> = ({
           <h3>Команды ({selectedObject.commands.length})</h3>
         </div>
         <div className="commands-list">
-          {selectedObject.commands.map((cmd: any, index: number) => (
-            <div key={index} className="command-card">
-              <h4>{cmd.name || `Команда ${index + 1}`}</h4>
-            </div>
-          ))}
+          <UiTable columns={['Имя']}>
+            {selectedObject.commands.map((cmd: any, index: number) => (
+              <UiTableRow key={index}>
+                <UiTableCell>{cmd.name || `Команда ${index + 1}`}</UiTableCell>
+              </UiTableRow>
+            ))}
+          </UiTable>
         </div>
       </div>
     );
@@ -2923,17 +2703,16 @@ export const FormEditor: React.FC<FormEditorProps> = ({
             <span className="section-count">
               ({registerRecords ? (Array.isArray(registerRecords) ? registerRecords.length : 1) : 0})
             </span>
-            <button
-              className="btn-primary btn-add-tabular"
+            <UiButton
+              icon="add"
               onClick={() => {
                 setNewRegisterRecord('');
                 setEditingRegisterRecordIndex(null);
                 setShowRegisterRecordsEditor(true);
               }}
             >
-              <span className="btn-icon">➕</span>
-              <span>Добавить регистр</span>
-            </button>
+              Добавить регистр
+            </UiButton>
           </div>
           {registerRecords ? (
             <div className="register-records-list">
@@ -2951,9 +2730,10 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                     <div key={index} className="register-record-card">
                       <div className="record-header">
                         <h4>{recordName}</h4>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            className="btn-edit-type"
+                        <div className="ui-row-actions">
+                          <UiButton
+                            icon="edit"
+                            title="Редактировать"
                             onClick={() => {
                               const currentRegister = record.Item?.text || 
                                                     record.Item?.['#text'] || 
@@ -2964,22 +2744,11 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                               setEditingRegisterRecordIndex(index);
                               setShowRegisterRecordsEditor(true);
                             }}
-                            title="Редактировать"
-                            aria-label="Редактировать"
-                            style={{ 
-                              padding: '4px 8px', 
-                              fontSize: '12px',
-                              background: 'var(--vscode-button-secondaryBackground)',
-                              color: 'var(--vscode-button-secondaryForeground)',
-                              border: '1px solid var(--vscode-button-border)',
-                              borderRadius: '3px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            ✎
-                          </button>
-                          <button
-                            className="btn-edit-type"
+                          />
+                          <UiButton
+                            icon="close"
+                            danger
+                            title="Удалить"
                             onClick={() => {
                               const updatedRecords = [...registerRecords];
                               updatedRecords.splice(index, 1);
@@ -2990,20 +2759,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                                 }
                               });
                             }}
-                            title="Удалить"
-                            aria-label="Удалить"
-                            style={{ 
-                              padding: '4px 8px', 
-                              fontSize: '12px',
-                              background: 'var(--vscode-errorForeground)',
-                              color: 'var(--vscode-button-foreground)',
-                              border: '1px solid var(--vscode-button-border)',
-                              borderRadius: '3px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            ×
-                          </button>
+                          />
                         </div>
                       </div>
                       <div className="record-content">
@@ -3032,8 +2788,9 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                 <div className="register-record-card">
                   <div className="record-header">
                     <h4>Движение регистра</h4>
-                    <button
-                      className="btn-edit-type"
+                    <UiButton
+                      icon="edit"
+                      title="Редактировать"
                       onClick={() => {
                         const currentRegister = registerRecords.Item?.text || 
                                               registerRecords.Item?.['#text'] || 
@@ -3044,20 +2801,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                         setEditingRegisterRecordIndex(0);
                         setShowRegisterRecordsEditor(true);
                       }}
-                      title="Редактировать"
-                      aria-label="Редактировать"
-                      style={{ 
-                        padding: '4px 8px', 
-                        fontSize: '12px',
-                        background: 'var(--vscode-button-secondaryBackground)',
-                        color: 'var(--vscode-button-secondaryForeground)',
-                        border: '1px solid var(--vscode-button-border)',
-                        borderRadius: '3px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      ✎
-                    </button>
+                    />
                   </div>
                   <div className="record-content">
                     {typeof registerRecords === 'object' ? (
@@ -3284,29 +3028,15 @@ export const FormEditor: React.FC<FormEditorProps> = ({
         <div className="form-editor">
           <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3>Типы значения характеристик ({characteristicTypes.length})</h3>
-            <button 
-              className="btn-primary btn-add-characteristic-type"
-              type="button"
+            <UiButton
+              icon="add"
               onClick={() => {
                 setEditingCharacteristicTypeIndex(null);
                 setShowCharacteristicTypeModal(true);
               }}
-              style={{
-                padding: '6px 12px',
-                background: 'var(--vscode-button-background)',
-                color: 'var(--vscode-button-foreground)',
-                border: 'none',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
             >
-              <span>➕</span>
-              <span>Добавить тип значения</span>
-            </button>
+              Добавить тип значения
+            </UiButton>
           </div>
           
           <div className="characteristic-types-list">
@@ -3332,54 +3062,27 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                         {typeValue}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button
-                        className="btn-edit-type"
-                        type="button"
+                    <div className="ui-row-actions">
+                      <UiButton
+                        icon="edit"
+                        title="Открыть редактор типов"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           setEditingCharacteristicTypeIndex(index);
                           setShowCharacteristicTypeModal(true);
                         }}
-                        title="Открыть редактор типов"
-                        aria-label="Открыть редактор типов"
-                        style={{ 
-                          padding: '4px 8px', 
-                          fontSize: '16px',
-                          background: 'var(--vscode-button-secondaryBackground)',
-                          color: 'var(--vscode-button-secondaryForeground)',
-                          border: '1px solid var(--vscode-button-border)',
-                          borderRadius: '3px',
-                          cursor: 'pointer',
-                          lineHeight: '1'
-                        }}
-                      >
-                        ✎
-                      </button>
-                      <button
-                        className="btn-delete-type"
-                        type="button"
+                      />
+                      <UiButton
+                        icon="close"
+                        danger
+                        title="Удалить"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           handleDeleteCharacteristicType(index);
                         }}
-                        title="Удалить"
-                        aria-label="Удалить"
-                        style={{
-                          padding: '4px 8px',
-                          fontSize: '16px',
-                          background: 'var(--vscode-errorForeground)',
-                          color: 'var(--vscode-button-foreground)',
-                          border: '1px solid var(--vscode-button-border)',
-                          borderRadius: '3px',
-                          cursor: 'pointer',
-                          lineHeight: '1'
-                        }}
-                      >
-                        ×
-                      </button>
+                      />
                     </div>
                   </div>
                 </div>
@@ -3413,30 +3116,16 @@ export const FormEditor: React.FC<FormEditorProps> = ({
           <div className="properties-group" style={{ marginBottom: '24px' }}>
             <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3>По счетам ({accountingFlags.length})</h3>
-              <button 
-                className="btn-primary"
-                type="button"
+              <UiButton
+                icon="add"
                 onClick={() => {
                   setEditingAccountingFlag(null);
                   setAddingAccountingFlagType('accountingFlag');
                   setShowAccountingFlagModal(true);
                 }}
-                style={{
-                  padding: '6px 12px',
-                  background: 'var(--vscode-button-background)',
-                  color: 'var(--vscode-button-foreground)',
-                  border: 'none',
-                  borderRadius: '3px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
               >
-                <span>➕</span>
-                <span>Добавить признак учета</span>
-              </button>
+                Добавить признак учета
+              </UiButton>
             </div>
             
             <div className="accounting-flags-list">
@@ -3475,46 +3164,21 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                           Тип: xs:boolean
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button
-                          type="button"
+                      <div className="ui-row-actions">
+                        <UiButton
+                          icon="edit"
+                          title="Редактировать"
                           onClick={() => {
                             setEditingAccountingFlag({ type: 'accountingFlag', index });
                             setShowAccountingFlagModal(true);
                           }}
-                          title="Редактировать"
-                          aria-label="Редактировать"
-                          style={{ 
-                            padding: '4px 8px', 
-                            fontSize: '16px',
-                            background: 'var(--vscode-button-secondaryBackground)',
-                            color: 'var(--vscode-button-secondaryForeground)',
-                            border: '1px solid var(--vscode-button-border)',
-                            borderRadius: '3px',
-                            cursor: 'pointer',
-                            lineHeight: '1'
-                          }}
-                        >
-                          ✎
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteAccountingFlag('accountingFlag', index)}
+                        />
+                        <UiButton
+                          icon="close"
+                          danger
                           title="Удалить"
-                          aria-label="Удалить"
-                          style={{
-                            padding: '4px 8px',
-                            fontSize: '16px',
-                            background: 'var(--vscode-errorForeground)',
-                            color: 'var(--vscode-button-foreground)',
-                            border: '1px solid var(--vscode-button-border)',
-                            borderRadius: '3px',
-                            cursor: 'pointer',
-                            lineHeight: '1'
-                          }}
-                        >
-                          ×
-                        </button>
+                          onClick={() => handleDeleteAccountingFlag('accountingFlag', index)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -3527,30 +3191,16 @@ export const FormEditor: React.FC<FormEditorProps> = ({
           <div className="properties-group">
             <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3>По субконто ({extDimensionAccountingFlags.length})</h3>
-              <button 
-                className="btn-primary"
-                type="button"
+              <UiButton
+                icon="add"
                 onClick={() => {
                   setEditingAccountingFlag(null);
                   setAddingAccountingFlagType('extDimensionAccountingFlag');
                   setShowAccountingFlagModal(true);
                 }}
-                style={{
-                  padding: '6px 12px',
-                  background: 'var(--vscode-button-background)',
-                  color: 'var(--vscode-button-foreground)',
-                  border: 'none',
-                  borderRadius: '3px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
               >
-                <span>➕</span>
-                <span>Добавить признак учета</span>
-              </button>
+                Добавить признак учета
+              </UiButton>
             </div>
             
             <div className="accounting-flags-list">
@@ -3589,46 +3239,21 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                           Тип: xs:boolean
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button
-                          type="button"
+                      <div className="ui-row-actions">
+                        <UiButton
+                          icon="edit"
+                          title="Редактировать"
                           onClick={() => {
                             setEditingAccountingFlag({ type: 'extDimensionAccountingFlag', index });
                             setShowAccountingFlagModal(true);
                           }}
-                          title="Редактировать"
-                          aria-label="Редактировать"
-                          style={{ 
-                            padding: '4px 8px', 
-                            fontSize: '16px',
-                            background: 'var(--vscode-button-secondaryBackground)',
-                            color: 'var(--vscode-button-secondaryForeground)',
-                            border: '1px solid var(--vscode-button-border)',
-                            borderRadius: '3px',
-                            cursor: 'pointer',
-                            lineHeight: '1'
-                          }}
-                        >
-                          ✎
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteAccountingFlag('extDimensionAccountingFlag', index)}
+                        />
+                        <UiButton
+                          icon="close"
+                          danger
                           title="Удалить"
-                          aria-label="Удалить"
-                          style={{
-                            padding: '4px 8px',
-                            fontSize: '16px',
-                            background: 'var(--vscode-errorForeground)',
-                            color: 'var(--vscode-button-foreground)',
-                            border: '1px solid var(--vscode-button-border)',
-                            borderRadius: '3px',
-                            cursor: 'pointer',
-                            lineHeight: '1'
-                          }}
-                        >
-                          ×
-                        </button>
+                          onClick={() => handleDeleteAccountingFlag('extDimensionAccountingFlag', index)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -3957,37 +3582,29 @@ const FieldInput: React.FC<{
 }> = ({ field, value, onChange, objectType, label }) => {
   const fieldInfo = getFieldTypeAndOptions(field, objectType);
 
-  // Числовое поле
   if (fieldInfo.type === 'number') {
     const strVal = value === null || value === undefined ? '' : String(value);
     return (
-      <input
+      <UiTextField
         type="number"
-        min={0}
         value={strVal}
-        onChange={(e) => onChange(e.target.value)}
-        className="property-input"
+        onChange={onChange}
         placeholder="0"
       />
     );
   }
 
-  // Boolean поле
   if (fieldInfo.type === 'boolean') {
     const boolValue = value === true || value === 'true' || value === 'True';
     return (
-      <select
-        value={String(boolValue)}
-        onChange={(e) => onChange(e.target.value === 'true')}
-        className="property-select"
-      >
-        <option value="true">Да (true)</option>
-        <option value="false">Нет (false)</option>
-      </select>
+      <UiCheckbox
+        checked={boolValue}
+        onChange={onChange}
+        label={boolValue ? 'Да' : 'Нет'}
+      />
     );
   }
 
-  // Enum поле
   if (fieldInfo.type === 'enum' && fieldInfo.options) {
     const stringValue = value !== null && value !== undefined ? String(value) : '';
     const isAccumulationRegisterRegisterType =
@@ -4006,28 +3623,22 @@ const FieldInput: React.FC<{
         })()
       : stringValue;
     return (
-      <select
+      <UiSelect
         value={selectValue}
-        onChange={(e) => onChange(e.target.value)}
-        className="property-select"
-      >
-        <option value="">-- Выберите значение --</option>
-        {opts.map((option) => (
-          <option key={option} value={option}>
-            {getEnumValueLabel(option, field)}
-          </option>
-        ))}
-      </select>
+        placeholder="-- Выберите значение --"
+        onChange={onChange}
+        options={opts.map((option) => ({
+          value: option,
+          label: getEnumValueLabel(option, field),
+        }))}
+      />
     );
   }
 
-  // Строковое поле (по умолчанию)
   return (
-    <input
-      type="text"
+    <UiTextField
       value={typeof value === 'string' ? value : ''}
-      onChange={(e) => onChange(e.target.value)}
-      className="property-input"
+      onChange={onChange}
       placeholder={`Введите ${label.toLowerCase()}...`}
     />
   );

@@ -30,6 +30,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TypeWidget = void 0;
 const react_1 = __importStar(require("react"));
 const typeUtils_1 = require("../utils/typeUtils");
+const ui_1 = require("../ui");
 const PRIMITIVE_TYPES = [
     { value: 'String', label: 'Строка' },
     { value: 'Number', label: 'Число' },
@@ -1552,10 +1553,10 @@ const TypeWidget = (props) => {
                     console.log('[TypeWidget] Клик по input - открываем модальное окно');
                     setIsOpen(true);
                 } }),
-            react_1.default.createElement("button", { type: "button", onClick: () => {
+            react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", onClick: () => {
                     console.log('[TypeWidget] Клик по кнопке - открываем модальное окно');
                     setIsOpen(true);
-                }, className: "type-select-btn", title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", "aria-label": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432" }, "\u270E")),
+                } })),
         (() => {
             if (isOpen) {
                 console.log('[TypeWidget] Рендерим модальное окно редактора типов', { isOpen, value });

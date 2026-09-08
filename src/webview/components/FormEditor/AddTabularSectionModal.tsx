@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { Modal } from './Modal';
+import { UiButton } from '../../ui';
 import { SimpleMultilingualEditor } from './SimpleMultilingualEditor';
 
 interface AddTabularSectionModalProps {
@@ -31,8 +32,8 @@ export const AddTabularSectionModal: React.FC<AddTabularSectionModalProps> = ({
 }) => {
   const footer = (
     <>
-      <button className="btn-secondary" onClick={onClose}>Отмена</button>
-      <button className="btn-primary" onClick={onSave}>Создать</button>
+      <UiButton secondary onClick={onClose}>Отмена</UiButton>
+      <UiButton onClick={onSave}>Создать</UiButton>
     </>
   );
 

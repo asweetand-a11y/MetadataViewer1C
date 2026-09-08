@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FormPreviewApp = void 0;
 const react_1 = __importStar(require("react"));
+const ui_1 = require("../../ui");
 /** Специальный путь для выбора самой формы (корень) в панели свойств. */
 const FORM_ROOT_PATH = '__form__';
 /** Главная командная панель формы (AutoCommandBar в properties, не в childItems). */
@@ -1490,7 +1491,7 @@ const FormPreviewApp = ({ vscode }) => {
                 form.formType ? react_1.default.createElement("div", { className: "edt-header__meta" }, form.formType) : null),
             react_1.default.createElement("div", { className: "edt-header__path", title: form.sourcePath }, form.sourcePath),
             react_1.default.createElement("div", { style: { marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' } },
-                react_1.default.createElement("button", { type: "button", className: "edt-icon-btn", title: isDirty ? 'Сохранить форму' : 'Нет несохранённых изменений', onClick: handleSave, disabled: !isDirty, style: { width: 'auto', padding: '0 10px' } }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C"))),
+                react_1.default.createElement(ui_1.UiButton, { icon: "save", title: isDirty ? 'Сохранить форму' : 'Нет несохранённых изменений', onClick: handleSave, disabled: !isDirty }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C"))),
         react_1.default.createElement("div", { ref: layoutRef, className: "edt-layout" },
             react_1.default.createElement("div", { className: "edt-layout__main" },
                 react_1.default.createElement("div", { ref: topRef, className: "edt-top" },

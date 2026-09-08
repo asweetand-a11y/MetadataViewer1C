@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { Modal } from '../../FormEditor/Modal';
+import { UiButton } from '../../../ui';
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
@@ -32,16 +33,12 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
 
   const footer = (
     <>
-      <button className="btn-secondary" onClick={onCancel}>
+      <UiButton secondary onClick={onCancel}>
         {cancelLabel}
-      </button>
-      <button
-        className="btn-primary"
-        style={{ background: 'var(--vscode-errorForeground)' }}
-        onClick={handleConfirm}
-      >
+      </UiButton>
+      <UiButton onClick={handleConfirm}>
         {confirmLabel}
-      </button>
+      </UiButton>
     </>
   );
 

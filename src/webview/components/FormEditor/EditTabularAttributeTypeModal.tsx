@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { Modal } from './Modal';
+import { UiButton } from '../../ui';
 import { TypeWidget } from '../../widgets/TypeWidget';
 
 interface EditTabularAttributeTypeModalProps {
@@ -29,7 +30,7 @@ export const EditTabularAttributeTypeModal: React.FC<EditTabularAttributeTypeMod
   onSave
 }) => {
   const footer = (
-    <button className="btn-secondary" onClick={onClose}>Закрыть</button>
+    <UiButton secondary onClick={onClose}>Закрыть</UiButton>
   );
 
   return (

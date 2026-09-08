@@ -9,13 +9,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TemplateToolbar = void 0;
 const react_1 = __importDefault(require("react"));
 require("./template-editor.css");
+const ui_1 = require("../../ui");
 const TemplateToolbar = ({ onBold, onItalic, onUnderline, onAlignLeft, onAlignCenter, onAlignRight, onMergeCells, onUnmergeCells, onAddRow, onDeleteRow, onAddColumn, onDeleteColumn, showGrid = true, onToggleGrid, showHeaders = true, onToggleHeaders, zoom = 1.0, onZoomIn, onZoomOut, onZoomReset, showNotes = true, onToggleNotes, onAssignName, onRemoveName, selectedRange, onShowProperties, showPropertiesPanel = false, onShowNamedAreas, showNamedAreaBorders = true, onToggleNamedAreaBorders }) => {
     // Определяем, можно ли назначить имя (выделен диапазон строк или колонок)
     // Можно назначить имя при любом выделении (даже при выделении диапазона)
     const canAssignName = selectedRange !== null;
     return (react_1.default.createElement("div", { className: "template-toolbar" },
         react_1.default.createElement("div", { className: "template-toolbar-group" },
-            react_1.default.createElement("button", { className: "template-toolbar-button", title: "\u0416\u0438\u0440\u043D\u044B\u0439 (Ctrl+B)", onClick: onBold },
+            react_1.default.createElement(ui_1.UiButton, { secondary: true, title: "\u0416\u0438\u0440\u043D\u044B\u0439 (Ctrl+B)", onClick: onBold },
                 react_1.default.createElement("strong", null, "B")),
             react_1.default.createElement("button", { className: "template-toolbar-button", title: "\u041A\u0443\u0440\u0441\u0438\u0432 (Ctrl+I)", onClick: onItalic },
                 react_1.default.createElement("em", null, "I")),

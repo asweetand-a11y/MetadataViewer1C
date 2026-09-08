@@ -18,6 +18,7 @@ import { normalizeXML, validateXML } from "./utils/xmlUtils";
 import { summarizeStructureValidationErrors, validateXmlStructure } from "./validation/xmlStructureValidator";
 import { CommitFileLogger } from "./utils/commitFileLogger";
 import { statusBarProgress, contextStatusBar } from "./extension";
+import { getCodiconStylesheetUri, getMetadataEditorScriptUri, getWebviewLocalResourceRoots } from "./utils/webviewAssets";
 
 export class FormPreviewer {
   public static readonly viewType = "metadataViewer.formPreview";
@@ -278,7 +279,7 @@ export class FormPreviewer {
           enableScripts: true,
           retainContextWhenHidden: true,
           localResourceRoots: [
-          vscode.Uri.joinPath(extensionUri, "media"),
+          ...getWebviewLocalResourceRoots(extensionUri),
           vscode.Uri.joinPath(extensionUri, "resources"),
         ],
         }
@@ -476,7 +477,8 @@ export class FormPreviewer {
    * - оставляем перехват dynamic chunks (Monaco) как в MetadataPanel
    */
   private getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri): string {
-    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", "metadataEditor.bundle.js"));
+    const scriptUri = getMetadataEditorScriptUri(webview, extensionUri);
+    const codiconUri = getCodiconStylesheetUri(webview, extensionUri);
     const resourceSvgUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "resources", "dark", "resource.svg"));
     const sequenceSvgUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "resources", "dark", "sequence.svg"));
     const templateSvgUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "resources", "dark", "template.svg"));
@@ -496,6 +498,7 @@ export class FormPreviewer {
                  worker-src ${webview.cspSource} blob:;
                  script-src ${webview.cspSource} 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
   <title>Form preview</title>
 
   <script nonce="${nonce}">

@@ -632,16 +632,10 @@
 .predefined-flat-table .col-actions {
   width: 1%;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
-.predefined-table-action {
-  margin-right: 4px;
-  line-height: 1;
-  font-size: 16px;
-}
-
-.predefined-table-action-delete {
-  background: var(--vscode-errorForeground) !important;
-  color: var(--vscode-button-foreground) !important;
+.predefined-flat-table .col-actions .ui-row-actions {
+  display: inline-flex;
 }
 

@@ -342,7 +342,7 @@ export const VirtualTableParamsModal: React.FC<VirtualTableParamsModalProps> = (
                       onChange={(e) => setValues((p) => ({ ...p, [d.id]: e.target.value }))}
                       placeholder="Произвольное условие…"
                     />
-                    <button type="button" className="vt-modal__btn" onClick={onEditCondition}>
+                    <button type="button" className="vt-modal__btn vt-modal__btn--ellipsis" onClick={onEditCondition} title="Редактировать условие">
                       …
                     </button>
                   </div>

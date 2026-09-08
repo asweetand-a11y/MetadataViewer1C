@@ -2,26 +2,30 @@
 	"name": "1c-configuration-tree",
 	"displayName": "1C Configuration tree",
 	"description": "Дерево конфигураций 1С: Предприятие 8",
-	"version": "2.10.9",
+	"version": "2.10.12",
 	"publisher": "whiterabbit",
 	"repository": {
-    "type": "git",
-    "url": "https://github.com/asweetand-a11y/MetadataViewer1C"
-  },
+		"type": "git",
+		"url": "https://github.com/asweetand-a11y/MetadataViewer1C"
+	},
 	"license": "MIT",
 	"author": {
-    "name": "Andrey Ponomarev",
-    "email": "",
-    "url": ""
-  	},
-  	"contributors": [
-    ""
-  	],
-  	"icon": "resources/1c-icon.png",
+		"name": "Andrey Ponomarev",
+		"email": "",
+		"url": ""
+	},
+	"contributors": [
+		""
+	],
+	"icon": "resources/1c-icon.png",
 	"engines": {
 		"vscode": "^1.56.0"
 	},
-	"sideEffects": false,
+	"sideEffects": [
+		"*.css",
+		"src/webview/index.tsx",
+		"src/webview/configWebview.ts"
+	],
 	"categories": [
 		"Other"
 	],
@@ -32,7 +36,7 @@
 	],
 	"activationEvents": [
 		"onLanguage:bsl",
-    	"onStartupFinished"
+		"onStartupFinished"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -500,7 +504,9 @@
 		"@rjsf/core": "^5.7.3",
 		"@rjsf/utils": "^5.7.3",
 		"@rjsf/validator-ajv8": "^5.7.3",
-		"@vscode/webview-ui-toolkit": "^1.1.0",
+		"@vscode-elements/elements": "^2.5.1",
+		"@vscode-elements/react-elements": "^2.4.0",
+		"@vscode/codicons": "^0.0.45",
 		"@xmldom/xmldom": "^0.8.11",
 		"fast-glob": "^3.2.12",
 		"fast-xml-parser": "^4.0.11",

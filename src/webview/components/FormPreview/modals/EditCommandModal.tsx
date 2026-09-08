@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { Modal } from '../../FormEditor/Modal';
+import { UiButton } from '../../../ui';
 
 interface EditCommandModalProps {
   isOpen: boolean;
@@ -47,10 +48,10 @@ export const EditCommandModal: React.FC<EditCommandModalProps> = ({
 
   const footer = (
     <>
-      <button className="btn-secondary" onClick={onClose}>Отмена</button>
-      <button className="btn-primary" onClick={handleSave}>
+      <UiButton secondary onClick={onClose}>Отмена</UiButton>
+      <UiButton onClick={handleSave}>
         {mode === 'add' ? 'Создать' : 'Сохранить'}
-      </button>
+      </UiButton>
     </>
   );
 

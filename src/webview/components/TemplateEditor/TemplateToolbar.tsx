@@ -4,6 +4,7 @@
 
 import React from 'react';
 import './template-editor.css';
+import { UiButton } from '../../ui';
 
 import { CellRange } from '../../../templatInterfaces';
 
@@ -78,13 +79,9 @@ export const TemplateToolbar: React.FC<TemplateToolbarProps> = ({
     return (
         <div className="template-toolbar">
             <div className="template-toolbar-group">
-                <button 
-                    className="template-toolbar-button" 
-                    title="Жирный (Ctrl+B)"
-                    onClick={onBold}
-                >
+                <UiButton secondary title="Жирный (Ctrl+B)" onClick={onBold}>
                     <strong>B</strong>
-                </button>
+                </UiButton>
                 <button 
                     className="template-toolbar-button" 
                     title="Курсив (Ctrl+I)"

@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { WidgetProps } from '@rjsf/utils';
 import { extractTypeString, normalizeTypeForSave, formatTypeForDisplay as formatTypeDisplay } from '../utils/typeUtils';
+import { UiButton } from '../ui';
 
 interface SelectedType {
   value: string;
@@ -1461,18 +1462,14 @@ export const TypeWidget: React.FC<WidgetProps> = (props) => {
             setIsOpen(true);
           }}
         />
-        <button
-          type="button"
+        <UiButton
+          icon="edit"
+          title="Открыть редактор типов"
           onClick={() => {
             console.log('[TypeWidget] Клик по кнопке - открываем модальное окно');
             setIsOpen(true);
           }}
-          className="type-select-btn"
-          title="Открыть редактор типов"
-          aria-label="Открыть редактор типов"
-        >
-          ✎
-        </button>
+        />
       </div>
       
       {(() => {

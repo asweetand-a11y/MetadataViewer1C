@@ -31,6 +31,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AccountingFlagEditorModal = void 0;
 const react_1 = __importStar(require("react"));
 const Modal_1 = require("./Modal");
+const ui_1 = require("../../ui");
 const SimpleMultilingualEditor_1 = require("./SimpleMultilingualEditor");
 const AccountingFlagEditorModal = ({ isOpen, flag, flagType, onClose, onSave }) => {
     const [name, setName] = (0, react_1.useState)('');
@@ -66,8 +67,8 @@ const AccountingFlagEditorModal = ({ isOpen, flag, flagType, onClose, onSave }) 
         }, flagType);
     };
     const footer = (react_1.default.createElement("div", { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
-        react_1.default.createElement("button", { className: "btn-secondary", onClick: onClose }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
-        react_1.default.createElement("button", { className: "btn-primary", onClick: handleSave }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C")));
+        react_1.default.createElement(ui_1.UiButton, { secondary: true, onClick: onClose }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+        react_1.default.createElement(ui_1.UiButton, { onClick: handleSave }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C")));
     return (react_1.default.createElement(Modal_1.Modal, { isOpen: isOpen, title: flag ? "Редактировать признак учета" : "Добавить признак учета", onClose: onClose, footer: footer },
         react_1.default.createElement("div", { className: "form-field", style: { marginBottom: '16px' } },
             react_1.default.createElement("label", null, "\u0418\u043C\u044F *"),

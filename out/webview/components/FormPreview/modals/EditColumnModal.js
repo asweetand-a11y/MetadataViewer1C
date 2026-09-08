@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EditColumnModal = void 0;
 const react_1 = __importDefault(require("react"));
 const Modal_1 = require("../../FormEditor/Modal");
+const ui_1 = require("../../../ui");
 const TypeWidget_1 = require("../../../widgets/TypeWidget");
 const EditColumnModal = ({ isOpen, mode, name, title, type, metadata, onClose, onSave, onNameChange, onTitleChange, onTypeChange }) => {
     const handleSave = () => {
@@ -24,8 +25,8 @@ const EditColumnModal = ({ isOpen, mode, name, title, type, metadata, onClose, o
         });
     };
     const footer = (react_1.default.createElement(react_1.default.Fragment, null,
-        react_1.default.createElement("button", { className: "btn-secondary", onClick: onClose }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
-        react_1.default.createElement("button", { className: "btn-primary", onClick: handleSave }, mode === 'add' ? 'Создать' : 'Сохранить')));
+        react_1.default.createElement(ui_1.UiButton, { secondary: true, onClick: onClose }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+        react_1.default.createElement(ui_1.UiButton, { onClick: handleSave }, mode === 'add' ? 'Создать' : 'Сохранить')));
     return (react_1.default.createElement(Modal_1.Modal, { isOpen: isOpen, title: mode === 'add' ? 'Новая колонка' : 'Редактировать колонку', onClose: onClose, footer: footer },
         react_1.default.createElement("div", { className: "form-field" },
             react_1.default.createElement("label", null, "\u0418\u043C\u044F *"),

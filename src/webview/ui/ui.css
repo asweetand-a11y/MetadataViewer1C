@@ -1,0 +1,215 @@
+/**
+ * Плотный лейаут VS Code Elements: property grid и таблицы вместо карточек.
+ */
+
+.property-grid {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--vscode-panel-border);
+  margin-top: 8px;
+}
+
+.property-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) 1fr;
+  align-items: center;
+  min-height: 28px;
+  gap: 8px;
+  padding: 2px 8px;
+  border-bottom: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+}
+
+.property-row:last-child {
+  border-bottom: none;
+}
+
+.property-row-label {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.property-row-value {
+  min-width: 0;
+}
+
+.property-row-value vscode-textfield,
+.property-row-value vscode-single-select,
+.property-row-value vscode-textarea {
+  width: 100%;
+}
+
+.ui-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ui-toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ui-filter {
+  flex: 1;
+  min-width: 160px;
+}
+
+.metadata-editor vscode-tabs {
+  display: block;
+  flex: 1;
+  min-height: 0;
+}
+
+.metadata-editor vscode-split-layout {
+  height: 100%;
+  min-height: 0;
+}
+
+.editor-header {
+  padding: 8px 12px;
+  box-shadow: none;
+}
+
+.section-header {
+  margin-bottom: 8px;
+}
+
+/* Карточки свойств → строки грида (пока JSX не полностью переведён) */
+.properties-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 8px;
+  border: 1px solid var(--vscode-panel-border);
+}
+
+.property-card {
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 8px;
+  border: none;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.property-card:hover {
+  box-shadow: none;
+  border-color: transparent;
+  background: var(--vscode-list-hoverBackground);
+}
+
+.property-header {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.property-header h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--vscode-descriptionForeground);
+}
+
+.attributes-list,
+.tabular-list,
+.forms-list,
+.commands-list,
+.standard-attributes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.attribute-card,
+.tabular-card,
+.form-card,
+.command-card,
+.standard-attribute-card,
+.register-record-card {
+  border-radius: 0;
+  padding: 4px 8px;
+  box-shadow: none;
+  border-left: none;
+  border-right: none;
+}
+
+.attribute-card:hover,
+.tabular-card:hover,
+.form-card:hover,
+.command-card:hover {
+  box-shadow: none;
+}
+
+.modal-overlay {
+  z-index: 1000;
+}
+
+/* vscode-button: не трогаем line-height иконки — это ломает карандаш */
+vscode-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+vscode-button::part(base) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.modal-header vscode-toolbar-button {
+  flex-shrink: 0;
+}
+
+.modal-footer vscode-button::part(base) {
+  padding: 0 14px;
+  min-height: 26px;
+  line-height: 22px;
+}
+
+/* Иконки действий — vscode-toolbar-button, глиф уже с padding: 3px */
+vscode-toolbar-button.ui-btn-icon {
+  flex-shrink: 0;
+}
+
+vscode-toolbar-button.ui-btn-danger:hover {
+  color: var(--vscode-errorForeground);
+}
+
+.ui-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ui-btn-block {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.type-widget-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.type-widget-input-wrapper .type-input {
+  height: 26px;
+  padding: 0 8px;
+  box-sizing: border-box;
+}

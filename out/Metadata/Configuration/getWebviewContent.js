@@ -2,14 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getWebviewContent = void 0;
 const getUri_1 = require("../utilites/getUri");
+const webviewAssets_1 = require("../../utils/webviewAssets");
 function getWebviewContent(webview, extensionUri, configuration) {
-    const toolkitUri = (0, getUri_1.getUri)(webview, extensionUri, [
-        "node_modules",
-        "@vscode",
-        "webview-ui-toolkit",
-        "dist",
-        "toolkit.js",
-    ]);
+    const elementsUri = (0, webviewAssets_1.getConfigWebviewScriptUri)(webview, extensionUri);
+    const codiconUri = (0, webviewAssets_1.getCodiconStylesheetUri)(webview, extensionUri);
     const styleUri = (0, getUri_1.getUri)(webview, extensionUri, ["webview-ui", "style.css"]);
     const mainUri = (0, getUri_1.getUri)(webview, extensionUri, ["webview-ui", "main.js"]);
     return /*html*/ `
@@ -18,7 +14,8 @@ function getWebviewContent(webview, extensionUri, configuration) {
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <script type="module" src="${toolkitUri}"></script>
+          <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
+          <script src="${elementsUri}"></script>
           <script type="module" src="${mainUri}"></script>
           <link rel="stylesheet" href="${styleUri}">
           <title></title>
@@ -46,11 +43,11 @@ function getWebviewContent(webview, extensionUri, configuration) {
           </div>
           <div class="parameter-container">
             <p class="label">Основной режим запуска</p>
-            <p class="description">Выбирается режим запуска системы по умолчанию (Управляемое приложение или Обычное приложение). Для новой конфигурации устанавливается режим запуска Управляемое приложение. Также режим запуска можно <vscode-link href="#">изменять для пользователя системы</vscode-link>. Данное свойство нельзя изменить, если свойство Режим совместимости установлено в значение Версия 8.1.</p>
-            <vscode-dropdown position="below" readonly>
+            <p class="description">Выбирается режим запуска системы по умолчанию (Управляемое приложение или Обычное приложение). Для новой конфигурации устанавливается режим запуска Управляемое приложение. Также режим запуска можно <a href="#">изменять для пользователя системы</a>. Данное свойство нельзя изменить, если свойство Режим совместимости установлено в значение Версия 8.1.</p>
+            <vscode-single-select position="below" readonly>
               <vscode-option value="Управляемое приложение"${(() => { return configuration.defaultRunMode === 'ManagedApplication' ? ' selected' : ''; })()}>Управляемое приложение</vscode-option>
               <vscode-option value="Обычное приложение"${(() => { return configuration.defaultRunMode !== 'ManagedApplication' ? ' selected' : ''; })()}>Обычное приложение</vscode-option>
-            </vscode-dropdown>
+            </vscode-single-select>
           </div>
           <div class="parameter-container">
             <p class="label">Назначение использования</p>
@@ -58,11 +55,11 @@ function getWebviewContent(webview, extensionUri, configuration) {
             <div id="purposes-list" class="parameter-list">
               ${configuration.usePurposes.map(up => `<div class="parameter-list-item"><div class="parameter-list-item-text">${up}</div></div>`).join('')}
               <div id="add-purpose" class="hidden">
-                <vscode-dropdown>
+                <vscode-single-select>
                   <vscode-option>111</vscode-option>
-                </vscode-dropdown>
+                </vscode-single-select>
                 <vscode-button id="save-purpose-button" class="add-cancel-button">ОК</vscode-button>
-                <vscode-button id="cancel-purpose-button" class="add-cancel-button" appearance="secondary">Отмена</vscode-button>
+                <vscode-button id="cancel-purpose-button" class="add-cancel-button" secondary>Отмена</vscode-button>
               </div>
             </div>
             <div>
@@ -72,14 +69,14 @@ function getWebviewContent(webview, extensionUri, configuration) {
           <div class="parameter-container">
             <p class="label">Вариант встроенного языка</p>
             <p class="description">Выбирается основной язык программирования (русский или английский). Выбор определяет, на каком языке будут формироваться языковые конструкции в модулях (например, при использовании синтакс-помощника), формироваться имена свойств для объектов, создаваемых платформой в качестве результата работы, а также имена компонентов формы (элементы, команды, реквизиты, параметры) для форм создаваемых платформой (как в режиме «1С:Предприятие», так и в конфигураторе). Вне зависимости от значения свойства можно использовать как русский, так и английский вариант языковых конструкций. При смене значения свойства вариант написания введенных языковых конструкций не изменяется.</p>
-            <vscode-dropdown position="below" readonly>
+            <vscode-single-select position="below" readonly>
               <vscode-option${(() => { return configuration.scriptVariant === 'Russian' ? ' selected' : ''; })()}>Русский</vscode-option>
               <vscode-option${(() => { return configuration.scriptVariant !== 'Russian' ? ' selected' : ''; })()}>Английский</vscode-option>
-            </vscode-dropdown>
+            </vscode-single-select>
           </div>
           <div class="parameter-container">
             <p class="label">Основные роли</p>
-            <p class="description">Список ролей, которые будут использоваться в том случае, когда список пользователей прикладного решения пустой. В этом случае не выполняется авторизация доступа при начале работы системы и права доступа определяются набором ролей (<vscode-link href="#">подробнее о правиле сочетания ролей</vscode-link>), указанных в свойстве. При этом считается, что пользователь обладает административными правами вне зависимости от значения права Администрирование у всех ролей, указанных в качестве основных. Если не указаны основные роли конфигурации и список пользователей пуст, то пользователь работает без ограничения прав доступа. Роли задаются в ветви дерева конфигурации <vscode-link href="#">Общие – Роли</vscode-link>.</p>
+            <p class="description">Список ролей, которые будут использоваться в том случае, когда список пользователей прикладного решения пустой. В этом случае не выполняется авторизация доступа при начале работы системы и права доступа определяются набором ролей (<a href="#">подробнее о правиле сочетания ролей</a>), указанных в свойстве. При этом считается, что пользователь обладает административными правами вне зависимости от значения права Администрирование у всех ролей, указанных в качестве основных. Если не указаны основные роли конфигурации и список пользователей пуст, то пользователь работает без ограничения прав доступа. Роли задаются в ветви дерева конфигурации <a href="#">Общие – Роли</a>.</p>
             <div id="roles-list" class="parameter-list">
               ${configuration.defaultRoles.map(dr => `<div class="parameter-list-item"><div class="parameter-list-item-text">${dr}</div></div>`).join('')}
             </div>
@@ -88,9 +85,9 @@ function getWebviewContent(webview, extensionUri, configuration) {
             </div>
           </div>
           <div class="parameter-container">
-            <vscode-link href="#">Модуль приложения</vscode-link>
-            <vscode-link href="#">Модуль сеанса</vscode-link>
-            <vscode-link href="#">Модуль внешнего соединения</vscode-link>
+            <a href="#">Модуль приложения</a>
+            <a href="#">Модуль сеанса</a>
+            <a href="#">Модуль внешнего соединения</a>
           </div>
           <div class="header">Представление</div>
           <div class="parameter-container">
@@ -137,53 +134,53 @@ function getWebviewContent(webview, extensionUri, configuration) {
           <div class="header">Совместимость</div>
           <div class="parameter-container">
             <p class="label">Режим управления блокировкой данных</p>
-            <p class="description">Вариант управления <vscode-link href="#">блокировкой данных в транзакции</vscode-link>.</p>
-            <vscode-dropdown position="below" readonly>
+            <p class="description">Вариант управления <a href="#">блокировкой данных в транзакции</a>.</p>
+            <vscode-single-select position="below" readonly>
               <vscode-option${(() => { return configuration.dataLockControlMode === 'Automatic' ? ' selected' : ''; })()}>Автоматический</vscode-option>
               <vscode-option${(() => { return configuration.dataLockControlMode === 'Managed' ? ' selected' : ''; })()}>Управляемый</vscode-option>
               <vscode-option${(() => { return configuration.dataLockControlMode === 'AutomaticAndManaged' ? ' selected' : ''; })()}>Автоматический и управляемый</vscode-option>
-            </vscode-dropdown>
+            </vscode-single-select>
           </div>
           <div class="parameter-container">
             <p class="label">Режим автонумерации объектов</p>
             <p class="description">Определяет, использовать повторно или нет автоматически полученные номера объектов, если они не записаны в базу данных.</p>
-            <vscode-dropdown position="below" readonly>
+            <vscode-single-select position="below" readonly>
               <vscode-option${(() => { return configuration.objectAutonumerationMode !== 'NotAutoFree' ? ' selected' : ''; })()}>Освобождать автоматически</vscode-option>
               <vscode-option${(() => { return configuration.objectAutonumerationMode === 'NotAutoFree' ? ' selected' : ''; })()}>Не освобождать автоматически</vscode-option>
-            </vscode-dropdown>
+            </vscode-single-select>
           </div>
           <div class="parameter-container">
             <p class="label">Режим использования модальности</p>
             <p class="description">Указывает, можно в прикладном решении использовать методы, приводящие к открытию модальных окон или нельзя.</p>
-            <vscode-dropdown position="below" readonly>
+            <vscode-single-select position="below" readonly>
               <vscode-option${(() => { return configuration.modalityUseMode === 'DontUse' ? ' selected' : ''; })()}>Использовать</vscode-option>
               <vscode-option${(() => { return configuration.modalityUseMode === 'UseWithWarnings' ? ' selected' : ''; })()}>Использовать с предупреждениями</vscode-option>
               <vscode-option${(() => { return configuration.modalityUseMode === 'Use' ? ' selected' : ''; })()}>Не использовать</vscode-option>
-            </vscode-dropdown>
+            </vscode-single-select>
           </div>
           <div class="parameter-container">
             <p class="label">Режим использования синхронных вызовов расширений платформы и внешних компонент</p>
             <p class="description">Свойство управляет возможностью использовать синхронные вызовы для работы с расширениями работы с файлами, криптографией и внешними компонентами. Если свойство установлено в значение Использовать, то на стороне клиента доступны синхронные методы работы с расширениями и внешними компонентами. В том случае, если свойство установлено в значение Не использовать, синхронные методы становятся недоступны в синтакс-помощнике, контекстной подсказке при редактировании модулей и расширенная проверка конфигурации выдает ошибки при обнаружении синхронных вызовов на стороне клиента. Вместо синхронных вызовов стоит использовать асинхронные аналоги.</p>
-            <vscode-dropdown position="below" readonly>
+            <vscode-single-select position="below" readonly>
               <vscode-option${(() => { return configuration.synchronousPlatformExtensionAndAddInCallUseMode === 'DontUse' ? ' selected' : ''; })()}>Использовать</vscode-option>
               <vscode-option${(() => { return configuration.synchronousPlatformExtensionAndAddInCallUseMode === 'UseWithWarnings' ? ' selected' : ''; })()}>Использовать с предупреждениями</vscode-option>
               <vscode-option${(() => { return configuration.synchronousPlatformExtensionAndAddInCallUseMode === 'Use' ? ' selected' : ''; })()}>Не использовать</vscode-option>
-            </vscode-dropdown>
+            </vscode-single-select>
           </div>
           <div class="parameter-container">
             <p class="label">Режим совместимости интерфейса</p>
             <p class="description">Свойство управляет режимом интерфейса клиентского приложения</p>
-            <vscode-dropdown position="below" readonly>
+            <vscode-single-select position="below" readonly>
               <vscode-option${(() => { return configuration.interfaceCompatibilityMode === 'Taxi' ? ' selected' : ''; })()}>Такси</vscode-option>
               <vscode-option${(() => { return configuration.interfaceCompatibilityMode === 'TaxiEnableVersion8_2' ? ' selected' : ''; })()}>Такси. Разрешить Версия 8.2</vscode-option>
               <vscode-option${(() => { return configuration.interfaceCompatibilityMode === 'Version8_2EnableTaxi' ? ' selected' : ''; })()}>Версия 8.2. Разрешить Такси</vscode-option>
               <vscode-option${(() => { return configuration.interfaceCompatibilityMode === 'Version8_2' ? ' selected' : ''; })()}>Версия 8.2</vscode-option>
-            </vscode-dropdown>
+            </vscode-single-select>
           </div>
           <div class="parameter-container">
             <p class="label">Режим совместимости</p>
-            <p class="description">Свойство управляет поведением механизмов, которое в новой версии системы изменено по сравнению с предыдущими версиями. <vscode-link href="#">Особенности работы системы в режиме совместимости с какой-либо версией</vscode-link></p>
-            <vscode-dropdown position="below" readonly>
+            <p class="description">Свойство управляет поведением механизмов, которое в новой версии системы изменено по сравнению с предыдущими версиями. <a href="#">Особенности работы системы в режиме совместимости с какой-либо версией</a></p>
+            <vscode-single-select position="below" readonly>
               <vscode-option${(() => { return configuration.compatibilityMode === 'DontUse' ? ' selected' : ''; })()}>Не использовать</vscode-option>
               <vscode-option${(() => { return configuration.compatibilityMode === 'Version8_3_20' ? ' selected' : ''; })()}>Версия 8.3.20</vscode-option>
               <vscode-option${(() => { return configuration.compatibilityMode === 'Version8_3_19' ? ' selected' : ''; })()}>Версия 8.3.19</vscode-option>
@@ -208,7 +205,7 @@ function getWebviewContent(webview, extensionUri, configuration) {
               <vscode-option${(() => { return configuration.compatibilityMode === 'Version8_2_16' ? ' selected' : ''; })()}>Версия 8.2.16</vscode-option>
               <vscode-option${(() => { return configuration.compatibilityMode === 'Version8_2_13' ? ' selected' : ''; })()}>Версия 8.2.13</vscode-option>
               <vscode-option${(() => { return configuration.compatibilityMode === 'Version8_1' ? ' selected' : ''; })()}>Версия 8.1</vscode-option>
-            </vscode-dropdown>
+            </vscode-single-select>
           </div>
         </section>
   		</body>

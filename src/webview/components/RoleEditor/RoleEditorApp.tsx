@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './RoleEditorApp.css';
+import { UiButton } from '../../ui';
 
 // ─── Типы ────────────────────────────────────────────────────────────────────
 
@@ -314,9 +315,9 @@ const RlsModal: React.FC<RlsModalProps> = ({ rightName, objectName, restriction,
           />
         </div>
         <div className="rls-modal-actions">
-          <button className="btn btn-secondary" onClick={handleClear}>Очистить</button>
-          <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
-          <button className="btn btn-primary" onClick={handleSave}>Сохранить</button>
+          <UiButton secondary onClick={handleClear}>Очистить</UiButton>
+          <UiButton secondary onClick={onClose}>Отмена</UiButton>
+          <UiButton onClick={handleSave}>Сохранить</UiButton>
         </div>
       </div>
     </div>
@@ -415,12 +416,12 @@ const RightsTable: React.FC<RightsTableProps> = ({ objectName, objectType, right
     <>
       <div className="role-rights-toolbar">
         <span className="role-rights-toolbar-label">Все права:</span>
-        <button className="btn btn-secondary" onClick={handleSelectAll} title="Установить все права">
+        <UiButton secondary onClick={handleSelectAll} title="Установить все права">
           Установить все
-        </button>
-        <button className="btn btn-secondary" onClick={handleClearAll} title="Снять все права">
+        </UiButton>
+        <UiButton secondary onClick={handleClearAll} title="Снять все права">
           Снять все
-        </button>
+        </UiButton>
       </div>
       <div className="role-rights-table-wrapper">
         <table className="role-rights-table">
@@ -469,14 +470,13 @@ const RightsTable: React.FC<RightsTableProps> = ({ objectName, objectType, right
                         {right!.restrictionByCondition!.condition.length > 30 ? '…' : ''}
                       </span>
                     ) : (
-                      <button
-                        className="btn btn-secondary"
-                        style={{ fontSize: 10, padding: '2px 6px', opacity: hoveredRight === rightName ? 1 : 0.3 }}
+                      <UiButton
+                        secondary
                         onClick={() => setRlsModal({ rightName })}
                         title="Добавить ограничение доступа к данным (RLS)"
                       >
                         + RLS
-                      </button>
+                      </UiButton>
                     )}
                   </td>
                 </tr>
@@ -648,14 +648,13 @@ export const RoleEditorApp: React.FC<RoleEditorAppProps> = ({ vscode }) => {
       <div className="role-editor-header">
         <div className="role-editor-title">Права роли: {roleName}</div>
         <div className="role-editor-actions">
-          <button
-            className="btn btn-primary"
+          <UiButton
             onClick={handleSave}
             disabled={saving || !dirty}
             title={dirty ? 'Сохранить изменения (Ctrl+S)' : 'Нет изменений'}
           >
             {saving ? 'Сохранение…' : 'Сохранить'}
-          </button>
+          </UiButton>
         </div>
       </div>
 

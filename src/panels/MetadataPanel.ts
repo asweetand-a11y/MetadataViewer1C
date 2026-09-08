@@ -27,6 +27,7 @@ import {
     isRegisterRecorderXmlType,
     syncRegisterRecorderDocuments,
 } from "../utils/syncRegisterRecorderDocuments";
+import { getCodiconStylesheetUri, getMetadataEditorScriptUri, getWebviewLocalResourceRoots } from "../utils/webviewAssets";
 
 
 /**
@@ -424,7 +425,7 @@ export class MetadataPanel {
                 {
                     enableScripts: true,
                     retainContextWhenHidden: true,
-                    localResourceRoots: [vscode.Uri.joinPath(extensionUri, "media")]
+                    localResourceRoots: getWebviewLocalResourceRoots(extensionUri)
                 }
             );
 
@@ -856,9 +857,8 @@ export class MetadataPanel {
     }
 
     private getHtmlForWebview(webview: vscode.Webview): string {
-        const scriptUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this.extensionUri, "media", "metadataEditor.bundle.js")
-        );
+        const scriptUri = getMetadataEditorScriptUri(webview, this.extensionUri);
+        const codiconUri = getCodiconStylesheetUri(webview, this.extensionUri);
         // ВАЖНО: CSS инлайнится в bundle через style-loader, отдельный файл не нужен
 
         const nonce = getNonce();
@@ -876,7 +876,7 @@ export class MetadataPanel {
                  worker-src ${webview.cspSource} blob:;
                  script-src ${webview.cspSource} 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- CSS инлайнится в bundle через style-loader -->
+  <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
   <title>1C Metadata Viewer</title>
   <script nonce="${nonce}">
     // КРИТИЧНО: Перехватываем загрузку динамических чанков ДО загрузки bundle

@@ -40,6 +40,7 @@ const xmlUtils_1 = require("./utils/xmlUtils");
 const xmlStructureValidator_1 = require("./validation/xmlStructureValidator");
 const commitFileLogger_1 = require("./utils/commitFileLogger");
 const extension_1 = require("./extension");
+const webviewAssets_1 = require("./utils/webviewAssets");
 class DcsEditor {
     async scanMetadataForWebview() {
         if (this.metadataCache)
@@ -377,7 +378,7 @@ class DcsEditor {
             panel = vscode.window.createWebviewPanel(DcsEditor.viewType, `Редактор СКД (${title ?? ""})`, vscode.ViewColumn.One, {
                 enableScripts: true,
                 retainContextWhenHidden: true,
-                localResourceRoots: [vscode.Uri.joinPath(extensionUri, "media")],
+                localResourceRoots: (0, webviewAssets_1.getWebviewLocalResourceRoots)(extensionUri),
             });
             this.webpanel = panel;
             extension_1.contextStatusBar.text = `1С: СКД — ${title ?? ""}`;
@@ -488,7 +489,8 @@ class DcsEditor {
         }
     }
     getHtmlForWebview(webview, extensionUri) {
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", "metadataEditor.bundle.js"));
+        const scriptUri = (0, webviewAssets_1.getMetadataEditorScriptUri)(webview, extensionUri);
+        const codiconUri = (0, webviewAssets_1.getCodiconStylesheetUri)(webview, extensionUri);
         const nonce = getNonce();
         return `<!DOCTYPE html>
 <html lang="ru">
@@ -503,6 +505,7 @@ class DcsEditor {
                  worker-src ${webview.cspSource} blob:;
                  script-src ${webview.cspSource} 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
   <title>Редактор СКД</title>
 </head>
 <body>

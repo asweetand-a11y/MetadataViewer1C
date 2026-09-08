@@ -16,6 +16,7 @@ import { normalizeXML, validateXML } from "./utils/xmlUtils";
 import { validateXmlStructure } from "./validation/xmlStructureValidator";
 import { CommitFileLogger } from "./utils/commitFileLogger";
 import { statusBarProgress, contextStatusBar } from "./extension";
+import { getCodiconStylesheetUri, getMetadataEditorScriptUri, getWebviewLocalResourceRoots } from "./utils/webviewAssets";
 
 type QueryMetadataNode = {
   id: string;
@@ -421,7 +422,7 @@ export class DcsEditor {
         {
           enableScripts: true,
           retainContextWhenHidden: true,
-          localResourceRoots: [vscode.Uri.joinPath(extensionUri, "media")],
+          localResourceRoots: getWebviewLocalResourceRoots(extensionUri),
         }
       );
       this.webpanel = panel;
@@ -543,7 +544,8 @@ export class DcsEditor {
   }
 
   private getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri): string {
-    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", "metadataEditor.bundle.js"));
+    const scriptUri = getMetadataEditorScriptUri(webview, extensionUri);
+    const codiconUri = getCodiconStylesheetUri(webview, extensionUri);
     const nonce = getNonce();
 
     return `<!DOCTYPE html>
@@ -559,6 +561,7 @@ export class DcsEditor {
                  worker-src ${webview.cspSource} blob:;
                  script-src ${webview.cspSource} 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
   <title>Редактор СКД</title>
 </head>
 <body>

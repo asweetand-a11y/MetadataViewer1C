@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { UiButton } from '../../ui';
 
 interface ModalProps {
   isOpen: boolean;
@@ -21,7 +22,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, title, onClose, children, 
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{title}</h3>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <UiButton secondary icon="close" iconOnly title="Закрыть" onClick={onClose} />
         </div>
         <div className="modal-body">
           {children}
@@ -35,4 +36,3 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, title, onClose, children, 
     </div>
   );
 };
-

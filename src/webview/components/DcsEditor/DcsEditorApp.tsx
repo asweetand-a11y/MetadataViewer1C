@@ -7,6 +7,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { TypeWidget } from '../../widgets/TypeWidget';
+import { UiButton } from '../../ui';
 import { QueryEditorEnhanced } from './QueryEditorEnhanced';
 import { MetadataTreePanel, type QueryMetadataNode } from './MetadataTreePanel';
 import { setQueryMetadataCompletionTree } from '../../utils/monacoQueryLanguage';
@@ -4233,16 +4234,14 @@ export const DcsEditorApp: React.FC<{ vscode: any }> = ({ vscode }) => {
           <span title={report.templatePath}>Шаблон: {report.templateName}</span>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button
-            type="button"
-            className="edt-icon-btn"
+          <UiButton
+            icon="save"
             title={originalSchema ? 'Сохранить изменения в XML' : 'Исходный XML не загружен'}
             onClick={handleSave}
             disabled={!originalSchema}
-            style={{ width: 'auto', padding: '0 10px' }}
           >
             Сохранить
-          </button>
+          </UiButton>
         </div>
       </div>
 

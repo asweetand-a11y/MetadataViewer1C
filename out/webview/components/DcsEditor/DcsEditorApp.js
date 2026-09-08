@@ -32,6 +32,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DcsEditorApp = void 0;
 const react_1 = __importStar(require("react"));
 const TypeWidget_1 = require("../../widgets/TypeWidget");
+const ui_1 = require("../../ui");
 const QueryEditorEnhanced_1 = require("./QueryEditorEnhanced");
 const MetadataTreePanel_1 = require("./MetadataTreePanel");
 const monacoQueryLanguage_1 = require("../../utils/monacoQueryLanguage");
@@ -3231,7 +3232,7 @@ const DcsEditorApp = ({ vscode }) => {
                     "\u0428\u0430\u0431\u043B\u043E\u043D: ",
                     report.templateName)),
             react_1.default.createElement("div", { style: { marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' } },
-                react_1.default.createElement("button", { type: "button", className: "edt-icon-btn", title: originalSchema ? 'Сохранить изменения в XML' : 'Исходный XML не загружен', onClick: handleSave, disabled: !originalSchema, style: { width: 'auto', padding: '0 10px' } }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C"))),
+                react_1.default.createElement(ui_1.UiButton, { icon: "save", title: originalSchema ? 'Сохранить изменения в XML' : 'Исходный XML не загружен', onClick: handleSave, disabled: !originalSchema }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C"))),
         react_1.default.createElement("div", { className: "dcs-top-tabs" }, dcsTabs.map((t) => (react_1.default.createElement("button", { key: t.id, type: "button", className: `dcs-top-tab ${dcsTab === t.id ? 'is-active' : ''}`, onClick: () => {
                 setDcsTab(t.id);
                 // при переключении на разделы с линейным списком — выбираем первый элемент

@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RegisterRecordsEditorModal = void 0;
 const react_1 = __importDefault(require("react"));
 const Modal_1 = require("./Modal");
+const ui_1 = require("../../ui");
 const RegisterRecordsEditorModal = ({ isOpen, registerRecord, isEditing, registers, onClose, onSave, onRegisterChange }) => {
     const handleSave = () => {
         if (!registerRecord.trim()) {
@@ -18,8 +19,8 @@ const RegisterRecordsEditorModal = ({ isOpen, registerRecord, isEditing, registe
         onSave(registerRecord);
     };
     const footer = (react_1.default.createElement(react_1.default.Fragment, null,
-        react_1.default.createElement("button", { className: "btn-secondary", onClick: onClose }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
-        react_1.default.createElement("button", { className: "btn-primary", onClick: handleSave }, isEditing ? 'Сохранить' : 'Добавить')));
+        react_1.default.createElement(ui_1.UiButton, { secondary: true, onClick: onClose }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+        react_1.default.createElement(ui_1.UiButton, { onClick: handleSave }, isEditing ? 'Сохранить' : 'Добавить')));
     return (react_1.default.createElement(Modal_1.Modal, { isOpen: isOpen, title: isEditing ? 'Редактировать регистр' : 'Добавить регистр', onClose: onClose, footer: footer },
         react_1.default.createElement("div", { className: "form-field" },
             react_1.default.createElement("label", null, "\u0420\u0435\u0433\u0438\u0441\u0442\u0440 *"),

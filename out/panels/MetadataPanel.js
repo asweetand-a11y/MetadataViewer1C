@@ -44,6 +44,7 @@ const subsystemMembership_1 = require("../utils/subsystemMembership");
 const metadataView_1 = require("../metadataView");
 const extension_1 = require("../extension");
 const syncRegisterRecorderDocuments_1 = require("../utils/syncRegisterRecorderDocuments");
+const webviewAssets_1 = require("../utils/webviewAssets");
 /**
  * Экранирование значения для XML-атрибута.
  */
@@ -380,7 +381,7 @@ class MetadataPanel {
             const panel = vscode.window.createWebviewPanel(MetadataPanel.viewType, panelTitle, column ?? vscode.ViewColumn.One, {
                 enableScripts: true,
                 retainContextWhenHidden: true,
-                localResourceRoots: [vscode.Uri.joinPath(extensionUri, "media")]
+                localResourceRoots: (0, webviewAssets_1.getWebviewLocalResourceRoots)(extensionUri)
             });
             extension_1.contextStatusBar.text = `1С: ${panelTitle}`;
             extension_1.contextStatusBar.show();
@@ -781,7 +782,8 @@ class MetadataPanel {
         this.panel.webview.postMessage(message);
     }
     getHtmlForWebview(webview) {
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", "metadataEditor.bundle.js"));
+        const scriptUri = (0, webviewAssets_1.getMetadataEditorScriptUri)(webview, this.extensionUri);
+        const codiconUri = (0, webviewAssets_1.getCodiconStylesheetUri)(webview, this.extensionUri);
         // ВАЖНО: CSS инлайнится в bundle через style-loader, отдельный файл не нужен
         const nonce = getNonce();
         return `<!DOCTYPE html>
@@ -797,7 +799,7 @@ class MetadataPanel {
                  worker-src ${webview.cspSource} blob:;
                  script-src ${webview.cspSource} 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- CSS инлайнится в bundle через style-loader -->
+  <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
   <title>1C Metadata Viewer</title>
   <script nonce="${nonce}">
     // КРИТИЧНО: Перехватываем загрузку динамических чанков ДО загрузки bundle

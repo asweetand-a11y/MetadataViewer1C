@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { Modal } from './Modal';
+import { UiButton } from '../../ui';
 
 interface RegisterRecordsEditorModalProps {
   isOpen: boolean;
@@ -34,10 +35,10 @@ export const RegisterRecordsEditorModal: React.FC<RegisterRecordsEditorModalProp
 
   const footer = (
     <>
-      <button className="btn-secondary" onClick={onClose}>Отмена</button>
-      <button className="btn-primary" onClick={handleSave}>
+      <UiButton secondary onClick={onClose}>Отмена</UiButton>
+      <UiButton onClick={handleSave}>
         {isEditing ? 'Сохранить' : 'Добавить'}
-      </button>
+      </UiButton>
     </>
   );
 

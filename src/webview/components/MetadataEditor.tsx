@@ -1,14 +1,13 @@
 /**
  * Основной компонент редактора метаданных
- * Управляет состоянием и синхронизацией между формой и XML редактором
+ * Управляет состоянием редактора метаданных и сохранением объекта.
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FormEditor } from './FormEditor';
-import { XmlEditor } from './XmlEditor';
 import { ParsedMetadataObject } from '../../xmlParsers/metadataParser';
-import { createXMLBuilder } from '../../utils/xmlUtils';
 import type { InformationRegisterScheduleEntry } from '../../metadata/types';
+import { UiButton, UiCheckbox, UiTabs } from '../ui';
 
 interface MetadataEditorProps {
   vscode: any;
@@ -24,13 +23,12 @@ interface InitMessage {
   };
 }
 
-type TabType = 'properties' | 'attributes' | 'tabular' | 'enumValues' | 'forms' | 'commands' | 'characteristicTypes' | 'accountingFlags' | 'subsystems' | 'xml';
+type TabType = 'properties' | 'attributes' | 'tabular' | 'enumValues' | 'forms' | 'commands' | 'characteristicTypes' | 'accountingFlags' | 'subsystems';
 
 export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
   const [objects, setObjects] = useState<ParsedMetadataObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<ParsedMetadataObject | null>(null);
   const [formData, setFormData] = useState<any>(null);
-  const [xmlContent, setXmlContent] = useState<string>('');
   const [metadata, setMetadata] = useState<{
     registers: string[];
     referenceTypes: string[];
@@ -42,7 +40,6 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
   });
   const [isDirty, setIsDirty] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('properties');
-  const [showSplitView, setShowSplitView] = useState(false);
 
   // Обработка сообщений от extension
   useEffect(() => {
@@ -65,45 +62,14 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
           const firstObj = initMsg.payload[0];
           setSelectedObject(firstObj);
           setFormData(firstObj.properties);
-          
-          // КРИТИЧНО: Используем исходный XML для отображения, чтобы сохранить структуру элементов/атрибутов
-          // Если исходный XML есть, используем его, иначе генерируем заново (fallback)
-          if (firstObj._originalXml) {
-            setXmlContent(firstObj._originalXml);
-          } else {
-            // Fallback: генерируем XML заново (структура может быть изменена)
-            try {
-              const builder = createXMLBuilder();
-              const xmlObj = {
-                MetaDataObject: {
-                  [firstObj.objectType]: {
-                    Properties: firstObj.properties,
-                    ChildObjects: {
-                      Attribute: firstObj.attributes?.map(a => ({ Properties: { Name: a.name, ...a.properties } })) || [],
-                      TabularSection: firstObj.tabularSections?.map(ts => ({ Properties: { Name: ts.name } })) || []
-                    }
-                  }
-                }
-              };
-              const xml = builder.build(xmlObj);
-              setXmlContent(xml);
-            } catch (e) {
-              console.error('Error generating XML:', e);
-              setXmlContent('<?xml version="1.0" encoding="UTF-8"?>\n<!-- Error generating XML -->');
-            }
-          }
         }
       } else if (message.type === 'objectUpdated') {
         // Обновляем объект после сохранения
         const updatedObj = message.payload as ParsedMetadataObject;
         setObjects(prev => prev.map(obj => obj.sourcePath === updatedObj.sourcePath ? updatedObj : obj));
         
-        // Если это текущий выбранный объект, обновляем его и XML контент
         setSelectedObject(prev => {
           if (prev && prev.sourcePath === updatedObj.sourcePath) {
-            if (updatedObj._originalXml) {
-              setXmlContent(updatedObj._originalXml);
-            }
             return updatedObj;
           }
           return prev;
@@ -137,27 +103,9 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
     if (updatedObject.properties) {
       setFormData(updatedObject.properties);
     }
-    // Обновляем XML контент при изменении объекта
-    if (updatedObject._originalXml) {
-      setXmlContent(updatedObject._originalXml);
-    }
     setIsDirty(true);
   }, []);
   
-  // Обновляем XML контент при изменении selectedObject
-  useEffect(() => {
-    if (selectedObject?._originalXml) {
-      setXmlContent(selectedObject._originalXml);
-    }
-  }, [selectedObject]);
-
-  // Обработка изменений в XML редакторе
-  const handleXmlChange = useCallback((xml: string) => {
-    setXmlContent(xml);
-    setIsDirty(true);
-    // TODO: Парсить XML и обновить форму
-  }, []);
-
   const handleSubsystemToggle = useCallback((relPath: string) => {
     setSelectedObject(prev => {
       if (!prev?.subsystems?.length) {
@@ -262,7 +210,6 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
       });
     }
     
-    result.push({ id: 'xml', label: 'XML' });
     return result;
   }, [selectedObject]);
 
@@ -277,6 +224,48 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
     );
   }
 
+  const renderTabBody = (tabId: TabType) => {
+    if (tabId === 'subsystems' && selectedObject.subsystems !== undefined) {
+      return (
+        <div className="editor-pane editor-form subsystem-membership-pane">
+          <div className="section-header">
+            <h3>Подсистемы, в которых участвует объект</h3>
+          </div>
+          {selectedObject.subsystems.length === 0 ? (
+            <p className="subsystem-membership-empty">В каталоге Subsystems нет XML-файлов подсистем.</p>
+          ) : (
+            <ul className="subsystem-membership-list">
+              {selectedObject.subsystems.map(row => (
+                <li key={row.relPath} className="subsystem-membership-item">
+                  <label className="subsystem-membership-label">
+                    <UiCheckbox
+                      checked={row.included}
+                      onChange={() => handleSubsystemToggle(row.relPath)}
+                      label={row.label}
+                    />
+                    <span className="subsystem-membership-path">{row.relPath.replace(/^Subsystems\//, '')}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      );
+    }
+    const form = (
+      <FormEditor
+        objectType={selectedObject.objectType}
+        formData={formData}
+        onChange={handleFormChange}
+        metadata={metadata}
+        activeTab={tabId}
+        selectedObject={selectedObject}
+        onSelectedObjectChange={handleSelectedObjectChange}
+      />
+    );
+    return <div className="editor-pane editor-form">{form}</div>;
+  };
+
   return (
     <div className="metadata-editor">
       <div className="editor-header">
@@ -285,97 +274,22 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ vscode }) => {
           <span className="object-type">{selectedObject.objectType}</span>
         </div>
         <div className="header-actions">
-          <button 
-            className="btn-toggle-view"
-            onClick={() => setShowSplitView(!showSplitView)}
-            title={showSplitView ? "Показать только форму" : "Показать форму и XML"}
-          >
-            {showSplitView ? '📋' : '🔀'}
-          </button>
-          <button 
-            className="btn-save" 
-            onClick={handleSave}
-            disabled={!isDirty}
-          >
-            💾 Сохранить
-          </button>
+          <UiButton icon="save" onClick={handleSave} disabled={!isDirty}>
+            Сохранить
+          </UiButton>
         </div>
       </div>
-
-      <div className="editor-tabs">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            className={`editor-tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-            {tab.count !== undefined && tab.count > 0 && (
-              <span className="tab-count">({tab.count})</span>
-            )}
-          </button>
+      <UiTabs
+        tabs={tabs}
+        selectedId={activeTab}
+        onSelect={(id) => setActiveTab(id as TabType)}
+      >
+        {tabs.map((tab) => (
+          <div key={tab.id} className="editor-tab-body">
+            {tab.id === activeTab ? renderTabBody(tab.id) : null}
+          </div>
         ))}
-      </div>
-
-      <div className={`editor-content ${showSplitView && activeTab !== 'xml' ? 'split-view' : ''}`}>
-        {activeTab === 'xml' ? (
-          <div className="editor-pane editor-xml-full">
-            <XmlEditor
-              value={xmlContent}
-              onChange={handleXmlChange}
-              language="xml"
-            />
-          </div>
-        ) : activeTab === 'subsystems' && selectedObject.subsystems !== undefined ? (
-          <div className="editor-pane editor-form subsystem-membership-pane">
-            <div className="section-header">
-              <h3>Подсистемы, в которых участвует объект</h3>
-            </div>
-            {selectedObject.subsystems.length === 0 ? (
-              <p className="subsystem-membership-empty">В каталоге Subsystems нет XML-файлов подсистем.</p>
-            ) : (
-              <ul className="subsystem-membership-list">
-                {selectedObject.subsystems.map(row => (
-                  <li key={row.relPath} className="subsystem-membership-item">
-                    <label className="subsystem-membership-label">
-                      <input
-                        type="checkbox"
-                        checked={row.included}
-                        onChange={() => handleSubsystemToggle(row.relPath)}
-                      />
-                      <span className="subsystem-membership-title">{row.label}</span>
-                      <span className="subsystem-membership-path">{row.relPath.replace(/^Subsystems\//, '')}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="editor-pane editor-form">
-                <FormEditor
-                  objectType={selectedObject.objectType}
-                  formData={formData}
-                  onChange={handleFormChange}
-                  metadata={metadata}
-                  activeTab={activeTab}
-                  selectedObject={selectedObject}
-                  onSelectedObjectChange={handleSelectedObjectChange}
-                />
-            </div>
-            {showSplitView && (
-              <div className="editor-pane editor-xml">
-                <XmlEditor
-                  value={xmlContent}
-                  onChange={handleXmlChange}
-                  language="xml"
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      </UiTabs>
     </div>
   );
 };

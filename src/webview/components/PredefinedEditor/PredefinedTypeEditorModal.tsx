@@ -5,6 +5,7 @@
 
 import React, { useMemo } from 'react';
 import { Modal } from '../FormEditor/Modal';
+import { UiButton } from '../../ui';
 import { TypeWidget } from '../../widgets/TypeWidget';
 
 interface PredefinedTypeEditorModalProps {
@@ -150,7 +151,7 @@ export const PredefinedTypeEditorModal: React.FC<PredefinedTypeEditorModalProps>
   };
 
   const footer = (
-    <button className="btn-secondary" onClick={onClose}>Закрыть</button>
+    <UiButton secondary onClick={onClose}>Закрыть</UiButton>
   );
 
   return (

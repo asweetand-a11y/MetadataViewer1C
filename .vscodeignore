@@ -26,6 +26,7 @@ node_modules/webpack-cli/**
 node_modules/monaco-editor/**
 node_modules/monaco-editor-core/**
 node_modules/@rjsf/**
+node_modules/@vscode-elements/**
 node_modules/react/**
 node_modules/react-dom/**
 media/metadataEditor.js

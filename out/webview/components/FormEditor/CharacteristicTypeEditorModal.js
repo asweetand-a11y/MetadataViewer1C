@@ -30,6 +30,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CharacteristicTypeEditorModal = void 0;
 const react_1 = __importStar(require("react"));
 const Modal_1 = require("./Modal");
+const ui_1 = require("../../ui");
 const TypeWidget_1 = require("../../widgets/TypeWidget");
 const CharacteristicTypeEditorModal = ({ isOpen, typeValue, metadata, onClose, onSave }) => {
     // Преобразуем строку типа в объект для TypeWidget
@@ -78,7 +79,7 @@ const CharacteristicTypeEditorModal = ({ isOpen, typeValue, metadata, onClose, o
         }
         onClose();
     };
-    const footer = (react_1.default.createElement("button", { className: "btn-secondary", onClick: onClose }, "\u0417\u0430\u043A\u0440\u044B\u0442\u044C"));
+    const footer = (react_1.default.createElement(ui_1.UiButton, { secondary: true, onClick: onClose }, "\u0417\u0430\u043A\u0440\u044B\u0442\u044C"));
     return (react_1.default.createElement(Modal_1.Modal, { isOpen: isOpen, title: typeValue ? "Редактировать тип значения характеристик" : "Добавить тип значения характеристик", onClose: onClose, footer: footer },
         react_1.default.createElement("div", { className: "form-field" },
             react_1.default.createElement("label", null, "\u0422\u0438\u043F \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F"),

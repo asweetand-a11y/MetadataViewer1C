@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { scanMetadataRoot } from './metadata_utils/MetadataScanner';
 import { MetadataRepository, type MetadataTreeNode } from './metadata_utils/MetadataRepository';
+import { getCodiconStylesheetUri, getMetadataEditorScriptUri, getWebviewLocalResourceRoots } from './utils/webviewAssets';
 
 type QueryMetadataNode = {
   id: string;
@@ -554,7 +555,7 @@ export class QueryStringEditor {
         {
           enableScripts: true,
           retainContextWhenHidden: true,
-          localResourceRoots: [vscode.Uri.joinPath(extensionUri, "media")],
+          localResourceRoots: getWebviewLocalResourceRoots(extensionUri),
         }
       );
       this.webpanel = panel;
@@ -719,9 +720,8 @@ export class QueryStringEditor {
    * Генерация HTML для webview
    */
   private getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri): string {
-    const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(extensionUri, 'media', 'metadataEditor.bundle.js')
-    );
+    const scriptUri = getMetadataEditorScriptUri(webview, extensionUri);
+    const codiconUri = getCodiconStylesheetUri(webview, extensionUri);
 
     const nonce = getNonce();
 
@@ -730,6 +730,7 @@ export class QueryStringEditor {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="${codiconUri}" id="vscode-codicon-stylesheet">
   <meta http-equiv="Content-Security-Policy" 
     content="default-src 'none'; 
              style-src ${webview.cspSource} 'unsafe-inline'; 
