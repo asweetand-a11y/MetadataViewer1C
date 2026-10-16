@@ -8,6 +8,7 @@ import { DcsEditor } from './dcsEditor';
 import { TreeItem } from './ConfigurationFormats/utils';
 // Added imports for autogen-bsl features
 import { initBslCursorFeatures } from './autogen-bsl/init';
+import { startEmbeddedMcpServer, stopEmbeddedMcpServer } from './autogen-bsl/mcp/embeddedMcpServer';
 import { CommitFileLogger } from './utils/commitFileLogger';
 import { BookmarkManager } from './utils/bookmarkManager';
 import { validateMetadataXmlFile } from './validation/metadataXmlValidator';
@@ -57,6 +58,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// Optional extra features ported from bsl-cursor (code actions, diff peek, metadata scan, AST rename)
 		initBslCursorFeatures(context);
+
+		void startEmbeddedMcpServer(context).catch((error) => {
+			outputChannel.appendLine(`[1c-ai MCP] Не удалось запустить встроенный сервер: ${error}`);
+		});
 	} catch (error) {
 		outputChannel.appendLine(`Ошибка при инициализации расширения: ${error}`);
 		vscode.window.showErrorMessage(`Ошибка активации расширения: ${error}`);
@@ -409,7 +414,8 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
 	try {
 		outputChannel.appendLine('=== Расширение "1C Metadata Viewer" деактивировано ===');
-		
+		void stopEmbeddedMcpServer();
+
 		// Очищаем содержимое файла Commit.txt при закрытии IDE
 		CommitFileLogger.getInstance().clearCommitFile();
 		

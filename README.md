@@ -133,15 +133,10 @@ VS Code (Cursor) расширение для работы с метаданны�
 - **По умолчанию:** `${workspaceFolder}\\build\\commit.txt`
 - **Описание:** Путь к файлу Commit.txt, в который записываются имена изменённых BSL файлов при их сохранении.
 
-### `metadataViewer.mcpServer_Name`
+### `metadataViewer.onecAiAccessToken`
 - **Тип:** `string`
-- **По умолчанию:** `1c-ai`
-- **Описание:** Имя mcp сервера 1C-напарник для генерации кода в модулях BSL
-
-### `metadataViewer.mcpServer_СodeGenerationToolName`
-- **Тип:** `string`
-- **По умолчанию:** `ask_1c_ai`
-- **Описание:** Имя инструмента для генерации кода mcp сервера 1C-напарник для генерации кода в модулях BSL
+- **По умолчанию:** пустая строка
+- **Описание:** Токен доступа API 1С:Напарник. Получается в личном кабинете [code.1c.ai](https://code.1c.ai/) (настройки API / ключ доступа).
 
 ### `metadataViewer.structureValidationEnabled`
 - **Тип:** `boolean`

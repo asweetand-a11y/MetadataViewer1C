@@ -31,6 +31,7 @@ const formPreviewer_1 = require("./formPreviewer");
 const dcsEditor_1 = require("./dcsEditor");
 // Added imports for autogen-bsl features
 const init_1 = require("./autogen-bsl/init");
+const embeddedMcpServer_1 = require("./autogen-bsl/mcp/embeddedMcpServer");
 const commitFileLogger_1 = require("./utils/commitFileLogger");
 const bookmarkManager_1 = require("./utils/bookmarkManager");
 const metadataXmlValidator_1 = require("./validation/metadataXmlValidator");
@@ -75,6 +76,9 @@ function activate(context) {
         context.subscriptions.push(exports.contextStatusBar);
         // Optional extra features ported from bsl-cursor (code actions, diff peek, metadata scan, AST rename)
         (0, init_1.initBslCursorFeatures)(context);
+        void (0, embeddedMcpServer_1.startEmbeddedMcpServer)(context).catch((error) => {
+            exports.outputChannel.appendLine(`[1c-ai MCP] Не удалось запустить встроенный сервер: ${error}`);
+        });
     }
     catch (error) {
         exports.outputChannel.appendLine(`Ошибка при инициализации расширения: ${error}`);
@@ -414,6 +418,7 @@ exports.activate = activate;
 function deactivate() {
     try {
         exports.outputChannel.appendLine('=== Расширение "1C Metadata Viewer" деактивировано ===');
+        void (0, embeddedMcpServer_1.stopEmbeddedMcpServer)();
         // Очищаем содержимое файла Commit.txt при закрытии IDE
         commitFileLogger_1.CommitFileLogger.getInstance().clearCommitFile();
         exports.outputChannel.appendLine('Commit.txt очищен');

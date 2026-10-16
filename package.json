@@ -2,7 +2,7 @@
 	"name": "1c-configuration-tree",
 	"displayName": "1C Configuration tree",
 	"description": "Дерево конфигураций 1С: Предприятие 8",
-	"version": "2.10.12",
+	"version": "2.10.13",
 	"publisher": "whiterabbit",
 	"repository": {
 		"type": "git",
@@ -40,6 +40,12 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"mcpServerDefinitionProviders": [
+			{
+				"id": "metadataViewer.onecAi",
+				"label": "1С:Напарник (встроенный MCP)"
+			}
+		],
 		"views": {
 			"explorer": [
 				{
@@ -206,6 +212,16 @@
 			}
 		],
 		"menus": {
+			"commandPalette": [
+				{
+					"command": "metadataViewer.genFromComment",
+					"when": "false"
+				},
+				{
+					"command": "metadataViewer.genFromCommentPrompt",
+					"when": "editorLangId == 'bsl' || editorLangId == '1c' || resourceExtname == '.bsl'"
+				}
+			],
 			"view/title": [
 				{
 					"command": "metadataViewer.settings",
@@ -372,13 +388,13 @@
 				},
 				{
 					"command": "metadataViewer.genFromCommentPrompt",
-					"group": "1c-metadata",
-					"when": "editorLangId == 'bsl'"
+					"group": "1c-metadata@1",
+					"when": "editorLangId == 'bsl' || editorLangId == '1c' || resourceExtname == '.bsl'"
 				},
 				{
 					"command": "metadataViewer.editQueryFromEditor",
-					"group": "1c-metadata",
-					"when": "editorLangId == 'bsl'"
+					"group": "1c-metadata@2",
+					"when": "editorLangId == 'bsl' || editorLangId == '1c' || resourceExtname == '.bsl'"
 				}
 			],
 			"editor/lineNumber/context": [
@@ -428,15 +444,11 @@
 						"default": "${workspaceFolder}\\build\\commit.txt",
 						"description": "%1c-metadata-viewer.commitFilePath.title%"
 					},
-					"metadataViewer.mcpServer_Name": {
+					"metadataViewer.onecAiAccessToken": {
 						"type": "string",
-						"default": "1c-ai",
-						"description": "Имя mcp сервера 1C-напарник"
-					},
-					"metadataViewer.mcpServer_СodeGenerationToolName": {
-						"type": "string",
-						"default": "ask_1c_ai",
-						"description": "Имя инструмента для генерации кода"
+						"default": "",
+						"password": true,
+						"description": "Токен доступа API 1С:Напарник (code.1c.ai)"
 					},
 					"metadataViewer.structureValidationEnabled": {
 						"type": "boolean",

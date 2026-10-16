@@ -4,8 +4,7 @@ import { outputChannel } from '../../extension';
 import { MCPClient } from './MCPClient';
 
 /**
- * AI генератор кода с использованием MCP сервера 1c-ai
- * Использует mcp_1c-ai для генерации BSL кода на основе естественного языка
+ * AI генератор кода через встроенный MCP 1С:Напарник (ask_1c_ai).
  */
 export class AIGenerator extends BaseGenerator {
   private mcpClient: MCPClient;
@@ -48,10 +47,10 @@ export class AIGenerator extends BaseGenerator {
     const rawRequest = String(context.intent.rawText || '').trim();
 
     if (debugMode) {
-      outputChannel.appendLine(`[AIGenerator] Генерация через mcp_1c-ai, запрос: ${rawRequest}`);
+      outputChannel.appendLine(`[AIGenerator] Генерация через 1С:Напарник, запрос: ${rawRequest}`);
     }
 
-    // Генерация кода через 1С:Напарник (mcp_1c-ai)
+    // Генерация кода через 1С:Напарник
     try {
       const moduleContext = this.detectModuleContext(context);
       const localSnippet = this.getLocalSnippet(context.document, context.position);
@@ -70,14 +69,14 @@ export class AIGenerator extends BaseGenerator {
       if (candidate) {
         
         if (debugMode) {
-          outputChannel.appendLine(`[AIGenerator] Код сгенерирован через mcp_1c-ai`);
+          outputChannel.appendLine(`[AIGenerator] Код сгенерирован через 1С:Напарник`);
         }
 
         return candidate;
       }
     } catch (e) {
       if (debugMode) {
-        outputChannel.appendLine(`[AIGenerator] mcp_1c-ai недоступен/вернул пустой ответ: ${e instanceof Error ? e.message : String(e)}`);
+        outputChannel.appendLine(`[AIGenerator] 1С:Напарник недоступен/вернул пустой ответ: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
@@ -117,7 +116,7 @@ export class AIGenerator extends BaseGenerator {
   }
 
   /**
-   * Строит вопрос для `mcp_1c-ai_ask_1c_ai`.
+   * Строит вопрос для tool `ask_1c_ai`.
    * Требуем вернуть только BSL код (без markdown и объяснений).
    */
   private build1cAiQuestion(args: {
@@ -304,7 +303,7 @@ export class AIGenerator extends BaseGenerator {
     // Анализируем запрос и генерируем базовый шаблон
     const lowerText = rawText.toLowerCase();
     
-    return `\n\t// Нет доступных MCP серверов для генерации кода\n`;
+    return `\n\t// Не удалось сгенерировать код через 1С:Напарник (проверьте токен API)\n`;
 
   }
     

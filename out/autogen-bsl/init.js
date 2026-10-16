@@ -31,19 +31,80 @@ const IntentRouter_1 = require("./routing/IntentRouter");
 const GeneratorFactory_1 = require("./generators/GeneratorFactory");
 const extension_1 = require("../extension");
 const queryStringEditor_1 = require("../queryStringEditor");
+/**
+ * BSL-файл: languageId от Language 1C (bsl/1c) или расширение .bsl.
+ */
+function isBslDocument(doc) {
+    const lang = (doc.languageId || '').toLowerCase();
+    return lang === 'bsl' || lang === '1c' || doc.fileName.toLowerCase().endsWith('.bsl');
+}
+/**
+ * Восстанавливает Range после сериализации аргументов команды.
+ */
+function toRange(range) {
+    if (range instanceof vscode.Range) {
+        return range;
+    }
+    const start = range.start;
+    const end = range.end;
+    return new vscode.Range(new vscode.Position(start.line, start.character ?? 0), new vscode.Position(end.line, end.character ?? 0));
+}
+/**
+ * Документ команды: аргумент, URI или активный редактор.
+ */
+function resolveDocument(docArg) {
+    const editor = vscode.window.activeTextEditor;
+    if (!docArg) {
+        return editor?.document;
+    }
+    const uriLike = docArg.uri;
+    const uriStr = uriLike
+        ? (typeof uriLike.toString === 'function'
+            ? uriLike.toString()
+            : String(uriLike))
+        : undefined;
+    if (uriStr) {
+        const found = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uriStr);
+        if (found) {
+            return found;
+        }
+    }
+    return editor?.document;
+}
 function initBslCursorFeatures(context) {
     // Code actions for // @gen in BSL
     const detector = new GenCommentCodeActionProvider_1.GenCommentDetector();
-    context.subscriptions.push(vscode.languages.registerCodeActionsProvider({ language: 'bsl' }, new GenCommentCodeActionProvider_1.GenCommentCodeActionProvider(detector), { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }));
+    context.subscriptions.push(vscode.languages.registerCodeActionsProvider([{ language: 'bsl' }, { language: '1c' }, { pattern: '**/*.bsl' }], new GenCommentCodeActionProvider_1.GenCommentCodeActionProvider(detector), { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }));
     // Services
     const intentParser = new IntentParser_1.IntentParser();
     const router = new IntentRouter_1.IntentRouter();
     const generatorFactory = new GeneratorFactory_1.GeneratorFactory();
     // Commands
-    context.subscriptions.push(vscode.commands.registerCommand('metadataViewer.genFromComment', async (doc, gen) => {
+    context.subscriptions.push(vscode.commands.registerCommand('metadataViewer.genFromComment', async (docArg, genArg) => {
         try {
             const config = vscode.workspace.getConfiguration();
             const debugMode = config.get('metadataViewer.debugMode', false);
+            const editor = vscode.window.activeTextEditor;
+            const doc = resolveDocument(docArg);
+            if (!editor || !doc) {
+                vscode.window.showWarningMessage('Нет активного редактора');
+                return;
+            }
+            if (!isBslDocument(doc)) {
+                vscode.window.showWarningMessage('Команда доступна только для BSL файлов');
+                return;
+            }
+            let gen = genArg;
+            if (gen?.range) {
+                gen = { text: gen.text, range: toRange(gen.range) };
+            }
+            else {
+                gen = detector.detect(doc, editor.selection.active) ?? undefined;
+            }
+            if (!gen) {
+                vscode.window.showWarningMessage('Не найден комментарий // @gen. Убедитесь, что курсор находится на строке с комментарием // @gen');
+                return;
+            }
             if (debugMode) {
                 extension_1.outputChannel.appendLine(`[genFromComment] Начало генерации, текст комментария: ${gen?.text || ''}`);
             }
@@ -51,11 +112,6 @@ function initBslCursorFeatures(context) {
             const strategyId = router.route(intent);
             if (debugMode) {
                 extension_1.outputChannel.appendLine(`[genFromComment] Intent: ${intent.kind}, strategy: ${strategyId}, confidence: ${intent.confidence}`);
-            }
-            const editor = vscode.window.activeTextEditor;
-            if (!editor || editor.document !== doc) {
-                vscode.window.showWarningMessage('Активный редактор не соответствует документу');
-                return;
             }
             const generator = generatorFactory.getGenerator(strategyId);
             if (!generator) {
@@ -110,23 +166,7 @@ function initBslCursorFeatures(context) {
     }));
     // Обёртка для вызова генерации из комментария из контекстного меню
     context.subscriptions.push(vscode.commands.registerCommand('metadataViewer.genFromCommentPrompt', async () => {
-        const ed = vscode.window.activeTextEditor;
-        if (!ed) {
-            vscode.window.showWarningMessage('Нет активного редактора');
-            return;
-        }
-        const doc = ed.document;
-        if (doc.languageId !== 'bsl') {
-            vscode.window.showWarningMessage('Команда доступна только для BSL файлов');
-            return;
-        }
-        const pos = ed.selection.active;
-        const gen = detector.detect(doc, pos);
-        if (!gen) {
-            vscode.window.showWarningMessage('Не найден комментарий // @gen. Убедитесь, что курсор находится на строке с комментарием // @gen');
-            return;
-        }
-        await vscode.commands.executeCommand('metadataViewer.genFromComment', doc, gen);
+        await vscode.commands.executeCommand('metadataViewer.genFromComment');
     }));
     // Команда для редактирования запроса из BSL-строки
     context.subscriptions.push(vscode.commands.registerCommand('metadataViewer.editQueryFromEditor', async () => {
