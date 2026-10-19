@@ -38,11 +38,14 @@ export async function startEmbeddedMcpServer(
 			if (e.affectsConfiguration('metadataViewer.onecAiAccessToken')) {
 				applyTokenFromSettings();
 			}
+			if (e.affectsConfiguration('metadataViewer.onecAiMcpPort')) {
+				void restartOnPortChange(context);
+			}
 		});
 		context.subscriptions.push(configSub);
 	}
 
-	const handle = await listenLoopback();
+	const handle = await listenLoopback(getConfiguredPort());
 	context.subscriptions.push({ dispose: () => { void handle.dispose(); } });
 	registerMcpDefinitionProvider(context, () =>
 		listenPort ? `http://127.0.0.1:${listenPort}/mcp` : undefined
@@ -66,13 +69,42 @@ export async function stopEmbeddedMcpServer(): Promise<void> {
 	});
 }
 
-function listenLoopback(): Promise<EmbeddedMcpHandle> {
+function getConfiguredPort(): number {
+	const port = vscode.workspace.getConfiguration('metadataViewer').get<number>('onecAiMcpPort', 17880);
+	if (!Number.isFinite(port) || port < 0 || port > 65535) {
+		return 17880;
+	}
+	return Math.floor(port);
+}
+
+async function restartOnPortChange(context: vscode.ExtensionContext): Promise<void> {
+	await stopEmbeddedMcpServer();
+	try {
+		const handle = await listenLoopback(getConfiguredPort());
+		context.subscriptions.push({ dispose: () => { void handle.dispose(); } });
+		logMcp(`[1c-ai MCP] Сервер перезапущен: ${handle.url}`);
+	} catch (error) {
+		logMcp(`[1c-ai MCP] Не удалось перезапустить сервер: ${error}`);
+	}
+}
+
+function listenLoopback(port: number): Promise<EmbeddedMcpHandle> {
 	return new Promise((resolve, reject) => {
 		const s = http.createServer((req, res) => {
 			void handleRequest(req, res);
 		});
-		s.on('error', reject);
-		s.listen(0, '127.0.0.1', () => {
+		s.on('error', (err: NodeJS.ErrnoException) => {
+			if (err.code === 'EADDRINUSE') {
+				reject(
+					new Error(
+						`Порт ${port} занят. Освободите его или смените metadataViewer.onecAiMcpPort`
+					)
+				);
+				return;
+			}
+			reject(err);
+		});
+		s.listen(port, '127.0.0.1', () => {
 			const addr = s.address();
 			if (!addr || typeof addr === 'string') {
 				reject(new Error('Не удалось получить порт MCP-сервера'));
@@ -93,6 +125,19 @@ function listenLoopback(): Promise<EmbeddedMcpHandle> {
 async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
 	const url = req.url || '/';
 	const path = url.split('?')[0];
+
+	if (req.method === 'OPTIONS' && path === '/mcp') {
+		res.statusCode = 204;
+		res.setHeader('Access-Control-Allow-Origin', '*');
+		res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+		res.setHeader(
+			'Access-Control-Allow-Headers',
+			'Content-Type, Accept, MCP-Session-Id, mcp-session-id, MCP-Protocol-Version'
+		);
+		res.setHeader('Access-Control-Expose-Headers', 'MCP-Session-Id, mcp-session-id');
+		res.end();
+		return;
+	}
 
 	if (req.method === 'GET' && path === '/mcp') {
 		json(res, 200, {
@@ -222,6 +267,8 @@ function json(
 	res.statusCode = status;
 	res.setHeader('Content-Type', 'application/json; charset=utf-8');
 	res.setHeader('Content-Length', String(data.length));
+	res.setHeader('Access-Control-Allow-Origin', '*');
+	res.setHeader('Access-Control-Expose-Headers', 'MCP-Session-Id, mcp-session-id');
 	if (extraHeaders) {
 		for (const [k, v] of Object.entries(extraHeaders)) {
 			res.setHeader(k, v);

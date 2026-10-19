@@ -2,7 +2,7 @@
 	"name": "1c-configuration-tree",
 	"displayName": "1C Configuration tree",
 	"description": "Дерево конфигураций 1С: Предприятие 8",
-	"version": "2.10.13",
+	"version": "2.10.14",
 	"publisher": "whiterabbit",
 	"repository": {
 		"type": "git",
@@ -449,6 +449,13 @@
 						"default": "",
 						"password": true,
 						"description": "Токен доступа API 1С:Напарник (code.1c.ai)"
+					},
+					"metadataViewer.onecAiMcpPort": {
+						"type": "integer",
+						"default": 17880,
+						"minimum": 0,
+						"maximum": 65535,
+						"description": "TCP-порт встроенного MCP 1С:Напарник (127.0.0.1). 0 — случайный порт."
 					},
 					"metadataViewer.structureValidationEnabled": {
 						"type": "boolean",
