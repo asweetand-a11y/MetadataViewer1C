@@ -4427,6 +4427,8 @@ export const DcsEditorApp: React.FC<{ vscode: any }> = ({ vscode }) => {
       <QueryEditorEnhanced
         isOpen={isQueryEditorOpen}
         queryText={queryBeingEdited.queryText}
+        dataCompositionMode
+        metadataTree={metadataTree}
         rightPanel={metadataTree ? (
           <MetadataTreePanel tree={metadataTree} />
         ) : (

@@ -5,6 +5,7 @@
  */
 
 import * as fs from 'fs';
+import * as glob from 'fast-glob';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { safeReadFile, safeWriteFile } from './fileUtils';
@@ -177,6 +178,48 @@ async function readConfiguration(root: string): Promise<string> {
     return safeReadFile(path.join(root, 'Configuration.xml'));
 }
 
+/**
+ * Расширения в рабочей области, включая вложенные каталоги.
+ * Ищет так же, как дерево конфигураций: Configuration.xml рядом с ConfigDumpInfo.xml.
+ */
+async function listExtensionRoots(sourceRoot: string): Promise<{ label: string; description: string; root: string }[]> {
+    const depth = vscode.workspace.getConfiguration().get<number>('metadataViewer.searchDepth') ?? 10;
+    const files = new Set<string>();
+    for (const folder of vscode.workspace.workspaceFolders ?? []) {
+        const found = glob.sync('**/Configuration.xml', {
+            cwd: folder.uri.fsPath,
+            absolute: true,
+            dot: true,
+            deep: depth,
+            onlyFiles: true,
+        });
+        for (const file of found) {
+            files.add(path.resolve(file));
+        }
+    }
+    const sourceResolved = path.resolve(sourceRoot);
+    const candidates: { label: string; description: string; root: string }[] = [];
+    for (const file of files) {
+        const root = path.dirname(file);
+        if (path.resolve(root) === sourceResolved) {
+            continue;
+        }
+        if (!fs.existsSync(path.join(root, 'ConfigDumpInfo.xml'))) {
+            continue;
+        }
+        const xml = await readConfiguration(root);
+        if (!isExtensionConfigurationXml(xml)) {
+            continue;
+        }
+        candidates.push({
+            label: readNamePrefix(xml) || path.basename(root),
+            description: root,
+            root,
+        });
+    }
+    return candidates;
+}
+
 export async function insertMethodInterceptor(): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor || !editor.document.fileName.toLowerCase().endsWith('.bsl')) {
@@ -232,31 +275,10 @@ export async function insertMethodInterceptor(): Promise<void> {
     let originText = sourceText;
     let originMethod = method;
     if (!sourceIsExtension) {
-        const folders = vscode.workspace.workspaceFolders ?? [];
-        const candidates: { label: string; root: string }[] = [];
-        for (const folder of folders) {
-            const root = folder.uri.fsPath;
-            const configurationPath = path.join(root, 'Configuration.xml');
-            if (!fs.existsSync(configurationPath) || path.resolve(root) === path.resolve(sourceRoot)) {
-                continue;
-            }
-            const xml = await readConfiguration(root);
-            if (isExtensionConfigurationXml(xml)) {
-                candidates.push({ label: readNamePrefix(xml) || path.basename(root), root });
-            }
-        }
+        const candidates = await listExtensionRoots(sourceRoot);
         if (candidates.length === 0) {
-            const pickedFolder = await vscode.window.showOpenDialog({
-                canSelectFiles: false,
-                canSelectFolders: true,
-                canSelectMany: false,
-                openLabel: 'Каталог расширения',
-                title: 'Каталог расширения, куда записать перехватчик',
-            });
-            if (!pickedFolder || pickedFolder.length === 0) {
-                return;
-            }
-            extensionRoot = pickedFolder[0].fsPath;
+            vscode.window.showWarningMessage('В рабочей области нет расширения. Откройте каталог расширения вместе с конфигурацией');
+            return;
         } else if (candidates.length === 1) {
             extensionRoot = candidates[0].root;
         } else {

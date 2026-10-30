@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './VirtualTableParamsModal.css';
 
 export type VirtualTableKind =
@@ -215,7 +215,8 @@ export interface VirtualTableParamsModalProps {
   initialValues: Partial<VirtualTableParamValues>;
   onSave: (values: VirtualTableParamValues) => void;
   onCancel: () => void;
-  onEditCondition: () => void;
+  /** Открывает редактор условия и возвращает новый текст в форму параметров. */
+  onEditCondition: (current: string, apply: (next: string) => void) => void;
 }
 
 const PERIODICITY_PRESETS = [
@@ -252,6 +253,7 @@ export const VirtualTableParamsModal: React.FC<VirtualTableParamsModalProps> = (
   onEditCondition,
 }) => {
   const defs = useMemo(() => getVirtualTableParams(family, kind), [family, kind]);
+  const wasOpen = useRef(false);
 
   const [values, setValues] = useState<VirtualTableParamValues>({
     НачалоПериода: '',
@@ -279,7 +281,12 @@ export const VirtualTableParamsModal: React.FC<VirtualTableParamsModalProps> = (
   });
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      wasOpen.current = false;
+      return;
+    }
+    if (wasOpen.current) return;
+    wasOpen.current = true;
     setValues((prev) => ({
       ...prev,
       ...initialValues,
@@ -342,7 +349,12 @@ export const VirtualTableParamsModal: React.FC<VirtualTableParamsModalProps> = (
                       onChange={(e) => setValues((p) => ({ ...p, [d.id]: e.target.value }))}
                       placeholder="Произвольное условие…"
                     />
-                    <button type="button" className="vt-modal__btn vt-modal__btn--ellipsis" onClick={onEditCondition} title="Редактировать условие">
+                    <button
+                      type="button"
+                      className="vt-modal__btn vt-modal__btn--ellipsis"
+                      onClick={() => onEditCondition(values[d.id], (next) => setValues((prev) => ({ ...prev, [d.id]: next })))}
+                      title="Редактировать условие"
+                    >
                       …
                     </button>
                   </div>

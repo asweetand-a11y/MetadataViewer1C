@@ -91,7 +91,7 @@ const StandaloneQueryEditor = ({ vscode }) => {
                 backgroundColor: 'var(--vscode-editor-background)',
             } }, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445..."));
     }
-    return (react_1.default.createElement(QueryEditorEnhanced_1.QueryEditorEnhanced, { isOpen: true, queryText: queryText, fullscreen: false, rightPanel: data.metadataTree ? (react_1.default.createElement(MetadataTreePanel_1.MetadataTreePanel, { tree: data.metadataTree })) : (react_1.default.createElement("div", { style: { padding: '1rem', color: 'var(--vscode-foreground)' } }, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0435\u0440\u0435\u0432\u0430 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445\u2026")), onSave: handleSave, onCancel: handleCancel }));
+    return (react_1.default.createElement(QueryEditorEnhanced_1.QueryEditorEnhanced, { isOpen: true, queryText: queryText, fullscreen: true, dataCompositionMode: false, metadataTree: data.metadataTree, rightPanel: data.metadataTree ? (react_1.default.createElement(MetadataTreePanel_1.MetadataTreePanel, { tree: data.metadataTree })) : (react_1.default.createElement("div", { style: { padding: '1rem', color: 'var(--vscode-foreground)' } }, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0435\u0440\u0435\u0432\u0430 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445\u2026")), onSave: handleSave, onCancel: handleCancel }));
 };
 exports.StandaloneQueryEditor = StandaloneQueryEditor;
 //# sourceMappingURL=StandaloneQueryEditor.js.map

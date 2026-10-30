@@ -404,6 +404,7 @@ class QueryStringEditor {
                     id: n.id,
                     label: memberName || n.label,
                     kind: 'member',
+                    role: String(n.member?.kind || '') || undefined,
                     insertText,
                     children,
                 };

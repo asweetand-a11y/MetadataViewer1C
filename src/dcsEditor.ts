@@ -22,6 +22,7 @@ type QueryMetadataNode = {
   id: string;
   label: string;
   kind: 'root' | 'type' | 'object' | 'group' | 'member';
+  role?: string;
   insertText?: string;
   children?: QueryMetadataNode[];
 };
@@ -340,6 +341,7 @@ export class DcsEditor {
             id: n.id,
             label: memberName || n.label,
             kind: 'member',
+            role: String(n.member?.kind || '') || undefined,
             insertText,
             children,
           };

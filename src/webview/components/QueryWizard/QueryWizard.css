@@ -1,0 +1,244 @@
+/**
+ * Стили конструктора запросов. Цвета берутся из темы редактора.
+ */
+
+.qw {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+}
+
+.qw-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px 8px 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-sideBar-background);
+}
+
+.qw-tab {
+  border: none;
+  background: transparent;
+  color: var(--vscode-foreground);
+  padding: 6px 8px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  font-size: 12px;
+}
+
+.qw-tab.is-active {
+  border-bottom-color: var(--vscode-focusBorder);
+  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
+}
+
+.qw-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  flex-wrap: wrap;
+}
+
+.qw-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px;
+}
+
+.qw-split {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
+  gap: 8px;
+  min-height: 280px;
+}
+
+.qw-split.is-3 {
+  grid-template-columns: minmax(160px, 0.9fr) minmax(180px, 1fr) auto minmax(180px, 1fr);
+}
+
+.qw-colbtns {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+}
+
+.qw-btn {
+  border: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-button-secondaryBackground, var(--vscode-editor-background));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+  border-radius: 2px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.qw-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.qw-btn.is-primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border-color: transparent;
+}
+
+.qw-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+  border: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-input-background, transparent);
+}
+
+.qw-list__title {
+  padding: 4px 8px;
+  font-size: 12px;
+  background: var(--vscode-sideBar-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.qw-list__body {
+  overflow: auto;
+  flex: 1;
+  max-height: 360px;
+}
+
+.qw-list__item {
+  padding: 3px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.qw-list__item.is-selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.qw-input, .qw-select, .qw-area {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.qw-area {
+  min-height: 72px;
+  font-family: var(--vscode-editor-font-family, Consolas, monospace);
+}
+
+.qw-empty, .qw-error {
+  padding: 8px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+}
+
+.qw-error {
+  color: var(--vscode-errorForeground);
+}
+
+.qw-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.qw-check {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.qw-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.qw-table th, .qw-table td {
+  border: 1px solid var(--vscode-panel-border);
+  padding: 4px;
+  vertical-align: top;
+}
+
+.qw-tree {
+  overflow: auto;
+  max-height: 420px;
+  border: 1px solid var(--vscode-panel-border);
+  padding: 4px;
+}
+
+.qw-tree__row {
+  cursor: pointer;
+  font-size: 12px;
+  padding: 1px 0;
+}
+
+.qw-tree__row.is-selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.qw-dialog__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qw-dialog {
+  width: min(560px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  background: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-panel-border);
+  padding: 0;
+}
+
+.qw-dialog.is-wide {
+  width: min(960px, calc(100vw - 32px));
+  height: min(720px, calc(100vh - 32px));
+  display: flex;
+  flex-direction: column;
+}
+
+.qw-dialog__header, .qw-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.qw-footer {
+  border-bottom: none;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
+.qw-dialog__body {
+  padding: 10px;
+}
+
+.qw-text {
+  flex: 1;
+  min-height: 240px;
+}

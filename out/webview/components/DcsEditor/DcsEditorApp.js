@@ -3331,7 +3331,7 @@ const DcsEditorApp = ({ vscode }) => {
                         "MVP: \u0440\u0430\u0437\u0434\u0435\u043B \u00AB",
                         dcsTabs.find((t) => t.id === dcsTab)?.label,
                         "\u00BB \u0431\u0443\u0434\u0435\u0442 \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u043C \u0448\u0430\u0433\u043E\u043C.")))))),
-        react_1.default.createElement(QueryEditorEnhanced_1.QueryEditorEnhanced, { isOpen: isQueryEditorOpen, queryText: queryBeingEdited.queryText, rightPanel: metadataTree ? (react_1.default.createElement(MetadataTreePanel_1.MetadataTreePanel, { tree: metadataTree })) : (react_1.default.createElement("div", { className: "dcs-metadata-tree-loading" }, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0435\u0440\u0435\u0432\u0430 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445\u2026")), onSave: (newQuery) => {
+        react_1.default.createElement(QueryEditorEnhanced_1.QueryEditorEnhanced, { isOpen: isQueryEditorOpen, queryText: queryBeingEdited.queryText, dataCompositionMode: true, metadataTree: metadataTree, rightPanel: metadataTree ? (react_1.default.createElement(MetadataTreePanel_1.MetadataTreePanel, { tree: metadataTree })) : (react_1.default.createElement("div", { className: "dcs-metadata-tree-loading" }, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0435\u0440\u0435\u0432\u0430 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445\u2026")), onSave: (newQuery) => {
                 handleChangeDataSetQuery(queryBeingEdited.dataSetPath, newQuery);
                 setIsQueryEditorOpen(false);
             }, onCancel: () => setIsQueryEditorOpen(false) })));

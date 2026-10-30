@@ -5,6 +5,8 @@ export type QueryMetadataNode = {
   id: string;
   label: string;
   kind: 'root' | 'type' | 'object' | 'group' | 'member';
+  /** Dimension, Resource, Attribute — если узел пришёл из метаданных объекта. */
+  role?: string;
   insertText?: string;
   children?: QueryMetadataNode[];
 };

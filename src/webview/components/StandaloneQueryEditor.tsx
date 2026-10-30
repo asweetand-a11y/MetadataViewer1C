@@ -97,7 +97,9 @@ export const StandaloneQueryEditor: React.FC<StandaloneQueryEditorProps> = ({ vs
     <QueryEditorEnhanced
       isOpen={true}
       queryText={queryText}
-      fullscreen={false}
+      fullscreen
+      dataCompositionMode={false}
+      metadataTree={data.metadataTree}
       rightPanel={data.metadataTree ? (
         <MetadataTreePanel tree={data.metadataTree} />
       ) : (

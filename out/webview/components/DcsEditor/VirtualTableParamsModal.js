@@ -197,6 +197,7 @@ const PERIOD_DECOMPOSITION_PRESETS = [
 ];
 const VirtualTableParamsModal = ({ isOpen, family, kind, initialValues, onSave, onCancel, onEditCondition, }) => {
     const defs = (0, react_1.useMemo)(() => getVirtualTableParams(family, kind), [family, kind]);
+    const wasOpen = (0, react_1.useRef)(false);
     const [values, setValues] = (0, react_1.useState)({
         НачалоПериода: '',
         КонецПериода: '',
@@ -222,8 +223,13 @@ const VirtualTableParamsModal = ({ isOpen, family, kind, initialValues, onSave, 
         Отбор: '',
     });
     (0, react_1.useEffect)(() => {
-        if (!isOpen)
+        if (!isOpen) {
+            wasOpen.current = false;
             return;
+        }
+        if (wasOpen.current)
+            return;
+        wasOpen.current = true;
         setValues((prev) => ({
             ...prev,
             ...initialValues,
@@ -242,7 +248,7 @@ const VirtualTableParamsModal = ({ isOpen, family, kind, initialValues, onSave, 
                     react_1.default.createElement("input", { type: "checkbox", checked: values[d.id] === 'Истина' || values[d.id] === 'true', onChange: (e) => setValues((p) => ({ ...p, [d.id]: e.target.checked ? 'Истина' : 'Ложь' })) }),
                     react_1.default.createElement("span", null, d.label))) : d.kind === 'condition' ? (react_1.default.createElement("div", { className: "vt-modal__condition" },
                     react_1.default.createElement("input", { className: "vt-modal__input", value: values[d.id], onChange: (e) => setValues((p) => ({ ...p, [d.id]: e.target.value })), placeholder: "\u041F\u0440\u043E\u0438\u0437\u0432\u043E\u043B\u044C\u043D\u043E\u0435 \u0443\u0441\u043B\u043E\u0432\u0438\u0435\u2026" }),
-                    react_1.default.createElement("button", { type: "button", className: "vt-modal__btn vt-modal__btn--ellipsis", onClick: onEditCondition, title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0443\u0441\u043B\u043E\u0432\u0438\u0435" }, "\u2026"))) : (react_1.default.createElement("input", { className: "vt-modal__input", value: values[d.id], onChange: (e) => setValues((p) => ({ ...p, [d.id]: e.target.value })), placeholder: "" }))))))),
+                    react_1.default.createElement("button", { type: "button", className: "vt-modal__btn vt-modal__btn--ellipsis", onClick: () => onEditCondition(values[d.id], (next) => setValues((prev) => ({ ...prev, [d.id]: next }))), title: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0443\u0441\u043B\u043E\u0432\u0438\u0435" }, "\u2026"))) : (react_1.default.createElement("input", { className: "vt-modal__input", value: values[d.id], onChange: (e) => setValues((p) => ({ ...p, [d.id]: e.target.value })), placeholder: "" }))))))),
             react_1.default.createElement("div", { className: "vt-modal__footer" },
                 react_1.default.createElement("button", { type: "button", className: "vt-modal__btn", onClick: onCancel }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
                 react_1.default.createElement("button", { type: "button", className: "vt-modal__btn vt-modal__btn--primary", onClick: () => onSave(values) }, "OK")))));
