@@ -85,7 +85,7 @@ const AccountingFlagEditorModal = ({ isOpen, flag, flagType, onClose, onSave }) 
             react_1.default.createElement(SimpleMultilingualEditor_1.SimpleMultilingualEditor, { value: synonym, onChange: setSynonym })),
         react_1.default.createElement("div", { className: "form-field", style: { marginBottom: '16px' } },
             react_1.default.createElement("label", null, "\u041A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0439"),
-            react_1.default.createElement(SimpleMultilingualEditor_1.SimpleMultilingualEditor, { value: comment, onChange: setComment })),
+            react_1.default.createElement("input", { type: "text", value: (0, SimpleMultilingualEditor_1.commentText)(comment), onChange: (e) => setComment(e.target.value), className: "property-input" })),
         react_1.default.createElement("div", { className: "form-field", style: { marginBottom: '16px' } },
             react_1.default.createElement("label", null, "\u0422\u0438\u043F"),
             react_1.default.createElement("input", { type: "text", value: "xs:boolean", disabled: true, style: {

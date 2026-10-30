@@ -37,7 +37,9 @@
 
 .property-row-value vscode-textfield,
 .property-row-value vscode-single-select,
-.property-row-value vscode-textarea {
+.property-row-value vscode-textarea,
+.property-card-wide .property-value vscode-textfield,
+.property-card-wide .property-value vscode-single-select {
   width: 100%;
 }
 
@@ -212,4 +214,77 @@ vscode-toolbar-button.ui-btn-danger:hover {
   height: 26px;
   padding: 0 8px;
   box-sizing: border-box;
+}
+
+.child-kind-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.child-kind-group h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.child-kind-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.tabular-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tabular-section {
+  border: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-editor-background);
+}
+
+.tabular-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-editor-inactiveSelectionBackground, transparent);
+}
+
+.tabular-section__heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.tabular-section__title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tabular-section__meta {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.tabular-section__meta--comment {
+  font-style: italic;
+}
+
+.tabular-section__tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tabular-section__footer {
+  padding: 6px 8px;
 }

@@ -6,8 +6,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SimpleMultilingualEditor = void 0;
+exports.SimpleMultilingualEditor = exports.commentText = void 0;
 const react_1 = __importDefault(require("react"));
+/** Comment в метаданных — строка, не многоязычный синоним. */
+function commentText(value) {
+    if (value == null)
+        return '';
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+        return String(value);
+    const item = value['v8:item'] ?? value.item;
+    const list = Array.isArray(item) ? item : item ? [item] : [];
+    const ru = list.find((entry) => String(entry?.['v8:lang'] ?? entry?.lang ?? '').toLowerCase() === 'ru') || list[0];
+    if (ru && typeof ru === 'object')
+        return String(ru['v8:content'] ?? ru.content ?? '');
+    return '';
+}
+exports.commentText = commentText;
 const SimpleMultilingualEditor = ({ value, onChange }) => {
     const normalizeValue = (val) => {
         if (!val)

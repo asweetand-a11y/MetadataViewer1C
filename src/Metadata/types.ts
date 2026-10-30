@@ -48,6 +48,18 @@ export interface InformationRegisterScheduleEntry {
     resources: string[];
 }
 
+/** Реквизиты и табличные части объекта для состава функциональной опции. */
+export interface FunctionalOptionMembers {
+    /** Catalog.Имя */
+    owner: string;
+    attributes: string[];
+    tabularSections: { name: string; attributes: string[] }[];
+    dimensions: string[];
+    resources: string[];
+    forms: string[];
+    commands: string[];
+}
+
 // Типы сообщений от extension к webview
 export interface InitMessage {
     type: "init";
@@ -59,6 +71,8 @@ export interface InitMessage {
         referenceTypes: string[];
         /** Регистры сведений (WriteMode=Independent) для выбора графика регистра расчёта */
         informationRegistersSchedule?: InformationRegisterScheduleEntry[];
+        /** Состав объектов для редактора функциональной опции. */
+        functionalOptionMembers?: FunctionalOptionMembers[];
     };
 }
 

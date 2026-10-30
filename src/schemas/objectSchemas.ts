@@ -1389,17 +1389,9 @@ export const webServiceSchema: JSONSchema7 = {
   title: 'WebService',
   properties: {
     ...basePropertiesSchema.properties,
-    Namespace: {
-      type: 'string',
-      title: 'Namespace',
-      enum: ["http://v8.1c.ru","http://www.1c.ru/dmil","http://www.1c.ru/SSL/EnterpriseDataExchange_1_0_1_1","http://www.1c.ru/SSL/EnterpriseDataUpload_1_0_1_1","http://www.1c.ru/SSL/Exchange"]
-    },
+    Namespace: { type: 'string', title: 'Namespace' },
     XDTOPackages: { type: 'object', title: 'XDTOPackages' },
-    DescriptorFileName: {
-      type: 'string',
-      title: 'DescriptorFileName',
-      enum: ["ws_Cons.1cws","dmil.1cws","EnterpriseDataExchange_1_0_1_1.1cws","EnterpriseDataUpload_1_0_1_1.1cws","exchange.1cws"]
-    },
+    DescriptorFileName: { type: 'string', title: 'DescriptorFileName' },
     ReuseSessions: { type: 'string', title: 'ReuseSessions' },
     SessionMaxAge: { type: 'number', title: 'SessionMaxAge' },
   },
@@ -1414,11 +1406,7 @@ export const hTTPServiceSchema: JSONSchema7 = {
   title: 'HTTPService',
   properties: {
     ...basePropertiesSchema.properties,
-    RootURL: {
-      type: 'string',
-      title: 'RootURL',
-      enum: ["ChatbotsWebhook","exchange_dsl_1_0_0_1","MIS","billing","applicants"]
-    },
+    RootURL: { type: 'string', title: 'RootURL' },
     ReuseSessions: { type: 'string', title: 'ReuseSessions' },
     SessionMaxAge: { type: 'number', title: 'SessionMaxAge' },
   },
@@ -1576,16 +1564,8 @@ export const eventSubscriptionSchema: JSONSchema7 = {
   properties: {
     ...basePropertiesSchema.properties,
     Source: { type: 'object', title: 'Source' },
-    Event: {
-      type: 'string',
-      title: 'Event',
-      enum: ["BeforeWrite","OnWrite","UndoPosting","Posting"]
-    },
-    Handler: {
-      type: 'string',
-      title: 'Handler',
-      enum: ["CommonModule.ВерсионированиеОбъектовСобытия.ЗаписатьВерсиюДокумента","CommonModule.ibs_ИнтеграцияСМИС.ЗарегистрироватьФизлицоКОтправке","CommonModule.ibs_ИнтеграцияСМИС.ЗарегистрироватьФизлицоКОтправкиВМИСПриЗаписиРегистров","CommonModule.ibs_ИнтеграцияСМИС.ОбработкаОтменыПроведенияДокументыДляМИС","CommonModule.ibs_ИнтеграцияСМИС.ОбработкаПроведенияДокументыДляМИС"]
-    },
+    Event: { type: 'string', title: 'Event' },
+    Handler: { type: 'string', title: 'Handler' },
   },
   required: ['Name']
 };
@@ -1598,11 +1578,7 @@ export const scheduledJobSchema: JSONSchema7 = {
   title: 'ScheduledJob',
   properties: {
     ...basePropertiesSchema.properties,
-    MethodName: {
-      type: 'string',
-      title: 'MethodName',
-      enum: ["CommonModule.ibs_ИнтеграцияСМИС.СформироватьИОтправитьСообщенияВМИС","CommonModule.ОбработкаНовостейСлужебный.ВсеОбновленияНовостей","CommonModule.ОбработкаНовостейСлужебный.ВсеОбновленияНовостейДляОбластиДанных","CommonModule.ЗагрузкаКандидатовИзИнтернетаСлужебный.ОбработатьОчередьЗагрузкиКандидатов","CommonModule.РаботаСКурсамиВалютЛокализация.ПриЗагрузкеАктуальныхКурсов"]
-    },
+    MethodName: { type: 'string', title: 'MethodName' },
     Description: { type: 'string', title: 'Description' },
     Key: { type: 'string', title: 'Key' },
     Use: {
@@ -1631,11 +1607,7 @@ export const commonCommandSchema: JSONSchema7 = {
   title: 'CommonCommand',
   properties: {
     ...basePropertiesSchema.properties,
-    Group: {
-      type: 'string',
-      title: 'Group',
-      enum: ["ActionsPanelTools","ActionsPanelReports","NavigationPanelOrdinary"]
-    },
+    Group: { type: 'string', title: 'Group' },
     Representation: { type: 'string', title: 'Representation' },
     ToolTip: { type: 'string', title: 'ToolTip' },
     Picture: { type: 'string', title: 'Picture' },
@@ -1782,11 +1754,7 @@ export const functionalOptionSchema: JSONSchema7 = {
   title: 'FunctionalOption',
   properties: {
     ...basePropertiesSchema.properties,
-    Location: {
-      type: 'string',
-      title: 'Location',
-      enum: ["Constant.ibs_ИспользоватьПодсистемуПремирования","Constant.ibs_ИспользоватьЦентрализациюДолжностей","InformationRegister.НастройкиРасчетаЗарплатыРасширенный.Resource.АвтоматическиОграничиватьИспользованиеДокументов","Constant.ДатаОбновленияПовторноИспользуемыхЗначенийМРО","InformationRegister.НастройкиВерсионированияОбъектов.Resource.Вариант"]
-    },
+    Location: { type: 'string', title: 'Location' },
     PrivilegedGetMode: {
       type: 'string',
       title: 'PrivilegedGetMode',
@@ -1828,6 +1796,31 @@ export const settingsStorageSchema: JSONSchema7 = {
       title: 'Формы',
       items: formSchema
     },
+  },
+  required: ['Name']
+};
+
+/**
+ * Схема для XDTOPackage
+ */
+export const xdtoPackageSchema: JSONSchema7 = {
+  type: 'object',
+  title: 'XDTOPackage',
+  properties: {
+    ...basePropertiesSchema.properties,
+    Namespace: { type: 'string', title: 'Namespace' },
+  },
+  required: ['Name']
+};
+
+/**
+ * Схема для WebSocketClient. Остальные поля XML дописывает generateSchema.
+ */
+export const webSocketClientSchema: JSONSchema7 = {
+  type: 'object',
+  title: 'WebSocketClient',
+  properties: {
+    ...basePropertiesSchema.properties,
   },
   required: ['Name']
 };
@@ -1909,6 +1902,10 @@ export const objectTypeSchemas: Record<string, JSONSchema7> = {
   FunctionalOptionsParameter: functionalOptionsParameterSchema,
 
   SettingsStorage: settingsStorageSchema,
+
+  XDTOPackage: xdtoPackageSchema,
+
+  WebSocketClient: webSocketClientSchema,
 
 };
 

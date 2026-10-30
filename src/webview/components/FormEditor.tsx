@@ -21,6 +21,11 @@ import { EnumValueEditorModal } from './FormEditor/EnumValueEditorModal';
 import { SimpleMultilingualEditor } from './FormEditor/SimpleMultilingualEditor';
 import { CharacteristicTypeEditorModal } from './FormEditor/CharacteristicTypeEditorModal';
 import { AccountingFlagEditorModal } from './FormEditor/AccountingFlagEditorModal';
+import { WebServiceOperationsTab } from './FormEditor/WebServiceOperationsTab';
+import { WebServiceXdtoPackagesField } from './FormEditor/WebServiceXdtoPackagesField';
+import { WEB_SERVICE_OTHER_KEYS, WEB_SERVICE_SESSION_KEYS } from './FormEditor/webServiceXml';
+import { EventSubscriptionEventField, EventSubscriptionSourceField } from './FormEditor/EventSubscriptionFields';
+import { FunctionalOptionContentEditor, FunctionalOptionLocationField } from './FormEditor/FunctionalOptionFields';
 import { UiButton, UiTextField, UiCheckbox, UiSelect, UiTable, UiTableRow, UiTableCell } from '../ui';
 import {
   getFieldLabel,
@@ -28,7 +33,7 @@ import {
   getFieldValues,
   normalizeAccumulationRegisterTypeValue
 } from '../../metadata/field-values';
-import type { InformationRegisterScheduleEntry } from '../../metadata/types';
+import type { FunctionalOptionMembers, InformationRegisterScheduleEntry } from '../../metadata/types';
 
 interface FormEditorProps {
   objectType: string;
@@ -38,6 +43,7 @@ interface FormEditorProps {
     registers?: string[];
     referenceTypes: string[];
     informationRegistersSchedule?: InformationRegisterScheduleEntry[];
+    functionalOptionMembers?: FunctionalOptionMembers[];
   };
   activeTab?: string;
   selectedObject?: any;
@@ -48,6 +54,27 @@ const widgets = {
   TypeWidget: TypeWidget,
   MultilingualWidget: MultilingualWidget
 };
+
+/** Объекты, у которых свойство Type — это тип значения, а не произвольная строка. */
+const VALUE_TYPE_EDITOR_OBJECT_TYPES = new Set([
+  'DefinedType', 'Определяемый тип',
+  'SessionParameter', 'Параметр сеанса',
+  'FilterCriterion', 'Критерий отбора',
+  'Constant', 'Константа',
+  'CommonAttribute', 'Общий реквизит',
+  'ChartOfCharacteristicTypes', 'План видов характеристик',
+]);
+
+function usesValueTypeEditor(objectType: string, xmlObjectType?: string): boolean {
+  return VALUE_TYPE_EDITOR_OBJECT_TYPES.has(objectType)
+    || (!!xmlObjectType && VALUE_TYPE_EDITOR_OBJECT_TYPES.has(xmlObjectType));
+}
+
+function isDefinedTypeObject(objectType: string, xmlObjectType?: string): boolean {
+  return objectType === 'DefinedType'
+    || objectType === 'Определяемый тип'
+    || xmlObjectType === 'DefinedType';
+}
 
 /**
  * Свойства вкладки «Данные» плана счетов в конфигураторе 1С (порядок отображения).
@@ -149,6 +176,52 @@ const CALCULATION_REGISTER_PROPERTY_KEYS: readonly string[] = [
 ];
 
 /** Извлекает ссылки ChartOfCalculationTypes.<Имя> из свойства BaseCalculationTypes (formData). */
+/** Текст локализованной строки 1С: строка, v8:item или content. */
+function readLocalString(value: unknown): string {
+  if (value == null || value === '') {
+    return '';
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value !== 'object') {
+    return String(value);
+  }
+  const obj = value as Record<string, unknown>;
+  const rawItem = obj['v8:item'];
+  if (rawItem != null) {
+    const items = Array.isArray(rawItem) ? rawItem : [rawItem];
+    return items
+      .map((item) => {
+        if (item && typeof item === 'object') {
+          const rec = item as Record<string, unknown>;
+          return String(rec['v8:content'] ?? rec.content ?? '');
+        }
+        return String(item ?? '');
+      })
+      .filter((part) => part.length > 0)
+      .join(', ');
+  }
+  if (obj.content != null) {
+    return String(obj.content);
+  }
+  if (obj['v8:content'] != null) {
+    return String(obj['v8:content']);
+  }
+  return '';
+}
+
+/** Имя реквизита или табличной части для списка. */
+function childObjectDisplayName(attr: any, fallback: string): string {
+  if (!attr) {
+    return fallback;
+  }
+  if (typeof attr.name === 'string' && attr.name.trim()) {
+    return attr.name;
+  }
+  return readLocalString(attr.name) || readLocalString(attr.properties?.Name) || fallback;
+}
+
 function extractBaseCalculationTypeRefs(raw: unknown): string[] {
   if (!raw || typeof raw !== 'object') {
     return [];
@@ -277,6 +350,19 @@ function collectDocumentSelectOptions(referenceTypes: string[]): Array<[string, 
     }
   }
   return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+}
+
+/** LocalString в метаданных: пустой тег или v8:item, не голый текст. */
+const MULTILINGUAL_METADATA_FIELDS = new Set([
+  'Synonym', 'Format', 'EditFormat', 'ToolTip',
+  'ObjectPresentation', 'ExtendedObjectPresentation',
+  'ListPresentation', 'ExtendedListPresentation',
+  'Explanation', 'ExtendedPresentation',
+  'RecordPresentation', 'ExtendedRecordPresentation',
+]);
+
+function isMultilingualMetadataField(field: string): boolean {
+  return MULTILINGUAL_METADATA_FIELDS.has(field);
 }
 
 /** Генерирует UUID через Web Crypto API или простой fallback (webview/браузер). */
@@ -436,20 +522,16 @@ export const FormEditor: React.FC<FormEditorProps> = ({
       },
       Synonym: {
         'ui:widget': 'MultilingualWidget'
-      },
-      Comment: {
-        'ui:widget': 'MultilingualWidget'
       }
     };
 
-    // Редактор типов для определяемых типов (DefinedType)
-    if (objectType === 'DefinedType') {
+    if (usesValueTypeEditor(objectType, selectedObject?.xmlObjectType)) {
       ui.Type = {
         'ui:widget': 'TypeWidget',
         'ui:options': {
           registers: metadata.registers,
           referenceTypes: metadata.referenceTypes,
-          definedTypeMode: true
+          definedTypeMode: isDefinedTypeObject(objectType, selectedObject?.xmlObjectType)
         }
       };
     }
@@ -468,7 +550,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
     }
 
     return ui;
-  }, [formData, metadata, objectType]);
+  }, [formData, metadata, objectType, selectedObject?.xmlObjectType]);
 
   const handleSubmit = (data: any) => {
     onChange(data.formData);
@@ -914,6 +996,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
         ChoiceForm: null,
         LinkByType: null,
         ChoiceHistoryOnInput: 'Auto',
+        Use: 'ForItem',
         Indexing: 'DontIndex',
         FullTextSearch: 'Use',
         DataHistory: 'Use'
@@ -1328,7 +1411,8 @@ export const FormEditor: React.FC<FormEditorProps> = ({
   if (activeTab === 'attributes' && (selectedObject?.attributes || formData?.attributes)) {
     const baseAttrs = (formData?.attributes ?? selectedObject?.attributes);
     const attributes = Array.isArray(baseAttrs) ? baseAttrs : [];
-    const isRegister = String(objectType || '').toLowerCase().includes('регистр');
+    const typeKey = String(objectType || '').toLowerCase();
+    const isRegister = typeKey.includes('регистр') || typeKey.includes('register');
     const openAddObjectChildModal = (kind: 'Attribute' | 'Resource' | 'Dimension') => {
       setNewObjectChildKind(kind);
       setShowAddAttributeToObjectModal(true);
@@ -1336,7 +1420,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
     content = (
       <div className="form-editor">
         <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3>Реквизиты ({attributes.length})</h3>
+          <h3>{isRegister ? 'Состав' : 'Реквизиты'} ({attributes.length})</h3>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {isRegister && (
               <>
@@ -1361,43 +1445,61 @@ export const FormEditor: React.FC<FormEditorProps> = ({
             placeholder="Фильтр по имени…"
           />
         </div>
-        <UiTable columns={['Вид', 'Имя', 'Тип', '']}>
-          {attributes
+        {(() => {
+          const kindOf = (attr: any): 'Dimension' | 'Resource' | 'Attribute' =>
+            attr?.childObjectKind === 'Resource' || attr?.childObjectKind === 'Dimension'
+              ? attr.childObjectKind
+              : 'Attribute';
+          const filtered = attributes
             .map((attr: any, index: number) => ({ attr, index }))
             .filter(({ attr }) => {
               if (!attr) return false;
-              const name =
-                typeof attr.name === 'string'
-                  ? attr.name
-                  : (attr.name?.content || attr.name?.['v8:content'] || attr.properties?.Name || '');
-              return String(name).toLowerCase().includes(listFilter.toLowerCase());
-            })
-            .map(({ attr, index }) => {
-              const kind =
-                attr.childObjectKind === 'Resource'
-                  ? 'Ресурс'
-                  : attr.childObjectKind === 'Dimension'
-                  ? 'Измерение'
-                  : 'Реквизит';
-              const name =
-                typeof attr.name === 'string'
-                  ? attr.name
-                  : (attr.name?.content || attr.name?.['v8:content'] || attr.properties?.Name || 'Без имени');
-              return (
-                <UiTableRow key={index}>
-                  <UiTableCell>{kind}</UiTableCell>
-                  <UiTableCell>{name}</UiTableCell>
-                  <UiTableCell>{formatTypeForDisplay(attr.type)}</UiTableCell>
-                  <UiTableCell>
-                    <div className="ui-row-actions">
-                      <UiButton icon="edit" title="Тип" onClick={() => setEditingAttributeType(index)} />
-                      <UiButton icon="close" danger title="Удалить" onClick={() => handleDeleteObjectAttribute(index)} />
-                    </div>
-                  </UiTableCell>
-                </UiTableRow>
-              );
-            })}
-        </UiTable>
+              return childObjectDisplayName(attr, '').toLowerCase().includes(listFilter.toLowerCase());
+            });
+          const renderRow = (attr: any, index: number) => (
+            <UiTableRow key={index}>
+              <UiTableCell>{childObjectDisplayName(attr, 'Без имени')}</UiTableCell>
+              <UiTableCell>{formatTypeForDisplay(attr.type)}</UiTableCell>
+              <UiTableCell>
+                <div className="ui-row-actions">
+                  <UiButton icon="edit" title="Тип" onClick={() => setEditingAttributeType(index)} />
+                  <UiButton icon="close" danger title="Удалить" onClick={() => handleDeleteObjectAttribute(index)} />
+                </div>
+              </UiTableCell>
+            </UiTableRow>
+          );
+          if (!isRegister) {
+            return (
+              <UiTable columns={['Имя', 'Тип', '']}>
+                {filtered.map(({ attr, index }) => renderRow(attr, index))}
+              </UiTable>
+            );
+          }
+          const groups: Array<{ kind: 'Dimension' | 'Resource' | 'Attribute'; title: string }> = [
+            { kind: 'Dimension', title: 'Измерения' },
+            { kind: 'Resource', title: 'Ресурсы' },
+            { kind: 'Attribute', title: 'Реквизиты' },
+          ];
+          return (
+            <div className="child-kind-groups">
+              {groups.map((group) => {
+                const rows = filtered.filter(({ attr }) => kindOf(attr) === group.kind);
+                return (
+                  <section key={group.kind} className="child-kind-group">
+                    <h4>{group.title} ({rows.length})</h4>
+                    {rows.length === 0 ? (
+                      <p className="child-kind-empty">Нет элементов</p>
+                    ) : (
+                      <UiTable columns={['Имя', 'Тип', '']}>
+                        {rows.map(({ attr, index }) => renderRow(attr, index))}
+                      </UiTable>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     );
   } else if (activeTab === 'tabular' && (selectedObject?.tabularSections || formData?.tabularSections)) {
@@ -1412,65 +1514,22 @@ export const FormEditor: React.FC<FormEditorProps> = ({
           </UiButton>
         </div>
         
-        <div className="tabular-list">
+        <div className="tabular-sections">
           {tabularSections.map((ts: any, tsIndex: number) => {
             if (!ts) return null;
+            const synonym = readLocalString(ts.properties?.Synonym);
+            const comment = readLocalString(ts.properties?.Comment);
+            const attrs = Array.isArray(ts.attributes) ? ts.attributes : [];
             return (
-              <div key={tsIndex} className="tabular-card">
-                <div className="tabular-header">
-                  <div>
-                    <h4>{ts.name}</h4>
-                    {ts.properties?.Synonym && (
-                      <div className="tabular-synonym">
-                        {(() => {
-                          const syn = ts.properties.Synonym;
-                          if (!syn) return '';
-                          if (typeof syn === 'string') return syn;
-                          if (typeof syn === 'object' && syn !== null) {
-                            if (syn['v8:item']) {
-                              const items = Array.isArray(syn['v8:item']) ? syn['v8:item'] : [syn['v8:item']];
-                              return items.map((item: any) => {
-                                if (typeof item === 'object' && item !== null) {
-                                  return item['v8:content'] || '';
-                                }
-                                return String(item || '');
-                              }).filter((s: string) => s).join(', ');
-                            }
-                            if (syn.content) return String(syn.content);
-                            if (syn['v8:content']) return String(syn['v8:content']);
-                          }
-                          return '';
-                        })()}
-                      </div>
-                    )}
-                    {ts.properties?.Comment && (
-                      <div className="tabular-comment">
-                        {(() => {
-                          const com = ts.properties.Comment;
-                          if (!com) return '';
-                          if (typeof com === 'string') return com;
-                          if (typeof com === 'object' && com !== null) {
-                            if (com['v8:item']) {
-                              const items = Array.isArray(com['v8:item']) ? com['v8:item'] : [com['v8:item']];
-                              return items.map((item: any) => {
-                                if (typeof item === 'object' && item !== null) {
-                                  return item['v8:content'] || '';
-                                }
-                                return String(item || '');
-                              }).filter((s: string) => s).join(', ');
-                            }
-                            if (com.content) return String(com.content);
-                            if (com['v8:content']) return String(com['v8:content']);
-                          }
-                          return '';
-                        })()}
-                      </div>
-                    )}
+              <section key={ts.uuid || tsIndex} className="tabular-section">
+                <div className="tabular-section__header">
+                  <div className="tabular-section__heading">
+                    <span className="tabular-section__title">{ts.name}</span>
+                    {synonym ? <span className="tabular-section__meta">{synonym}</span> : null}
+                    {comment ? <span className="tabular-section__meta tabular-section__meta--comment">{comment}</span> : null}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="tabular-attributes-count">
-                      Реквизитов: {ts.attributes?.length || 0}
-                    </span>
+                  <div className="tabular-section__tools">
+                    <span className="tabular-attributes-count">Реквизитов: {attrs.length}</span>
                     <UiButton
                       icon="close"
                       danger
@@ -1483,98 +1542,49 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                     />
                   </div>
                 </div>
-                
-                {ts.attributes && Array.isArray(ts.attributes) && ts.attributes.length > 0 && (
-                  <div className="tabular-attributes-list">
-                    {ts.attributes.map((attr: any, attrIndex: number) => {
+                {attrs.length > 0 && (
+                  <UiTable columns={['Имя', 'Синоним', 'Тип', '']}>
+                    {attrs.map((attr: any, attrIndex: number) => {
                       if (!attr) return null;
                       return (
-                        <div key={attrIndex} className="tabular-attribute-item">
-                          <div className="attribute-info">
-                            <span className="attribute-name">{attr.name || `Реквизит ${attrIndex + 1}`}</span>
-                            {attr.properties?.Synonym && (
-                              <span className="attribute-synonym">
-                                {(() => {
-                                  const syn = attr.properties.Synonym;
-                                  if (!syn) return '';
-                                  if (typeof syn === 'string') return syn;
-                                  if (typeof syn === 'object' && syn !== null) {
-                                    if (syn['v8:item']) {
-                                      const items = Array.isArray(syn['v8:item']) ? syn['v8:item'] : [syn['v8:item']];
-                                      return items.map((item: any) => {
-                                        if (typeof item === 'object' && item !== null) {
-                                          return item['v8:content'] || '';
-                                        }
-                                        return String(item || '');
-                                      }).filter((s: string) => s).join(', ');
-                                    }
-                                    // Если это объект без v8:item, пробуем найти content напрямую
-                                    if (syn.content) return String(syn.content);
-                                    if (syn['v8:content']) return String(syn['v8:content']);
-                                  }
-                                  return '';
-                                })()}
-                              </span>
-                            )}
-                            {attr.properties?.Comment && (
-                              <span className="attribute-comment">
-                                {(() => {
-                                  const com = attr.properties.Comment;
-                                  if (!com) return '';
-                                  if (typeof com === 'string') return com;
-                                  if (typeof com === 'object' && com !== null) {
-                                    if (com['v8:item']) {
-                                      const items = Array.isArray(com['v8:item']) ? com['v8:item'] : [com['v8:item']];
-                                      return items.map((item: any) => {
-                                        if (typeof item === 'object' && item !== null) {
-                                          return item['v8:content'] || '';
-                                        }
-                                        return String(item || '');
-                                      }).filter((s: string) => s).join(', ');
-                                    }
-                                    // Если это объект без v8:item, пробуем найти content напрямую
-                                    if (com.content) return String(com.content);
-                                    if (com['v8:content']) return String(com['v8:content']);
-                                  }
-                                  return '';
-                                })()}
-                              </span>
-                            )}
-                            <span className="attribute-type">
-                              {formatTypeForDisplay(attr.type)}
-                            </span>
-                          </div>
-                          <div className="ui-row-actions">
-                            <UiButton
-                              icon="edit"
-                              title="Открыть редактор типов"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleEditAttributeType(tsIndex, attrIndex);
-                              }}
-                            />
-                            <UiButton
-                              icon="close"
-                              danger
-                              title="Удалить"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDeleteTabularAttribute(tsIndex, attrIndex);
-                              }}
-                            />
-                          </div>
-                        </div>
+                        <UiTableRow key={attr.uuid || attrIndex}>
+                          <UiTableCell>{childObjectDisplayName(attr, `Реквизит ${attrIndex + 1}`)}</UiTableCell>
+                          <UiTableCell>{readLocalString(attr.properties?.Synonym)}</UiTableCell>
+                          <UiTableCell>{formatTypeForDisplay(attr.type)}</UiTableCell>
+                          <UiTableCell>
+                            <div className="ui-row-actions">
+                              <UiButton
+                                icon="edit"
+                                title="Открыть редактор типов"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleEditAttributeType(tsIndex, attrIndex);
+                                }}
+                              />
+                              <UiButton
+                                icon="close"
+                                danger
+                                title="Удалить"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDeleteTabularAttribute(tsIndex, attrIndex);
+                                }}
+                              />
+                            </div>
+                          </UiTableCell>
+                        </UiTableRow>
                       );
                     })}
-                  </div>
+                  </UiTable>
                 )}
-                
-                <UiButton secondary block icon="add" onClick={() => setShowAddAttributeModal(tsIndex)}>
-                  Добавить реквизит
-                </UiButton>
-              </div>
+                <div className="tabular-section__footer">
+                  <UiButton secondary icon="add" onClick={() => setShowAddAttributeModal(tsIndex)}>
+                    Добавить реквизит
+                  </UiButton>
+                </div>
+              </section>
             );
           })}
         </div>
@@ -1665,6 +1675,29 @@ export const FormEditor: React.FC<FormEditorProps> = ({
         </div>
       </div>
     );
+  } else if (activeTab === 'composition') {
+    content = (
+      <FunctionalOptionContentEditor
+        value={formData?.Content}
+        referenceTypes={metadata.referenceTypes || []}
+        members={metadata.functionalOptionMembers || []}
+        onChange={(next) => {
+          handleChange({ formData: { ...formData, Content: next } });
+        }}
+      />
+    );
+  } else if (activeTab === 'operations') {
+    content = (
+      <WebServiceOperationsTab
+        xml={selectedObject?._originalXml || ''}
+        onXmlChange={(xml) => {
+          if (!selectedObject || !onSelectedObjectChange) {
+            return;
+          }
+          onSelectedObjectChange({ ...selectedObject, _originalXml: xml });
+        }}
+      />
+    );
   } else if (activeTab === 'properties' && formData) {
     // Группируем свойства
     const basicFields = ['Name', 'Synonym', 'Comment'];
@@ -1673,6 +1706,18 @@ export const FormEditor: React.FC<FormEditorProps> = ({
     const isDocument =
       String(objectType || '').toLowerCase() === 'документ' ||
       String(objectType || '').toLowerCase() === 'document';
+    const isWebService =
+      objectType === 'WebService' ||
+      objectType === 'Web-сервис' ||
+      objectType === 'Веб-сервис' ||
+      (selectedObject?.sourcePath && String(selectedObject.sourcePath).replace(/\\/g, '/').includes('/WebServices/'));
+    const functionalOptionPath = selectedObject?.sourcePath
+      ? String(selectedObject.sourcePath).replace(/\\/g, '/')
+      : '';
+    const isFunctionalOption =
+      objectType === 'FunctionalOption' ||
+      objectType === 'Функциональная опция' ||
+      (functionalOptionPath.includes('/FunctionalOptions/') && !functionalOptionPath.includes('/FunctionalOptionsParameters/'));
 
     const isChartOfAccountsProps =
       objectType === 'ChartOfAccounts' ||
@@ -1720,7 +1765,10 @@ export const FormEditor: React.FC<FormEditorProps> = ({
       !(isInformationRegister && INFORMATION_REGISTER_PROPERTY_KEYS.includes(key)) &&
       !(isAccumulationRegister && ACCUMULATION_REGISTER_PROPERTY_KEYS.includes(key)) &&
       !(isAccountingRegister && ACCOUNTING_REGISTER_PROPERTY_KEYS.includes(key)) &&
-      !(isCalculationRegister && CALCULATION_REGISTER_PROPERTY_KEYS.includes(key))
+      !(isCalculationRegister && CALCULATION_REGISTER_PROPERTY_KEYS.includes(key)) &&
+      !(isWebService && (WEB_SERVICE_OTHER_KEYS as readonly string[]).includes(key)) &&
+      !(isWebService && (WEB_SERVICE_SESSION_KEYS as readonly string[]).includes(key)) &&
+      !(isFunctionalOption && key === 'Content')
     );
 
     /** Карточка свойства регистра (скаляр или JSON-объект из XML). */
@@ -1791,7 +1839,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                     <h4>{getFieldLabel(field)}</h4>
                   </div>
                   <div className="property-value">
-                    {(field === 'Synonym' || field === 'Comment') && typeof value === 'object' && value?.['v8:item'] ? (
+                    {field === 'Synonym' && typeof value === 'object' && value?.['v8:item'] ? (
                       <div className="multilingual-wrapper">
                         <SimpleMultilingualEditor
                           value={value}
@@ -1817,6 +1865,71 @@ export const FormEditor: React.FC<FormEditorProps> = ({
             })}
           </div>
         </div>
+
+        {isWebService && (
+          <div className="properties-group">
+            <div className="section-header">
+              <h3>Прочее</h3>
+            </div>
+            <div className="properties-cards">
+              {WEB_SERVICE_OTHER_KEYS.filter((field) => field in formData || field === 'XDTOPackages').map((field) => (
+                <div key={field} className="property-card">
+                  <div className="property-header">
+                    <h4>{getFieldLabel(field)}</h4>
+                  </div>
+                  <div className="property-value">
+                    {field === 'XDTOPackages' ? (
+                      <WebServiceXdtoPackagesField
+                        value={formData[field]}
+                        onChange={(newValue) => {
+                          handleChange({ formData: { ...formData, [field]: newValue } });
+                        }}
+                      />
+                    ) : (
+                      <FieldInput
+                        field={field}
+                        value={formData[field] ?? ''}
+                        onChange={(newValue) => {
+                          handleChange({ formData: { ...formData, [field]: newValue } });
+                        }}
+                        objectType={objectType}
+                        label={getFieldLabel(field)}
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isWebService && (
+          <div className="properties-group">
+            <div className="section-header">
+              <h3>Управление сеансами</h3>
+            </div>
+            <div className="properties-cards">
+              {WEB_SERVICE_SESSION_KEYS.filter((field) => field in formData || field === 'ReuseSessions' || field === 'SessionMaxAge').map((field) => (
+                <div key={field} className="property-card">
+                  <div className="property-header">
+                    <h4>{getFieldLabel(field)}</h4>
+                  </div>
+                  <div className="property-value">
+                    <FieldInput
+                      field={field}
+                      value={formData[field] ?? ''}
+                      onChange={(newValue) => {
+                        handleChange({ formData: { ...formData, [field]: newValue } });
+                      }}
+                      objectType={objectType}
+                      label={getFieldLabel(field)}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Вкладка «Данные» конфигуратора: длина кода, маска, автопорядок и т.д. */}
         {isChartOfCalculationTypesProps && (
@@ -1939,7 +2052,14 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                       <h4>{getFieldLabel(field)}</h4>
                     </div>
                     <div className="property-value">
-                      {typeof value === 'object' && value !== null ? (
+                      {isMultilingualMetadataField(field) ? (
+                        <SimpleMultilingualEditor
+                          value={value}
+                          onChange={(newValue) => {
+                            handleChange({ formData: { ...formData, [field]: newValue } });
+                          }}
+                        />
+                      ) : typeof value === 'object' && value !== null ? (
                         <textarea
                           value={JSON.stringify(value, null, 2)}
                           onChange={e => {
@@ -1992,7 +2112,14 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                       <h4>{getFieldLabel(field)}</h4>
                     </div>
                     <div className="property-value">
-                      {typeof value === 'object' && value !== null ? (
+                      {isMultilingualMetadataField(field) ? (
+                        <SimpleMultilingualEditor
+                          value={value}
+                          onChange={(newValue) => {
+                            handleChange({ formData: { ...formData, [field]: newValue } });
+                          }}
+                        />
+                      ) : typeof value === 'object' && value !== null ? (
                         <textarea
                           value={JSON.stringify(value, null, 2)}
                           onChange={e => {
@@ -2931,8 +3058,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                   );
                 }
 
-                // Редактор типов для определяемых типов (DefinedType)
-                if (field === 'Type' && objectType === 'DefinedType') {
+                if (field === 'Type' && usesValueTypeEditor(objectType, selectedObject?.xmlObjectType)) {
                   return (
                     <div key={field} className="property-card">
                       <div className="property-header">
@@ -2957,7 +3083,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                             options: {
                               registers: metadata.registers,
                               referenceTypes: metadata.referenceTypes,
-                              definedTypeMode: true
+                              definedTypeMode: isDefinedTypeObject(objectType, selectedObject?.xmlObjectType)
                             }
                           } as any)}
                         />
@@ -2965,14 +3091,125 @@ export const FormEditor: React.FC<FormEditorProps> = ({
                     </div>
                   );
                 }
-                
+
+                if (field === 'Location' && isFunctionalOption) {
+                  return (
+                    <div key={field} className="property-card property-card-wide">
+                      <div className="property-header">
+                        <h4>{getFieldLabel(field)}</h4>
+                      </div>
+                      <div className="property-value">
+                        <FunctionalOptionLocationField
+                          value={value}
+                          referenceTypes={metadata.referenceTypes || []}
+                          members={metadata.functionalOptionMembers || []}
+                          onChange={(newValue) => {
+                            handleChange({ formData: { ...formData, Location: newValue } });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (field === 'PrivilegedGetMode' && isFunctionalOption) {
+                  const privileged = value === true || value === 'true' || value === 'True';
+                  return (
+                    <div key={field} className="property-card property-card-wide">
+                      <div className="property-header">
+                        <h4>{getFieldLabel(field)}</h4>
+                      </div>
+                      <div className="property-value">
+                        <UiCheckbox
+                          checked={privileged}
+                          onChange={(checked) => {
+                            handleChange({ formData: { ...formData, PrivilegedGetMode: checked ? 'true' : 'false' } });
+                          }}
+                          label={privileged ? 'Да' : 'Нет'}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (field === 'Source') {
+                  return (
+                    <div key={field} className="property-card property-card-wide">
+                      <div className="property-header">
+                        <h4>{getFieldLabel(field)}</h4>
+                      </div>
+                      <div className="property-value">
+                        <EventSubscriptionSourceField
+                          value={value}
+                          referenceTypes={metadata.referenceTypes || []}
+                          currentEvent={typeof formData.Event === 'string' ? formData.Event : ''}
+                          onChange={(newValue, eventStillValid) => {
+                            handleChange({
+                              formData: {
+                                ...formData,
+                                Source: newValue,
+                                Event: eventStillValid ? formData.Event : '',
+                              },
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (field === 'Event') {
+                  return (
+                    <div key={field} className="property-card property-card-wide">
+                      <div className="property-header">
+                        <h4>{getFieldLabel(field)}</h4>
+                      </div>
+                      <div className="property-value">
+                        <EventSubscriptionEventField
+                          value={value}
+                          source={formData.Source}
+                          onChange={(newValue) => {
+                            handleChange({ formData: { ...formData, Event: newValue } });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (field === 'Handler') {
+                  return (
+                    <div key={field} className="property-card property-card-wide">
+                      <div className="property-header">
+                        <h4>{getFieldLabel(field)}</h4>
+                      </div>
+                      <div className="property-value">
+                        <UiTextField
+                          value={typeof value === 'string' ? value : ''}
+                          placeholder="ОбщийМодуль.ИмяМодуля.ИмяПроцедуры"
+                          onChange={(newValue) => {
+                            handleChange({ formData: { ...formData, [field]: newValue } });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div key={field} className="property-card">
                     <div className="property-header">
                       <h4>{getFieldLabel(field)}</h4>
                     </div>
                     <div className="property-value">
-                      {typeof value === 'object' && value !== null ? (
+                      {isMultilingualMetadataField(field) ? (
+                        <SimpleMultilingualEditor
+                          value={value}
+                          onChange={(newValue) => {
+                            handleChange({ formData: { ...formData, [field]: newValue } });
+                          }}
+                        />
+                      ) : typeof value === 'object' && value !== null ? (
                         <textarea
                           value={JSON.stringify(value, null, 2)}
                           onChange={(e) => {

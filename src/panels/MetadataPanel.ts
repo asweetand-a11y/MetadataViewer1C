@@ -7,7 +7,8 @@ import { parsePredefinedXml } from "../xmlParsers/predefinedParser";
 import { parseFormXml, isFormFile, parseFormXmlFull, ParsedFormFull } from "../xmlParsers/formParser";
 import { FIELD_VALUES, TEXT_INPUT_FIELDS, normalizeAccumulationRegisterTypeValue } from "../metadata/field-values";
 import { createRefDisplayMap, createRefBSLMap } from "../metadata/metadata-types";
-import { WebviewMessage, InitMessage, InformationRegisterScheduleEntry } from "../metadata/types";
+import { WebviewMessage, InitMessage, InformationRegisterScheduleEntry, FunctionalOptionMembers } from "../metadata/types";
+import { collectFunctionalOptionMembers } from "../utils/functionalOptionCatalog";
 import { safeReadFile, safeWriteFile, createBackup, validatePath } from "../utils/fileUtils";
 import { createXMLParser, normalizeXML, validateXML } from "../utils/xmlUtils";
 import { applyChangesToXmlString } from "../utils/xmlStringPatcher";
@@ -15,6 +16,9 @@ import { summarizeStructureValidationErrors, validateXmlStructure } from "../val
 import { applyFormChangesToXmlStringWithDom } from "../utils/xmlDomUtils";
 import { XmlDiffMerge } from "../utils/xmlDiffMerge";
 import { ensureMetadataInConfigurationXml } from "../utils/configurationXmlUpdater";
+import { markConfigurationChangedInDump } from "../utils/configDumpInfoUpdater";
+import { finalizeOneCXml, styleForExistingOneCXml } from "../utils/oneCXmlStyle";
+import { applyAdoptedExtensionFlags } from "../utils/extensionPropertyState";
 import {
     loadSubsystemMembershipForObject,
     applySubsystemMembershipChanges,
@@ -524,14 +528,16 @@ export class MetadataPanel {
     /**
      * Сканирование метаданных конфигурации для получения списков регистров и ссылочных типов
      */
-    private async scanMetadataForWebview(): Promise<{
+    private async scanMetadataForWebview(options?: { functionalOptionMembers?: boolean }): Promise<{
         registers: string[];
         referenceTypes: string[];
         informationRegistersSchedule: InformationRegisterScheduleEntry[];
+        functionalOptionMembers: FunctionalOptionMembers[];
     }> {
         const registers: string[] = [];
         const referenceTypes: string[] = [];
         const informationRegistersSchedule: InformationRegisterScheduleEntry[] = [];
+        let functionalOptionMembers: FunctionalOptionMembers[] = [];
         
         try {
             // Определяем корень конфигурации для сканирования.
@@ -789,11 +795,15 @@ export class MetadataPanel {
             informationRegistersSchedule.sort((a, b) =>
                 a.displayName.localeCompare(b.displayName, "ru")
             );
+
+            if (options?.functionalOptionMembers) {
+                functionalOptionMembers = await collectFunctionalOptionMembers(scanResult.objects);
+            }
         } catch (error) {
             console.error('[MetadataPanel.scanMetadataForWebview] Ошибка сканирования метаданных:', error);
         }
         
-        return { registers, referenceTypes, informationRegistersSchedule };
+        return { registers, referenceTypes, informationRegistersSchedule, functionalOptionMembers };
     }
 
     /**
@@ -838,7 +848,12 @@ export class MetadataPanel {
 
         console.log('[MetadataPanel.postMetadata] Webview готов, сканируем метаданные...');
         // Сканируем метаданные для получения списков регистров и ссылочных типов
-        const metadata = await this.scanMetadataForWebview();
+        const sourcePath = String(this.parsedObjects[0]?.sourcePath || '').replace(/\\/g, '/');
+        const loadFunctionalOptionMembers = sourcePath.includes('/FunctionalOptions/')
+            && !sourcePath.includes('/FunctionalOptionsParameters/');
+        const metadata = await this.scanMetadataForWebview({
+            functionalOptionMembers: loadFunctionalOptionMembers,
+        });
 
         await this.enrichParsedObjectsRecorderDocuments();
         
@@ -849,6 +864,7 @@ export class MetadataPanel {
                 registers: metadata.registers,
                 referenceTypes: metadata.referenceTypes,
                 informationRegistersSchedule: metadata.informationRegistersSchedule,
+                functionalOptionMembers: metadata.functionalOptionMembers,
             },
         };
         
@@ -1434,7 +1450,11 @@ export class MetadataPanel {
             
             // КРИТИЧНО: Сохраняем файл только если валидация прошла успешно
             try {
-                await safeWriteFile(obj.sourcePath, updatedXml);
+                updatedXml = applyAdoptedExtensionFlags(updatedXml, obj.sourcePath);
+                await safeWriteFile(
+                    obj.sourcePath,
+                    finalizeOneCXml(updatedXml, styleForExistingOneCXml(obj.sourcePath))
+                );
                 
                 // После сохранения объекта обновляем ConfigDumpInfo.xml, чтобы дамп "увидел" новые реквизиты/ТЧ.
                 // Это особенно важно при добавлении новых элементов (Attribute/TabularSection/Attribute ТЧ),
@@ -1453,6 +1473,10 @@ export class MetadataPanel {
                             await createBackup(configDumpInfoPath);
                             await safeWriteFile(configDumpInfoPath, patched.updatedXml);
                             console.log(`[MetadataPanel.handleSave] ConfigDumpInfo.xml обновлён: добавлено записей: ${patched.addedCount}, удалено: ${patched.removedCount}`);
+                        }
+                        const objectFqn = `${xmlObjectType}.${obj.name}`;
+                        if (!configDumpInfoXml.includes(`name="${objectFqn}"`)) {
+                            await markConfigurationChangedInDump(this.configRoot);
                         }
                     }
                 } catch (e: any) {

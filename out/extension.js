@@ -35,6 +35,8 @@ const embeddedMcpServer_1 = require("./autogen-bsl/mcp/embeddedMcpServer");
 const commitFileLogger_1 = require("./utils/commitFileLogger");
 const bookmarkManager_1 = require("./utils/bookmarkManager");
 const metadataXmlValidator_1 = require("./validation/metadataXmlValidator");
+const extensionPropertyState_1 = require("./utils/extensionPropertyState");
+const methodInterceptor_1 = require("./utils/methodInterceptor");
 // Output channel для логов расширения
 exports.outputChannel = vscode.window.createOutputChannel('1C Metadata Viewer');
 /** Общий StatusBarItem для прогресса (генерация кода, загрузка редакторов и т.п.) */
@@ -235,6 +237,9 @@ function activate(context) {
         }
         await runValidateMetadataXml(fileUri.fsPath, context.extensionUri.fsPath);
     });
+    vscode.commands.registerCommand('metadataViewer.insertMethodInterceptor', async () => {
+        await (0, methodInterceptor_1.insertMethodInterceptor)();
+    });
     vscode.commands.registerCommand('metadataViewer.openModule', (node) => {
         let filePath = '';
         if (node.configType === 'xml') {
@@ -428,24 +433,24 @@ function deactivate() {
     }
 }
 exports.deactivate = deactivate;
+function openBslDocument(filePath) {
+    void (0, extensionPropertyState_1.ensureModulePropertyState)(filePath);
+    vscode.workspace.openTextDocument(vscode.Uri.file(filePath)).then(doc => {
+        vscode.window.showTextDocument(doc);
+    });
+}
 function OpenFile(filePath) {
     const openPath = vscode.Uri.file(filePath);
     if (fs.existsSync(filePath)) {
-        vscode.workspace.openTextDocument(openPath).then(doc => {
-            vscode.window.showTextDocument(doc);
-        });
+        openBslDocument(filePath);
     }
     else {
         vscode.window
-            .showInformationMessage(`File ${filePath} does not exist. Create?`, 'Yes', 'No')
+            .showInformationMessage(`Файла нет: ${filePath}. Создать?`, 'Да', 'Нет')
             .then(answer => {
-            if (answer === 'Yes') {
-                // TODO: Кроме собственно создания файла наверное надо что-то писать в XML? Наверняка нужно...
-                vscode.workspace.fs.writeFile(openPath, new Uint8Array).then(_ => {
-                    vscode.window.showInformationMessage(`File ${filePath} is creted!`);
-                    vscode.workspace.openTextDocument(openPath).then(doc => {
-                        vscode.window.showTextDocument(doc);
-                    });
+            if (answer === 'Да') {
+                vscode.workspace.fs.writeFile(openPath, Buffer.from('\uFEFF', 'utf8')).then(() => {
+                    openBslDocument(filePath);
                 });
             }
         });

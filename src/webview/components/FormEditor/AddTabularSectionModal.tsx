@@ -5,7 +5,7 @@
 import React from 'react';
 import { Modal } from './Modal';
 import { UiButton } from '../../ui';
-import { SimpleMultilingualEditor } from './SimpleMultilingualEditor';
+import { SimpleMultilingualEditor, commentText } from './SimpleMultilingualEditor';
 
 interface AddTabularSectionModalProps {
   isOpen: boolean;
@@ -63,9 +63,11 @@ export const AddTabularSectionModal: React.FC<AddTabularSectionModalProps> = ({
       </div>
       <div className="form-field">
         <label>Комментарий</label>
-        <SimpleMultilingualEditor
-          value={comment}
-          onChange={onCommentChange}
+        <input
+          type="text"
+          value={commentText(comment)}
+          onChange={(e) => onCommentChange(e.target.value)}
+          className="property-input"
         />
       </div>
     </Modal>

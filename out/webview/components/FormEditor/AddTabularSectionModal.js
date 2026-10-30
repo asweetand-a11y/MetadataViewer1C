@@ -24,7 +24,7 @@ const AddTabularSectionModal = ({ isOpen, name, synonym, comment, onClose, onSav
             react_1.default.createElement(SimpleMultilingualEditor_1.SimpleMultilingualEditor, { value: synonym, onChange: onSynonymChange })),
         react_1.default.createElement("div", { className: "form-field" },
             react_1.default.createElement("label", null, "\u041A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0439"),
-            react_1.default.createElement(SimpleMultilingualEditor_1.SimpleMultilingualEditor, { value: comment, onChange: onCommentChange }))));
+            react_1.default.createElement("input", { type: "text", value: (0, SimpleMultilingualEditor_1.commentText)(comment), onChange: (e) => onCommentChange(e.target.value), className: "property-input" }))));
 };
 exports.AddTabularSectionModal = AddTabularSectionModal;
 //# sourceMappingURL=AddTabularSectionModal.js.map

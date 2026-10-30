@@ -29,6 +29,8 @@
 	"1c-metadata-viewer.editQueryFromEditor.title": "BSL: Редактировать запрос",
 	"1c-metadata-viewer.showTemplate.title": "Просмотр макета",
 	"1c-metadata-viewer.editMetadata.title": "Редактировать метаданные",
+	"1c-metadata-viewer.addMetadataObject.title": "Добавить",
+	"1c-metadata-viewer.deleteMetadataObject.title": "Delete",
 	"1c-metadata-viewer.commitFilePath.title": "Путь к файлу Commit.txt",
 	"1c-metadata-viewer.toggleBookmark.title": "Установить/удалить закладку",
 	"1c-metadata-viewer.nextBookmark.title": "Следующая закладка",

@@ -379,11 +379,21 @@ function applyPropertiesChangesWithDom(objElement, properties) {
         if (key === 'StandardTabularSections') {
             continue;
         }
+        // Заимствованный объект расширения: не добавлять свойства, которых нет в оболочке.
+        // Идентичность (принадлежность, имя, ссылка на объект конфигурации) не переписывается.
+        const belongingEl = propertiesElement.getElementsByTagName('ObjectBelonging')[0];
+        const adopted = belongingEl?.parentNode === propertiesElement && (belongingEl.textContent || '').trim() === 'Adopted';
+        if (adopted && (key === 'ObjectBelonging' || key === 'ExtendedConfigurationObject' || key === 'Name')) {
+            continue;
+        }
         // Находим существующий элемент свойства
         const existingElements = propertiesElement.getElementsByTagName(key);
         let propertyElement;
         if (existingElements.length > 0) {
             propertyElement = existingElements[0];
+        }
+        else if (adopted) {
+            continue;
         }
         else {
             // Создаем новый элемент свойства
@@ -397,7 +407,85 @@ function applyPropertiesChangesWithDom(objElement, properties) {
 /**
  * Устанавливает значение свойства в DOM элемент
  */
+/** Поля LocalString: пустое значение — пустой тег, текст — v8:item. */
+const MULTILINGUAL_PROPERTIES = new Set([
+    'Synonym', 'Format', 'EditFormat', 'ToolTip',
+    'ObjectPresentation', 'ExtendedObjectPresentation',
+    'ListPresentation', 'ExtendedListPresentation',
+    'Explanation', 'ExtendedPresentation',
+    'RecordPresentation', 'ExtendedRecordPresentation',
+]);
+/** Поля xs:string. Внутри них v8:item конфигуратор не читает. */
+const PLAIN_STRING_PROPERTIES = new Set([
+    'Comment', 'Mask', 'ChoiceForm', 'NameInDataSource', 'ScheduleLink',
+    'Shortcut', 'AccountingFlag', 'AddressingDimension', 'ExtDimensionAccountingFlag',
+]);
+/** Comment в MDClasses — xs:string. Многоязычный v8:item платформа не читает. */
+function metadataCommentText(value) {
+    if (value == null)
+        return '';
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+        return String(value);
+    if (typeof value !== 'object')
+        return '';
+    const item = value['v8:item'] ?? value.item;
+    const list = Array.isArray(item) ? item : item ? [item] : [];
+    const ru = list.find((entry) => String(entry?.['v8:lang'] ?? entry?.lang ?? '').toLowerCase() === 'ru') || list[0];
+    if (ru && typeof ru === 'object')
+        return String(ru['v8:content'] ?? ru.content ?? '');
+    if (typeof value['#text'] === 'string')
+        return value['#text'];
+    return '';
+}
+function multilingualItems(value) {
+    if (value == null || value === '')
+        return [];
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        const content = String(value);
+        return content ? [{ lang: 'ru', content }] : [];
+    }
+    if (typeof value !== 'object' || Array.isArray(value))
+        return [];
+    const raw = value['v8:item'] ?? value.item;
+    if (raw) {
+        const list = Array.isArray(raw) ? raw : [raw];
+        return list
+            .map((entry) => ({
+            lang: String(entry?.['v8:lang'] ?? entry?.lang ?? 'ru'),
+            content: String(entry?.['v8:content'] ?? entry?.content ?? ''),
+        }))
+            .filter((entry) => entry.content !== '');
+    }
+    return Object.entries(value)
+        .filter(([key, content]) => /^[a-z]{2,3}$/i.test(key) && content != null && String(content) !== '')
+        .map(([lang, content]) => ({ lang, content: String(content) }));
+}
+function writeMultilingualProperty(element, value) {
+    while (element.firstChild) {
+        element.removeChild(element.firstChild);
+    }
+    const doc = element.ownerDocument;
+    for (const item of multilingualItems(value)) {
+        const row = doc.createElementNS('http://v8.1c.ru/8.1/data/core', 'v8:item');
+        const lang = doc.createElementNS('http://v8.1c.ru/8.1/data/core', 'v8:lang');
+        lang.textContent = item.lang;
+        const content = doc.createElementNS('http://v8.1c.ru/8.1/data/core', 'v8:content');
+        content.textContent = item.content;
+        row.appendChild(lang);
+        row.appendChild(content);
+        element.appendChild(row);
+    }
+}
 function setPropertyValueWithDom(element, value) {
+    const localName = (element.localName || element.tagName || '').replace(/^.*:/, '');
+    if (PLAIN_STRING_PROPERTIES.has(localName)) {
+        element.textContent = metadataCommentText(value);
+        return;
+    }
+    if (MULTILINGUAL_PROPERTIES.has(localName)) {
+        writeMultilingualProperty(element, value);
+        return;
+    }
     // Очищаем существующее содержимое
     while (element.firstChild) {
         element.removeChild(element.firstChild);
@@ -1250,17 +1338,24 @@ function applyEnumValuesChangesWithDom(objElement, enumValues) {
                 'v8:item': { 'v8:lang': 'ru', 'v8:content': String(item.name) }
             });
         }
-        const comment = props.Comment ?? props.comment ?? '';
-        setOrCreateChild(propsEl, 'Comment', comment !== undefined && comment !== null ? comment : '');
+        const comment = metadataCommentText(props.Comment ?? props.comment ?? '');
+        setOrCreateChild(propsEl, 'Comment', comment);
     }
 }
 /**
  * Применяет изменения к ChildObjects (атрибуты, табличные части, признаки учета)
  */
 function applyChildObjectsChangesWithDom(objElement, attributes, tabularSections, accountingFlags, extDimensionAccountingFlags) {
-    // Находим или создаем элемент ChildObjects
+    // Пустой состав не создаём: у параметра сеанса, константы и других объектов без состава ChildObjects недопустим.
     let childObjectsElement = objElement.getElementsByTagName('ChildObjects')[0];
     if (!childObjectsElement) {
+        const hasChildren = Boolean((attributes && attributes.length)
+            || (tabularSections && tabularSections.length)
+            || (accountingFlags && accountingFlags.length)
+            || (extDimensionAccountingFlags && extDimensionAccountingFlags.length));
+        if (!hasChildren) {
+            return;
+        }
         childObjectsElement = objElement.ownerDocument.createElement('ChildObjects');
         objElement.appendChild(childObjectsElement);
     }
@@ -1522,9 +1617,113 @@ function applyChildObjectItemChangesWithDom(childObjectsElement, item, tagName) 
     // Для AccountingFlag и ExtDimensionAccountingFlag используем ту же логику, что и для Resource/Dimension
     applyNamedChildObjectChangesWithDom(childObjectsElement, item, tagName);
 }
+const XSI_NIL_NS = 'http://www.w3.org/2001/XMLSchema-instance';
+/**
+ * Пустые свойства реквизита в порядке схемы MDClasses.
+ * Без них платформа не принимает объект при загрузке из файлов.
+ */
+function attributeSkeletonContext(childObjectsElement) {
+    const parentName = (childObjectsElement.parentElement?.localName || childObjectsElement.parentElement?.tagName || '').replace(/^.*:/, '');
+    if (parentName === 'TabularSection')
+        return 'tabular';
+    if (parentName === 'Catalog')
+        return 'catalog';
+    if (parentName === 'ChartOfCharacteristicTypes')
+        return 'cct';
+    return 'object';
+}
+function appendNewAttributePropertySkeleton(propertiesElement, context) {
+    const doc = propertiesElement.ownerDocument;
+    const add = (name) => {
+        propertiesElement.appendChild(doc.createElement(name));
+    };
+    const addNil = (name) => {
+        const el = doc.createElement(name);
+        el.setAttributeNS(XSI_NIL_NS, 'xsi:nil', 'true');
+        propertiesElement.appendChild(el);
+    };
+    const addUse = () => {
+        const useEl = doc.createElement('Use');
+        useEl.textContent = 'ForItem';
+        propertiesElement.appendChild(useEl);
+    };
+    add('Synonym');
+    add('Comment');
+    add('Type');
+    add('PasswordMode');
+    add('Format');
+    add('EditFormat');
+    add('ToolTip');
+    add('MarkNegatives');
+    add('Mask');
+    add('MultiLine');
+    add('ExtendedEdit');
+    addNil('MinValue');
+    addNil('MaxValue');
+    if (context !== 'tabular') {
+        add('FillFromFillingValue');
+        addNil('FillValue');
+    }
+    add('FillChecking');
+    add('ChoiceFoldersAndItems');
+    add('ChoiceParameterLinks');
+    add('ChoiceParameters');
+    add('QuickChoice');
+    add('CreateOnInput');
+    add('ChoiceForm');
+    add('LinkByType');
+    add('ChoiceHistoryOnInput');
+    if (context === 'catalog')
+        addUse();
+    add('Indexing');
+    if (context === 'cct')
+        addUse();
+    add('FullTextSearch');
+    add('DataHistory');
+}
+/** Пустое FillValue нового реквизита: строка и число типизированы, остальные типы — nil. */
+function alignNewAttributeFillValue(propertiesElement) {
+    const fill = propertiesElement.getElementsByTagName('FillValue')[0];
+    if (!fill || fill.parentNode !== propertiesElement)
+        return;
+    const nil = fill.getAttributeNS(XSI_NIL_NS, 'nil') || fill.getAttribute('xsi:nil');
+    if (nil !== 'true')
+        return;
+    const typeEl = propertiesElement.getElementsByTagName('Type')[0];
+    if (!typeEl || typeEl.parentNode !== propertiesElement)
+        return;
+    const typeNames = [];
+    for (let i = 0; i < typeEl.childNodes.length; i++) {
+        const node = typeEl.childNodes[i];
+        if (node.nodeType !== 1)
+            continue;
+        const local = (node.localName || node.tagName || '').replace(/^.*:/, '');
+        if (local === 'Type')
+            typeNames.push((node.textContent || '').trim());
+    }
+    if (typeNames.length !== 1)
+        return;
+    const typeName = typeNames[0];
+    const clearNil = () => {
+        fill.removeAttributeNS(XSI_NIL_NS, 'nil');
+        if (fill.hasAttribute('xsi:nil'))
+            fill.removeAttribute('xsi:nil');
+    };
+    if (typeName === 'xs:string') {
+        clearNil();
+        fill.setAttributeNS(XSI_NIL_NS, 'xsi:type', 'xs:string');
+        fill.textContent = '';
+    }
+    else if (typeName === 'xs:decimal') {
+        clearNil();
+        fill.setAttributeNS(XSI_NIL_NS, 'xsi:type', 'xs:decimal');
+        fill.textContent = '0';
+    }
+}
 function applyAttributeChangesWithDom(childObjectsElement, attr) {
     if (!attr.name)
         return;
+    let createdAttribute = false;
     // Находим существующий атрибут
     // Имя атрибута находится в Properties.Name, а не в отдельном Name
     const attributes = childObjectsElement.getElementsByTagName('Attribute');
@@ -1587,6 +1786,8 @@ function applyAttributeChangesWithDom(childObjectsElement, attr) {
         const nameElement = propertiesElement.ownerDocument.createElement('Name');
         nameElement.textContent = attr.name;
         propertiesElement.appendChild(nameElement);
+        appendNewAttributePropertySkeleton(propertiesElement, attributeSkeletonContext(childObjectsElement));
+        createdAttribute = true;
     }
     // Применяем свойства атрибута (создаем или находим элемент Properties)
     // Убеждаемся, что Name всегда есть в Properties
@@ -1817,6 +2018,9 @@ function applyAttributeChangesWithDom(childObjectsElement, attr) {
             }
             setPropertyValueWithDom(propElement, value);
         }
+    }
+    if (createdAttribute) {
+        alignNewAttributeFillValue(propertiesElement);
     }
 }
 /**

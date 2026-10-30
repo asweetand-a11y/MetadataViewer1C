@@ -23,6 +23,9 @@ import {
   runUpdateConfigDumpFromCommitTxt,
   syncConfigDumpInfoWithFileSystem,
 } from './utils/configDumpInfoUpdater';
+import { FOLDER_SUFFIX_TO_TYPE, createMetadataObject, deleteMetadataObject, isValidMetadataName, resolveCreatableObjectFromTreePath } from './utils/createMetadataObject';
+import { safeReadFile } from './utils/fileUtils';
+import { AUTO_MODULE_TYPES, MODULE_KINDS_BY_TYPE, borrowMetadataObject, isExtensionConfigurationXml, readNamePrefix } from './utils/borrowMetadataObject';
 import { CommitFileLogger } from './utils/commitFileLogger';
 import { validateCommittedXmlContent } from './validation/metadataXmlValidator';
 
@@ -47,6 +50,14 @@ interface MetadataObjects {
   webService: TreeItem[],
   httpService: TreeItem[],
   wsReference: TreeItem[],
+  xdtoPackage: TreeItem[],
+  webSocketClient: TreeItem[],
+  filterCriterion: TreeItem[],
+  functionalOption: TreeItem[],
+  functionalOptionsParameter: TreeItem[],
+  settingsStorage: TreeItem[],
+  commonCommand: TreeItem[],
+  commandGroup: TreeItem[],
   style: TreeItem[],
 	constant: TreeItem[],
 	catalog: TreeItem[],
@@ -181,6 +192,15 @@ export class MetadataView {
     vscode.commands.registerCommand('metadataViewer.refreshObjectByPath', async (filePath: string) => {
       await this.refreshObjectByPath(filePath);
     });
+    vscode.commands.registerCommand('metadataViewer.addMetadataObject', async (item: TreeItem) => {
+      await this.addMetadataObject(context, item);
+    });
+    vscode.commands.registerCommand('metadataViewer.deleteMetadataObject', async (item: TreeItem) => {
+      await this.deleteMetadataObject(context, item);
+    });
+    vscode.commands.registerCommand('metadataViewer.borrowMetadataObject', async (item: TreeItem) => {
+      await this.borrowObjectToExtension(item);
+    });
 	}
 
   /**
@@ -223,6 +243,264 @@ export class MetadataView {
     // Инвалидация кэша для этой конфигурации
     await this.cache.invalidate(configRoot);
     outputChannel.appendLine(`[MetadataView.refreshObjectByPath] Инвалидирован кэш для конфигурации: ${configRoot}`);
+  }
+
+  /**
+   * Создаёт объект метаданных в папке дерева и открывает его в редакторе.
+   */
+  private async addMetadataObject(context: vscode.ExtensionContext, item: TreeItem): Promise<void> {
+    if (!item?.id) {
+      vscode.window.showWarningMessage('Не удалось определить папку метаданных');
+      return;
+    }
+    const suffix = item.id.split('/').pop() ?? '';
+    const xmlObjectType = FOLDER_SUFFIX_TO_TYPE[suffix];
+    if (!xmlObjectType) {
+      vscode.window.showWarningMessage('Для этой папки создание объектов не поддерживается');
+      return;
+    }
+
+    const config = this.findConfigurationNode(item);
+    if (!config?.path || !config.isConfiguration) {
+      vscode.window.showWarningMessage('Не удалось определить конфигурацию');
+      return;
+    }
+    if (config.configType !== 'xml') {
+      vscode.window.showWarningMessage('Создание объектов поддерживается только для XML-выгрузки');
+      return;
+    }
+
+    const folderLabel = typeof item.label === 'string' ? item.label : 'объект';
+    const name = await vscode.window.showInputBox({
+      title: `Новый объект: ${folderLabel}`,
+      prompt: 'Имя (идентификатор)',
+      validateInput: (value) => {
+        const trimmed = value.trim();
+        if (!trimmed) {
+          return 'Укажите имя';
+        }
+        if (!isValidMetadataName(trimmed)) {
+          return 'Имя должно начинаться с буквы или «_» и содержать только буквы, цифры и «_»';
+        }
+        return undefined;
+      },
+    });
+    if (!name) {
+      return;
+    }
+
+    const synonym = await vscode.window.showInputBox({
+      title: `Новый объект: ${name.trim()}`,
+      prompt: 'Синоним',
+      value: name.trim(),
+    });
+    if (synonym === undefined) {
+      return;
+    }
+
+    try {
+      const { filePath } = await createMetadataObject({
+        configRoot: config.path,
+        xmlObjectType,
+        name: name.trim(),
+        synonym,
+        extensionPath: context.extensionUri.fsPath,
+      });
+      await this.cache.invalidate(config.id);
+      config.children = CreateMetadata(config.id);
+      this.dataProvider?.update();
+      await this.expand(config);
+      const { MetadataPanel } = await import('./panels/MetadataPanel');
+      await MetadataPanel.createOrShowForFile(context.extensionUri, filePath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Не удалось создать объект: ${message}`);
+    }
+  }
+
+  private findConfigurationNode(item: TreeItem): TreeItem | null {
+    const itemId = (item?.id ?? '').replace(/\\/g, '/');
+    const configs = (tree[0]?.children ?? []).filter((node) => node.isConfiguration);
+    const matches = configs.filter((cfg) => {
+      const cfgId = (cfg.id ?? '').replace(/\\/g, '/');
+      return cfgId.length > 0 && (itemId === cfgId || itemId.startsWith(cfgId + '/'));
+    });
+    matches.sort((a, b) => b.id.length - a.id.length);
+    if (matches[0]) {
+      if (!matches[0].path) {
+        matches[0].path = matches[0].id;
+      }
+      return matches[0];
+    }
+
+    let current: TreeItem | null = item;
+    const seen = new Set<string>();
+    while (current && !seen.has(current.id)) {
+      seen.add(current.id);
+      if (current.isConfiguration) {
+        if (!current.path) {
+          current.path = current.id;
+        }
+        return current;
+      }
+      if (!current.parentId) {
+        return null;
+      }
+      current = SearchTree(tree[0], current.parentId) ?? SearchTreeByNormalizedId(tree[0], current.parentId);
+    }
+    return null;
+  }
+
+  /**
+   * Удаляет объект метаданных, на котором вызвана команда, и обновляет дерево.
+   */
+  private async deleteMetadataObject(context: vscode.ExtensionContext, item: TreeItem): Promise<void> {
+    if (!item?.path) {
+      vscode.window.showWarningMessage('Не удалось определить файл объекта');
+      return;
+    }
+    const config = this.findConfigurationNode(item);
+    if (!config?.path || !config.isConfiguration) {
+      vscode.window.showWarningMessage('Не удалось определить конфигурацию');
+      return;
+    }
+    if (config.configType !== 'xml') {
+      vscode.window.showWarningMessage('Удаление поддерживается только для XML-выгрузки');
+      return;
+    }
+
+    const identity = resolveCreatableObjectFromTreePath(config.path, item.path);
+    if (!identity) {
+      vscode.window.showWarningMessage('Удаление этого объекта не поддерживается');
+      return;
+    }
+
+    const label = typeof item.label === 'string' ? item.label : identity.name;
+    const confirmed = await vscode.window.showWarningMessage(
+      `Удалить «${label}»? Будут удалены файл объекта, его состав и запись в конфигурации.`,
+      { modal: true },
+      'Удалить'
+    );
+    if (confirmed !== 'Удалить') {
+      return;
+    }
+
+    try {
+      await deleteMetadataObject({
+        configRoot: config.path,
+        xmlObjectType: identity.xmlObjectType,
+        name: identity.name,
+        extensionPath: context.extensionUri.fsPath,
+      });
+      await this.cache.invalidate(config.id);
+      config.children = CreateMetadata(config.id);
+      this.dataProvider?.update();
+      await this.expand(config);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Не удалось удалить объект: ${message}`);
+    }
+  }
+
+  /**
+   * Заимствует объект основной конфигурации в выбранное расширение:
+   * тонкий XML Adopted и пустые модули с PropertyState.
+   */
+  private async borrowObjectToExtension(item: TreeItem): Promise<void> {
+    if (!item?.path) {
+      vscode.window.showWarningMessage('Не удалось определить файл объекта');
+      return;
+    }
+    const config = this.findConfigurationNode(item);
+    if (!config?.path || !config.isConfiguration || config.configType !== 'xml') {
+      vscode.window.showWarningMessage('Заимствование поддерживается только для XML-выгрузки');
+      return;
+    }
+    const identity = resolveCreatableObjectFromTreePath(config.path, item.path);
+    if (!identity) {
+      vscode.window.showWarningMessage('Этот узел заимствовать нельзя. Выберите сам объект, не форму и не реквизит');
+      return;
+    }
+    let sourceConfiguration = '';
+    try {
+      sourceConfiguration = await safeReadFile(pathJoin(config.path, 'Configuration.xml'));
+    } catch {
+      vscode.window.showWarningMessage('Не удалось прочитать Configuration.xml источника');
+      return;
+    }
+    if (isExtensionConfigurationXml(sourceConfiguration)) {
+      vscode.window.showWarningMessage('Заимствуют объект основной конфигурации, не объект расширения');
+      return;
+    }
+
+    const extensions: { label: string; description: string; root: string; id: string }[] = [];
+    for (const node of tree[0]?.children ?? []) {
+      if (!node.isConfiguration || !node.path || node.path === config.path || node.configType !== 'xml') {
+        continue;
+      }
+      try {
+        const xml = await safeReadFile(pathJoin(node.path, 'Configuration.xml'));
+        if (!isExtensionConfigurationXml(xml)) {
+          continue;
+        }
+        const prefix = readNamePrefix(xml);
+        extensions.push({
+          label: prefix || (typeof node.label === 'string' ? node.label : pathBasename(node.path)),
+          description: node.path,
+          root: node.path,
+          id: node.id,
+        });
+      } catch {
+        continue;
+      }
+    }
+    if (extensions.length === 0) {
+      vscode.window.showWarningMessage('В дереве нет расширения. Откройте каталог расширения рядом с конфигурацией');
+      return;
+    }
+    const target = extensions.length === 1
+      ? extensions[0]
+      : await vscode.window.showQuickPick(extensions, { title: 'Расширение для заимствования' });
+    if (!target) {
+      return;
+    }
+
+    const kinds = MODULE_KINDS_BY_TYPE[identity.xmlObjectType] ?? [];
+    let modules = AUTO_MODULE_TYPES.has(identity.xmlObjectType) ? kinds : [] as string[];
+    if (!AUTO_MODULE_TYPES.has(identity.xmlObjectType) && kinds.length > 0) {
+      const picked = await vscode.window.showQuickPick(
+        kinds.map((kind) => ({ label: kind, picked: true })),
+        { title: 'Модули заимствования', canPickMany: true }
+      );
+      if (!picked) {
+        return;
+      }
+      modules = picked.map((item) => item.label);
+    }
+
+    try {
+      const result = await borrowMetadataObject({
+        sourceRoot: config.path,
+        extensionRoot: target.root,
+        xmlObjectType: identity.xmlObjectType,
+        name: identity.name,
+        modules,
+      });
+      const extensionNode = (tree[0]?.children ?? []).find((node) => node.id === target.id);
+      if (extensionNode) {
+        await this.cache.invalidate(extensionNode.id);
+        extensionNode.children = CreateMetadata(extensionNode.id);
+        this.dataProvider?.update();
+        await this.expand(extensionNode);
+      }
+      const text = result.alreadyExisted
+        ? `«${identity.name}» уже был в расширении. Состав и модули не затёрты`
+        : `«${identity.name}» заимствован в расширение`;
+      vscode.window.showInformationMessage(text);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Не удалось заимствовать объект: ${message}`);
+    }
   }
 
   /**
@@ -2624,7 +2902,8 @@ function CreateTreeElements(rootPath: vscode.Uri, element: TreeItem, metadataFil
 
         break;
       case current.$_name.startsWith('SessionParameter.'):
-        previous.sessionParameter.push(GetTreeItem(treeItemId, current.$_name, { icon: 'sessionParameter' }));
+        previous.sessionParameter.push(GetTreeItem(treeItemId, current.$_name, {
+          icon: 'sessionParameter', context: 'object', path: treeItemPath }));
         break;
       case current.$_name.startsWith('Role.'):
         previous.role.push(GetTreeItem(treeItemId, current.$_name, {
@@ -2634,7 +2913,7 @@ function CreateTreeElements(rootPath: vscode.Uri, element: TreeItem, metadataFil
         }));
         break;
       case current.$_name.startsWith('CommonAttribute.'):
-        previous.commonAttribute.push(GetTreeItem(treeItemId, current.$_name, { icon: 'attribute' }));
+        previous.commonAttribute.push(GetTreeItem(treeItemId, current.$_name, { icon: 'attribute', context: 'object', path: treeItemPath }));
         break;
       case current.$_name.startsWith('ExchangePlan.'):
         previous.exchangePlan.push(GetTreeItem(
@@ -2643,15 +2922,39 @@ function CreateTreeElements(rootPath: vscode.Uri, element: TreeItem, metadataFil
             children: FillObjectItemsByMetadata(treeItemId + '/', current, attributeReduceResult) }));
   
         break;
+      case current.$_name.startsWith('FilterCriterion.'):
+        previous.filterCriterion.push(GetTreeItem(treeItemId, current.$_name, {
+          icon: 'filterCriteria', context: 'object', path: treeItemPath }));
+        break;
       case current.$_name.startsWith('EventSubscription.'):
         previous.eventSubscription.push(GetTreeItem(
           treeItemId, current.$_name, {
-            icon: 'eventSubscription', context: 'handler', path: treeItemPath }));
+            icon: 'eventSubscription', context: 'object_and_handler', path: treeItemPath }));
         break;
       case current.$_name.startsWith('ScheduledJob.'):
         previous.scheduledJob.push(GetTreeItem(
           treeItemId, current.$_name, {
-            icon: 'scheduledJob', context: 'handler', path: treeItemPath }));
+            icon: 'scheduledJob', context: 'object_and_handler', path: treeItemPath }));
+        break;
+      case current.$_name.startsWith('FunctionalOptionsParameter.'):
+        previous.functionalOptionsParameter.push(GetTreeItem(treeItemId, current.$_name, {
+          context: 'object', path: treeItemPath }));
+        break;
+      case current.$_name.startsWith('FunctionalOption.'):
+        previous.functionalOption.push(GetTreeItem(treeItemId, current.$_name, {
+          context: 'object', path: treeItemPath }));
+        break;
+      case current.$_name.startsWith('SettingsStorage.'):
+        previous.settingsStorage.push(GetTreeItem(treeItemId, current.$_name, {
+          context: 'object', path: treeItemPath }));
+        break;
+      case current.$_name.startsWith('CommonCommand.'):
+        previous.commonCommand.push(GetTreeItem(treeItemId, current.$_name, {
+          context: 'object', path: treeItemPath }));
+        break;
+      case current.$_name.startsWith('CommandGroup.'):
+        previous.commandGroup.push(GetTreeItem(treeItemId, current.$_name, {
+          context: 'object', path: treeItemPath }));
         break;
       case current.$_name.startsWith('CommonForm.'):
         previous.commonForm.push(GetTreeItem(
@@ -2691,7 +2994,16 @@ function CreateTreeElements(rootPath: vscode.Uri, element: TreeItem, metadataFil
 
         break;
       case current.$_name.startsWith('WSReference.'):
-        previous.wsReference.push(GetTreeItem(treeItemId, current.$_name, { icon: 'wsLink' }));
+        previous.wsReference.push(GetTreeItem(treeItemId, current.$_name, {
+          icon: 'wsLink', context: 'object', path: treeItemPath }));
+        break;
+      case current.$_name.startsWith('XDTOPackage.'):
+        previous.xdtoPackage.push(GetTreeItem(treeItemId, current.$_name, {
+          context: 'object', path: treeItemPath }));
+        break;
+      case current.$_name.startsWith('WebSocketClient.'):
+        previous.webSocketClient.push(GetTreeItem(treeItemId, current.$_name, {
+          icon: 'http', context: 'object', path: treeItemPath }));
         break;
       case current.$_name.startsWith('Style.'):
         previous.style.push(GetTreeItem(treeItemId, current.$_name, { icon: 'style' }));
@@ -2717,11 +3029,11 @@ function CreateTreeElements(rootPath: vscode.Uri, element: TreeItem, metadataFil
   
         break;
       case current.$_name.startsWith('DocumentNumerator.'):
-        previous.documentNumerator.push(GetTreeItem( treeItemId, current.$_name, { icon: 'documentNumerator' }));
+        previous.documentNumerator.push(GetTreeItem( treeItemId, current.$_name, { icon: 'documentNumerator', context: 'object', path: treeItemPath }));
   
         break;
       case current.$_name.startsWith('Sequence.'):
-        previous.sequence.push(GetTreeItem( treeItemId, current.$_name, { icon: 'sequence' }));
+        previous.sequence.push(GetTreeItem( treeItemId, current.$_name, { icon: 'sequence', context: 'object', path: treeItemPath }));
   
         break;
       case current.$_name.startsWith('DocumentJournal.'):
@@ -2850,6 +3162,14 @@ function CreateTreeElements(rootPath: vscode.Uri, element: TreeItem, metadataFil
     webService: [],
     httpService: [],
     wsReference: [],
+    xdtoPackage: [],
+    webSocketClient: [],
+    filterCriterion: [],
+    functionalOption: [],
+    functionalOptionsParameter: [],
+    settingsStorage: [],
+    commonCommand: [],
+    commandGroup: [],
     style: [],
     constant: [],
 		catalog: [],
@@ -2879,14 +3199,22 @@ function CreateTreeElements(rootPath: vscode.Uri, element: TreeItem, metadataFil
 	SearchTree(element, element.id + '/roles')!.children = reduceResult.role;
 	SearchTree(element, element.id + '/commonAttributes')!.children = reduceResult.commonAttribute;
 	SearchTree(element, element.id + '/exchangePlans')!.children = reduceResult.exchangePlan;
+	SearchTree(element, element.id + '/filterCriteria')!.children = reduceResult.filterCriterion;
 	SearchTree(element, element.id + '/eventSubscriptions')!.children = reduceResult.eventSubscription;
 	SearchTree(element, element.id + '/scheduledJobs')!.children = reduceResult.scheduledJob;
+	SearchTree(element, element.id + '/functionalOptions')!.children = reduceResult.functionalOption;
+	SearchTree(element, element.id + '/functionalOptionsParameters')!.children = reduceResult.functionalOptionsParameter;
+	SearchTree(element, element.id + '/settingsStorages')!.children = reduceResult.settingsStorage;
+	SearchTree(element, element.id + '/commonCommands')!.children = reduceResult.commonCommand;
+	SearchTree(element, element.id + '/commandGroups')!.children = reduceResult.commandGroup;
 	SearchTree(element, element.id + '/commonForms')!.children = reduceResult.commonForm;
 	SearchTree(element, element.id + '/commonTemplates')!.children = reduceResult.commonTemplate;
 	SearchTree(element, element.id + '/commonPictures')!.children = reduceResult.commonPicture;
+	SearchTree(element, element.id + '/xdtoPackages')!.children = reduceResult.xdtoPackage;
 	SearchTree(element, element.id + '/webServices')!.children = reduceResult.webService;
 	SearchTree(element, element.id + '/httpServices')!.children = reduceResult.httpService;
 	SearchTree(element, element.id + '/wsReferences')!.children = reduceResult.wsReference;
+	SearchTree(element, element.id + '/webSocketClients')!.children = reduceResult.webSocketClient;
 	SearchTree(element, element.id + '/styles')!.children = reduceResult.style;
 	SearchTree(element, element.id + '/constants')!.children = reduceResult.constant;
 	SearchTree(element, element.id + '/catalogs')!.children = reduceResult.catalog;
@@ -3633,8 +3961,22 @@ export class NodeWithIdTreeDataProvider implements vscode.TreeDataProvider<TreeI
   }
 }
 
+function markCreatableFolders(items: TreeItem[]): TreeItem[] {
+  const walk = (nodes?: TreeItem[]) => {
+    nodes?.forEach((node) => {
+      const suffix = node.id.split('/').pop() ?? '';
+      if (FOLDER_SUFFIX_TO_TYPE[suffix]) {
+        node.contextValue = 'metadataFolder';
+      }
+      walk(node.children);
+    });
+  };
+  walk(items);
+  return items;
+}
+
 function CreateMetadata(idPrefix: string) {
-  return [
+  return markCreatableFolders([
     GetTreeItem(idPrefix + '/common', 'Общие', { icon: 'common', children: [
       GetTreeItem(idPrefix + '/subsystems', 'Подсистемы', { icon: 'subsystem', children: [] }),
       GetTreeItem(idPrefix + '/commonModules', 'Общие модули', { icon: 'commonModule', children: [] }),
@@ -3659,6 +4001,7 @@ function CreateMetadata(idPrefix: string) {
       GetTreeItem(idPrefix + '/webServices', 'Web-сервисы', { icon: 'ws', children: [] }),
       GetTreeItem(idPrefix + '/httpServices', 'HTTP-сервисы', { icon: 'http', children: [] }),
       GetTreeItem(idPrefix + '/wsReferences', 'WS-ссылки', { icon: 'wsLink', children: [] }),
+      GetTreeItem(idPrefix + '/webSocketClients', 'WebSocket-клиенты', { icon: 'http', children: [] }),
       //GetTreeItem(idPrefix + '/', 'Сервисы интеграции', { children: [] }),
       GetTreeItem(idPrefix + '/styleItems', 'Элементы стиля', { children: [] }),
       GetTreeItem(idPrefix + '/styles', 'Стили', { icon: 'style', children: [] }),
@@ -3684,7 +4027,7 @@ function CreateMetadata(idPrefix: string) {
     GetTreeItem(idPrefix + '/businessProcesses', 'Бизнес-процессы', { icon: 'businessProcess', children: [] }),
     GetTreeItem(idPrefix + '/tasks', 'Задачи', { icon: 'task', children: [] }),
     GetTreeItem(idPrefix + '/externalDataSources', 'Внешние источники данных', { icon: 'externalDataSource', children: [] }),
-  ];
+  ]);
 }
 
 function GetMetadataName(name: string) {

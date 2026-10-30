@@ -9,6 +9,17 @@ interface SimpleMultilingualEditorProps {
   onChange: (value: any) => void;
 }
 
+/** Comment в метаданных — строка, не многоязычный синоним. */
+export function commentText(value: any): string {
+  if (value == null) return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+  const item = value['v8:item'] ?? value.item;
+  const list = Array.isArray(item) ? item : item ? [item] : [];
+  const ru = list.find((entry: any) => String(entry?.['v8:lang'] ?? entry?.lang ?? '').toLowerCase() === 'ru') || list[0];
+  if (ru && typeof ru === 'object') return String(ru['v8:content'] ?? ru.content ?? '');
+  return '';
+}
+
 export const SimpleMultilingualEditor: React.FC<SimpleMultilingualEditorProps> = ({ value, onChange }) => {
   const normalizeValue = (val: any): Array<{ lang: string; content: string }> => {
     if (!val) return [{ lang: 'ru', content: '' }];

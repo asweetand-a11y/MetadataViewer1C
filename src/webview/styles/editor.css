@@ -528,48 +528,74 @@
   color: var(--vscode-foreground);
 }
 
-.qualifiers-panel {
-  margin-bottom: 20px;
-  padding: 15px;
-  background: var(--vscode-input-background);
-  border: 1px solid var(--vscode-input-border);
+/* Квалификаторы: компактная строка «подпись + поле».
+   Селекторы с .type-editor-modal перебивают поздние правила .rjsf input/select/label,
+   которые иначе растягивают поля на всю ширину колонки. */
+.type-editor-modal .qualifiers-panel {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-panel-border);
   border-radius: 4px;
 }
 
-.qualifier-group {
-  margin-bottom: 12px;
-}
-
-.qualifier-group:last-child {
-  margin-bottom: 0;
-}
-
-.qualifier-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
-  font-weight: 500;
+.type-editor-modal .qualifiers-panel h5 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--vscode-foreground);
 }
 
-.qualifier-group input[type="number"] {
-  width: 100%;
-  padding: 6px 10px;
-  background: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border);
-  border-radius: 4px;
-  font-size: 13px;
+.type-editor-modal .qualifier-group {
+  display: grid;
+  grid-template-columns: 140px 168px;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px 0;
 }
 
-.qualifier-group select {
-  width: 100%;
-  padding: 6px 10px;
-  background: var(--vscode-dropdown-background);
-  color: var(--vscode-dropdown-foreground);
-  border: 1px solid var(--vscode-input-border);
-  border-radius: 4px;
-  font-size: 13px;
+.type-editor-modal .qualifier-group:last-child {
+  margin-bottom: 0;
+}
+
+.type-editor-modal .qualifier-group label {
+  display: block;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--vscode-descriptionForeground);
+}
+
+.type-editor-modal .qualifier-group input[type="number"],
+.type-editor-modal .qualifier-group select {
+  width: 168px;
+  max-width: 100%;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 2px 8px;
+  line-height: 20px;
+  font-size: 12px;
+  font-family: var(--vscode-font-family);
+  border-radius: 3px;
+  flex: none;
+  align-self: center;
+}
+
+.type-editor-modal .qualifier-group input[type="number"] {
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+}
+
+.type-editor-modal .qualifier-group select {
+  color-scheme: light dark;
+  background: var(--vscode-dropdown-background, var(--vscode-input-background));
+  color: var(--vscode-dropdown-foreground, var(--vscode-input-foreground));
+  border: 1px solid var(--vscode-dropdown-border, var(--vscode-input-border, var(--vscode-panel-border)));
   cursor: pointer;
 }
 
@@ -1334,6 +1360,10 @@
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
   margin-top: 16px;
+}
+
+.additional-properties-list > .property-card-wide {
+  grid-column: 1 / -1;
 }
 
 /* Forms and Commands Lists */

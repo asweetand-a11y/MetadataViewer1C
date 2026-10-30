@@ -6,6 +6,7 @@ import { IntentRouter } from './routing/IntentRouter';
 import { GeneratorFactory } from './generators/GeneratorFactory';
 import { outputChannel, statusBarProgress } from '../extension';
 import { QueryStringEditor } from '../queryStringEditor';
+import { registerBslCompletion } from '../bslCompletion/bslCompletionProvider';
 
 /**
  * BSL-файл: languageId от Language 1C (bsl/1c) или расширение .bsl.
@@ -54,6 +55,8 @@ function resolveDocument(docArg: vscode.TextDocument | undefined): vscode.TextDo
 }
 
 export function initBslCursorFeatures(context: vscode.ExtensionContext) {
+  registerBslCompletion(context);
+
   // Code actions for // @gen in BSL
   const detector = new GenCommentDetector();
   context.subscriptions.push(
@@ -183,7 +186,7 @@ export function initBslCursorFeatures(context: vscode.ExtensionContext) {
       }
 
       const doc = ed.document;
-      if (doc.languageId !== 'bsl') {
+      if (!isBslDocument(doc)) {
         vscode.window.showWarningMessage('Команда доступна только для BSL файлов');
         return;
       }

@@ -12,14 +12,15 @@ interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  width?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, title, onClose, children, footer }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, title, onClose, children, footer, width }) => {
   if (!isOpen) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" style={width ? { width, maxWidth: '92vw' } : undefined} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{title}</h3>
           <UiButton secondary icon="close" iconOnly title="Закрыть" onClick={onClose} />

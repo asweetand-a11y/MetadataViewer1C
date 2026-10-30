@@ -3,7 +3,7 @@
  * JSON Schema для конкретных типов объектов метаданных 1С
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSchemaForObjectType = exports.objectTypeSchemas = exports.settingsStorageSchema = exports.functionalOptionsParameterSchema = exports.functionalOptionSchema = exports.filterCriterionSchema = exports.styleItemSchema = exports.wSReferenceSchema = exports.commonPictureSchema = exports.commonTemplateSchema = exports.commandGroupSchema = exports.commonCommandSchema = exports.scheduledJobSchema = exports.eventSubscriptionSchema = exports.commonAttributeSchema = exports.sessionParameterSchema = exports.roleSchema = exports.subsystemSchema = exports.hTTPServiceSchema = exports.webServiceSchema = exports.documentNumeratorSchema = exports.documentJournalSchema = exports.exchangePlanSchema = exports.definedTypeSchema = exports.commonFormSchema = exports.commonModuleSchema = exports.constantSchema = exports.taskSchema = exports.businessProcessSchema = exports.chartOfCalculationTypesSchema = exports.chartOfCharacteristicTypesSchema = exports.dataProcessorSchema = exports.reportSchema = exports.calculationRegisterSchema = exports.accumulationRegisterSchema = exports.informationRegisterSchema = exports.formObjectSchema = exports.enumSchema = exports.catalogSchema = exports.documentSchema = exports.commandSchema = exports.formSchema = exports.tabularSectionSchema = exports.attributeSchema = void 0;
+exports.getSchemaForObjectType = exports.objectTypeSchemas = exports.webSocketClientSchema = exports.xdtoPackageSchema = exports.settingsStorageSchema = exports.functionalOptionsParameterSchema = exports.functionalOptionSchema = exports.filterCriterionSchema = exports.styleItemSchema = exports.wSReferenceSchema = exports.commonPictureSchema = exports.commonTemplateSchema = exports.commandGroupSchema = exports.commonCommandSchema = exports.scheduledJobSchema = exports.eventSubscriptionSchema = exports.commonAttributeSchema = exports.sessionParameterSchema = exports.roleSchema = exports.subsystemSchema = exports.hTTPServiceSchema = exports.webServiceSchema = exports.documentNumeratorSchema = exports.documentJournalSchema = exports.exchangePlanSchema = exports.definedTypeSchema = exports.commonFormSchema = exports.commonModuleSchema = exports.constantSchema = exports.taskSchema = exports.businessProcessSchema = exports.chartOfCalculationTypesSchema = exports.chartOfCharacteristicTypesSchema = exports.dataProcessorSchema = exports.reportSchema = exports.calculationRegisterSchema = exports.accumulationRegisterSchema = exports.informationRegisterSchema = exports.formObjectSchema = exports.enumSchema = exports.catalogSchema = exports.documentSchema = exports.commandSchema = exports.formSchema = exports.tabularSectionSchema = exports.attributeSchema = void 0;
 const baseSchema_1 = require("./baseSchema");
 /**
  * Схема для реквизита (Attribute)
@@ -1364,17 +1364,9 @@ exports.webServiceSchema = {
     title: 'WebService',
     properties: {
         ...baseSchema_1.basePropertiesSchema.properties,
-        Namespace: {
-            type: 'string',
-            title: 'Namespace',
-            enum: ["http://v8.1c.ru", "http://www.1c.ru/dmil", "http://www.1c.ru/SSL/EnterpriseDataExchange_1_0_1_1", "http://www.1c.ru/SSL/EnterpriseDataUpload_1_0_1_1", "http://www.1c.ru/SSL/Exchange"]
-        },
+        Namespace: { type: 'string', title: 'Namespace' },
         XDTOPackages: { type: 'object', title: 'XDTOPackages' },
-        DescriptorFileName: {
-            type: 'string',
-            title: 'DescriptorFileName',
-            enum: ["ws_Cons.1cws", "dmil.1cws", "EnterpriseDataExchange_1_0_1_1.1cws", "EnterpriseDataUpload_1_0_1_1.1cws", "exchange.1cws"]
-        },
+        DescriptorFileName: { type: 'string', title: 'DescriptorFileName' },
         ReuseSessions: { type: 'string', title: 'ReuseSessions' },
         SessionMaxAge: { type: 'number', title: 'SessionMaxAge' },
     },
@@ -1388,11 +1380,7 @@ exports.hTTPServiceSchema = {
     title: 'HTTPService',
     properties: {
         ...baseSchema_1.basePropertiesSchema.properties,
-        RootURL: {
-            type: 'string',
-            title: 'RootURL',
-            enum: ["ChatbotsWebhook", "exchange_dsl_1_0_0_1", "MIS", "billing", "applicants"]
-        },
+        RootURL: { type: 'string', title: 'RootURL' },
         ReuseSessions: { type: 'string', title: 'ReuseSessions' },
         SessionMaxAge: { type: 'number', title: 'SessionMaxAge' },
     },
@@ -1545,16 +1533,8 @@ exports.eventSubscriptionSchema = {
     properties: {
         ...baseSchema_1.basePropertiesSchema.properties,
         Source: { type: 'object', title: 'Source' },
-        Event: {
-            type: 'string',
-            title: 'Event',
-            enum: ["BeforeWrite", "OnWrite", "UndoPosting", "Posting"]
-        },
-        Handler: {
-            type: 'string',
-            title: 'Handler',
-            enum: ["CommonModule.ВерсионированиеОбъектовСобытия.ЗаписатьВерсиюДокумента", "CommonModule.ibs_ИнтеграцияСМИС.ЗарегистрироватьФизлицоКОтправке", "CommonModule.ibs_ИнтеграцияСМИС.ЗарегистрироватьФизлицоКОтправкиВМИСПриЗаписиРегистров", "CommonModule.ibs_ИнтеграцияСМИС.ОбработкаОтменыПроведенияДокументыДляМИС", "CommonModule.ibs_ИнтеграцияСМИС.ОбработкаПроведенияДокументыДляМИС"]
-        },
+        Event: { type: 'string', title: 'Event' },
+        Handler: { type: 'string', title: 'Handler' },
     },
     required: ['Name']
 };
@@ -1566,11 +1546,7 @@ exports.scheduledJobSchema = {
     title: 'ScheduledJob',
     properties: {
         ...baseSchema_1.basePropertiesSchema.properties,
-        MethodName: {
-            type: 'string',
-            title: 'MethodName',
-            enum: ["CommonModule.ibs_ИнтеграцияСМИС.СформироватьИОтправитьСообщенияВМИС", "CommonModule.ОбработкаНовостейСлужебный.ВсеОбновленияНовостей", "CommonModule.ОбработкаНовостейСлужебный.ВсеОбновленияНовостейДляОбластиДанных", "CommonModule.ЗагрузкаКандидатовИзИнтернетаСлужебный.ОбработатьОчередьЗагрузкиКандидатов", "CommonModule.РаботаСКурсамиВалютЛокализация.ПриЗагрузкеАктуальныхКурсов"]
-        },
+        MethodName: { type: 'string', title: 'MethodName' },
         Description: { type: 'string', title: 'Description' },
         Key: { type: 'string', title: 'Key' },
         Use: {
@@ -1598,11 +1574,7 @@ exports.commonCommandSchema = {
     title: 'CommonCommand',
     properties: {
         ...baseSchema_1.basePropertiesSchema.properties,
-        Group: {
-            type: 'string',
-            title: 'Group',
-            enum: ["ActionsPanelTools", "ActionsPanelReports", "NavigationPanelOrdinary"]
-        },
+        Group: { type: 'string', title: 'Group' },
         Representation: { type: 'string', title: 'Representation' },
         ToolTip: { type: 'string', title: 'ToolTip' },
         Picture: { type: 'string', title: 'Picture' },
@@ -1742,11 +1714,7 @@ exports.functionalOptionSchema = {
     title: 'FunctionalOption',
     properties: {
         ...baseSchema_1.basePropertiesSchema.properties,
-        Location: {
-            type: 'string',
-            title: 'Location',
-            enum: ["Constant.ibs_ИспользоватьПодсистемуПремирования", "Constant.ibs_ИспользоватьЦентрализациюДолжностей", "InformationRegister.НастройкиРасчетаЗарплатыРасширенный.Resource.АвтоматическиОграничиватьИспользованиеДокументов", "Constant.ДатаОбновленияПовторноИспользуемыхЗначенийМРО", "InformationRegister.НастройкиВерсионированияОбъектов.Resource.Вариант"]
-        },
+        Location: { type: 'string', title: 'Location' },
         PrivilegedGetMode: {
             type: 'string',
             title: 'PrivilegedGetMode',
@@ -1789,6 +1757,29 @@ exports.settingsStorageSchema = {
     },
     required: ['Name']
 };
+/**
+ * Схема для XDTOPackage
+ */
+exports.xdtoPackageSchema = {
+    type: 'object',
+    title: 'XDTOPackage',
+    properties: {
+        ...baseSchema_1.basePropertiesSchema.properties,
+        Namespace: { type: 'string', title: 'Namespace' },
+    },
+    required: ['Name']
+};
+/**
+ * Схема для WebSocketClient. Остальные поля XML дописывает generateSchema.
+ */
+exports.webSocketClientSchema = {
+    type: 'object',
+    title: 'WebSocketClient',
+    properties: {
+        ...baseSchema_1.basePropertiesSchema.properties,
+    },
+    required: ['Name']
+};
 exports.objectTypeSchemas = {
     Document: exports.documentSchema,
     Catalog: exports.catalogSchema,
@@ -1828,6 +1819,8 @@ exports.objectTypeSchemas = {
     FunctionalOption: exports.functionalOptionSchema,
     FunctionalOptionsParameter: exports.functionalOptionsParameterSchema,
     SettingsStorage: exports.settingsStorageSchema,
+    XDTOPackage: exports.xdtoPackageSchema,
+    WebSocketClient: exports.webSocketClientSchema,
 };
 /**
  * Получить схему для типа объекта

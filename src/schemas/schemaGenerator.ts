@@ -64,7 +64,12 @@ function generateSchemaFromObject(obj: any, path: string = ''): JSONSchema7 {
         continue;
       }
 
-      if (cleanKey === 'Synonym' || cleanKey === 'Comment' || cleanKey === 'ToolTip') {
+      if (cleanKey === 'Comment') {
+        properties[cleanKey] = { type: 'string', title: 'Комментарий' };
+        continue;
+      }
+
+      if (cleanKey === 'Synonym' || cleanKey === 'ToolTip') {
         properties[cleanKey] = {
           oneOf: [
             { type: 'string' },
@@ -84,7 +89,7 @@ function generateSchemaFromObject(obj: any, path: string = ''): JSONSchema7 {
               }
             }
           ],
-          title: cleanKey === 'Synonym' ? 'Синоним' : cleanKey === 'Comment' ? 'Комментарий' : 'Подсказка'
+          title: cleanKey === 'Synonym' ? 'Синоним' : 'Подсказка'
         };
         continue;
       }
@@ -114,19 +119,39 @@ export function generateSchema(objectType: string, xmlData: any): JSONSchema7 {
     return schemaCache.get(cacheKey)!;
   }
 
-  // Пытаемся получить готовую схему
+  // Готовая схема или базовые свойства.
   let schema = getSchemaForObjectType(objectType);
 
-  // Если схемы нет, генерируем автоматически
-  if (schema === basePropertiesSchema && xmlData.properties) {
+  // Поля из XML, которых нет в схеме, добавляем, чтобы узкая схема их не прятала.
+  if (xmlData.properties) {
     const generatedSchema = generateSchemaFromObject(xmlData.properties);
-    schema = {
-      ...basePropertiesSchema,
-      properties: {
-        ...basePropertiesSchema.properties,
-        ...generatedSchema.properties
+    const generatedProps = (generatedSchema.properties ?? {}) as Record<string, JSONSchema7>;
+    const known = (schema.properties ?? {}) as Record<string, JSONSchema7>;
+    if (schema === basePropertiesSchema) {
+      schema = {
+        ...basePropertiesSchema,
+        properties: {
+          ...basePropertiesSchema.properties,
+          ...generatedProps
+        }
+      };
+    } else {
+      const extra: Record<string, JSONSchema7> = {};
+      for (const [key, value] of Object.entries(generatedProps)) {
+        if (!(key in known)) {
+          extra[key] = value;
+        }
       }
-    };
+      if (Object.keys(extra).length > 0) {
+        schema = {
+          ...schema,
+          properties: {
+            ...known,
+            ...extra
+          }
+        };
+      }
+    }
   }
 
   // Кэшируем результат

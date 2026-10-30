@@ -33,6 +33,7 @@ const predefinedParser_1 = require("../xmlParsers/predefinedParser");
 const formParser_1 = require("../xmlParsers/formParser");
 const field_values_1 = require("../metadata/field-values");
 const metadata_types_1 = require("../metadata/metadata-types");
+const functionalOptionCatalog_1 = require("../utils/functionalOptionCatalog");
 const fileUtils_1 = require("../utils/fileUtils");
 const xmlUtils_1 = require("../utils/xmlUtils");
 const xmlStringPatcher_1 = require("../utils/xmlStringPatcher");
@@ -40,6 +41,9 @@ const xmlStructureValidator_1 = require("../validation/xmlStructureValidator");
 const xmlDomUtils_1 = require("../utils/xmlDomUtils");
 const xmlDiffMerge_1 = require("../utils/xmlDiffMerge");
 const configurationXmlUpdater_1 = require("../utils/configurationXmlUpdater");
+const configDumpInfoUpdater_1 = require("../utils/configDumpInfoUpdater");
+const oneCXmlStyle_1 = require("../utils/oneCXmlStyle");
+const extensionPropertyState_1 = require("../utils/extensionPropertyState");
 const subsystemMembership_1 = require("../utils/subsystemMembership");
 const metadataView_1 = require("../metadataView");
 const extension_1 = require("../extension");
@@ -472,10 +476,11 @@ class MetadataPanel {
     /**
      * Сканирование метаданных конфигурации для получения списков регистров и ссылочных типов
      */
-    async scanMetadataForWebview() {
+    async scanMetadataForWebview(options) {
         const registers = [];
         const referenceTypes = [];
         const informationRegistersSchedule = [];
+        let functionalOptionMembers = [];
         try {
             // Определяем корень конфигурации для сканирования.
             // Возможны два варианта структуры:
@@ -722,11 +727,14 @@ class MetadataPanel {
                 }
             }
             informationRegistersSchedule.sort((a, b) => a.displayName.localeCompare(b.displayName, "ru"));
+            if (options?.functionalOptionMembers) {
+                functionalOptionMembers = await (0, functionalOptionCatalog_1.collectFunctionalOptionMembers)(scanResult.objects);
+            }
         }
         catch (error) {
             console.error('[MetadataPanel.scanMetadataForWebview] Ошибка сканирования метаданных:', error);
         }
-        return { registers, referenceTypes, informationRegistersSchedule };
+        return { registers, referenceTypes, informationRegistersSchedule, functionalOptionMembers };
     }
     /**
      * Заполняет recorderDocumentNames у объектов-регистров по фактическим RegisterRecords в XML документов.
@@ -767,7 +775,12 @@ class MetadataPanel {
         }
         console.log('[MetadataPanel.postMetadata] Webview готов, сканируем метаданные...');
         // Сканируем метаданные для получения списков регистров и ссылочных типов
-        const metadata = await this.scanMetadataForWebview();
+        const sourcePath = String(this.parsedObjects[0]?.sourcePath || '').replace(/\\/g, '/');
+        const loadFunctionalOptionMembers = sourcePath.includes('/FunctionalOptions/')
+            && !sourcePath.includes('/FunctionalOptionsParameters/');
+        const metadata = await this.scanMetadataForWebview({
+            functionalOptionMembers: loadFunctionalOptionMembers,
+        });
         await this.enrichParsedObjectsRecorderDocuments();
         const message = {
             type: "init",
@@ -776,6 +789,7 @@ class MetadataPanel {
                 registers: metadata.registers,
                 referenceTypes: metadata.referenceTypes,
                 informationRegistersSchedule: metadata.informationRegistersSchedule,
+                functionalOptionMembers: metadata.functionalOptionMembers,
             },
         };
         console.log('[MetadataPanel.postMetadata] Отправка сообщения init, объектов:', this.parsedObjects.length);
@@ -1305,7 +1319,8 @@ class MetadataPanel {
             }
             // КРИТИЧНО: Сохраняем файл только если валидация прошла успешно
             try {
-                await (0, fileUtils_1.safeWriteFile)(obj.sourcePath, updatedXml);
+                updatedXml = (0, extensionPropertyState_1.applyAdoptedExtensionFlags)(updatedXml, obj.sourcePath);
+                await (0, fileUtils_1.safeWriteFile)(obj.sourcePath, (0, oneCXmlStyle_1.finalizeOneCXml)(updatedXml, (0, oneCXmlStyle_1.styleForExistingOneCXml)(obj.sourcePath)));
                 // После сохранения объекта обновляем ConfigDumpInfo.xml, чтобы дамп "увидел" новые реквизиты/ТЧ.
                 // Это особенно важно при добавлении новых элементов (Attribute/TabularSection/Attribute ТЧ),
                 // т.к. ConfigDumpInfo содержит отдельные записи для них.
@@ -1323,6 +1338,10 @@ class MetadataPanel {
                             await (0, fileUtils_1.createBackup)(configDumpInfoPath);
                             await (0, fileUtils_1.safeWriteFile)(configDumpInfoPath, patched.updatedXml);
                             console.log(`[MetadataPanel.handleSave] ConfigDumpInfo.xml обновлён: добавлено записей: ${patched.addedCount}, удалено: ${patched.removedCount}`);
+                        }
+                        const objectFqn = `${xmlObjectType}.${obj.name}`;
+                        if (!configDumpInfoXml.includes(`name="${objectFqn}"`)) {
+                            await (0, configDumpInfoUpdater_1.markConfigurationChangedInDump)(this.configRoot);
                         }
                     }
                 }

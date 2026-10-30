@@ -2,7 +2,7 @@
 	"name": "1c-configuration-tree",
 	"displayName": "1C Configuration tree",
 	"description": "Дерево конфигураций 1С: Предприятие 8",
-	"version": "2.10.14",
+	"version": "2.10.21",
 	"publisher": "whiterabbit",
 	"repository": {
 		"type": "git",
@@ -40,6 +40,24 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"configurationDefaults": {
+			"[bsl]": {
+				"editor.quickSuggestions": {
+					"other": true,
+					"comments": false,
+					"strings": false
+				},
+				"editor.suggestOnTriggerCharacters": true
+			},
+			"[1c]": {
+				"editor.quickSuggestions": {
+					"other": true,
+					"comments": false,
+					"strings": false
+				},
+				"editor.suggestOnTriggerCharacters": true
+			}
+		},
 		"mcpServerDefinitionProviders": [
 			{
 				"id": "metadataViewer.onecAi",
@@ -186,6 +204,24 @@
 				"icon": "$(edit)"
 			},
 			{
+				"command": "metadataViewer.addMetadataObject",
+				"title": "%1c-metadata-viewer.addMetadataObject.title%",
+				"icon": "$(add)"
+			},
+			{
+				"command": "metadataViewer.deleteMetadataObject",
+				"title": "%1c-metadata-viewer.deleteMetadataObject.title%",
+				"icon": "$(trash)"
+			},
+			{
+				"command": "metadataViewer.borrowMetadataObject",
+				"title": "Заимствовать в расширение"
+			},
+			{
+				"command": "metadataViewer.insertMethodInterceptor",
+				"title": "Перехватчик метода расширения"
+			},
+			{
 				"command": "metadataViewer.validateMetadataXml",
 				"title": "Проверить XML метаданных (XDTO)"
 			},
@@ -248,7 +284,7 @@
 				{
 					"command": "metadataViewer.openObjectModule",
 					"group": "inline",
-					"when": "viewItem =~ /object/"
+					"when": "viewItem =~ /object/ && !(viewItem =~ /handler/)"
 				},
 				{
 					"command": "metadataViewer.openManagerModule",
@@ -258,7 +294,7 @@
 				{
 					"command": "metadataViewer.openObjectModule",
 					"group": "bsl",
-					"when": "viewItem =~ /object/"
+					"when": "viewItem =~ /object/ && !(viewItem =~ /handler/)"
 				},
 				{
 					"command": "metadataViewer.openManagerModule",
@@ -278,12 +314,27 @@
 				{
 					"command": "metadataViewer.openDcsEditor",
 					"group": "edit",
-					"when": "viewItem =~ /object/"
+					"when": "viewItem =~ /object/ && !(viewItem =~ /handler/)"
+				},
+				{
+					"command": "metadataViewer.addMetadataObject",
+					"group": "navigation",
+					"when": "viewItem == metadataFolder"
+				},
+				{
+					"command": "metadataViewer.deleteMetadataObject",
+					"group": "navigation",
+					"when": "viewItem =~ /^(object|object_and_manager|object_and_handler|object_and_manager_and_predefined|recordset_and_manager|valueManager_and_manager|manager|module)$/"
+				},
+				{
+					"command": "metadataViewer.borrowMetadataObject",
+					"group": "navigation",
+					"when": "viewItem =~ /^(object|object_and_manager|object_and_handler|object_and_manager_and_predefined|recordset_and_manager|valueManager_and_manager|manager|module)$/"
 				},
 				{
 					"command": "metadataViewer.editMetadata",
 					"group": "inline",
-					"when": "viewItem =~ /(object|manager|recordset|valueManager|module|form|predefined)/ && !(viewItem =~ /(handler|subsystem|command|tabularSection|attribute|dimension|resource|column|value|accountingFlag|extDimensionAccountingFlag|addressingAttribute|parameter|urlTemplate|operation)/)"
+					"when": "viewItem =~ /(object|manager|recordset|valueManager|module|form|predefined)/ && !(viewItem =~ /(subsystem|command|tabularSection|attribute|dimension|resource|column|value|accountingFlag|extDimensionAccountingFlag|addressingAttribute|parameter|urlTemplate|operation)/)"
 				},
 				{
 					"command": "metadataViewer.openModule",
@@ -313,7 +364,7 @@
 				{
 					"command": "metadataViewer.editMetadata",
 					"group": "edit",
-					"when": "viewItem =~ /(object|manager|recordset|valueManager|module|form|predefined)/ && !(viewItem =~ /(handler|subsystem|command|tabularSection|attribute|dimension|resource|column|value|accountingFlag|extDimensionAccountingFlag|addressingAttribute|parameter|urlTemplate|operation)/)"
+					"when": "viewItem =~ /(object|manager|recordset|valueManager|module|form|predefined)/ && !(viewItem =~ /(subsystem|command|tabularSection|attribute|dimension|resource|column|value|accountingFlag|extDimensionAccountingFlag|addressingAttribute|parameter|urlTemplate|operation)/)"
 				},
 				{
 					"command": "metadataViewer.refreshObjectStructure",
@@ -394,6 +445,11 @@
 				{
 					"command": "metadataViewer.editQueryFromEditor",
 					"group": "1c-metadata@2",
+					"when": "editorLangId == 'bsl' || editorLangId == '1c' || resourceExtname == '.bsl'"
+				},
+				{
+					"command": "metadataViewer.insertMethodInterceptor",
+					"group": "1c-metadata@3",
 					"when": "editorLangId == 'bsl' || editorLangId == '1c' || resourceExtname == '.bsl'"
 				}
 			],

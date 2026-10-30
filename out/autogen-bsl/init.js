@@ -31,6 +31,7 @@ const IntentRouter_1 = require("./routing/IntentRouter");
 const GeneratorFactory_1 = require("./generators/GeneratorFactory");
 const extension_1 = require("../extension");
 const queryStringEditor_1 = require("../queryStringEditor");
+const bslCompletionProvider_1 = require("../bslCompletion/bslCompletionProvider");
 /**
  * BSL-файл: languageId от Language 1C (bsl/1c) или расширение .bsl.
  */
@@ -72,6 +73,7 @@ function resolveDocument(docArg) {
     return editor?.document;
 }
 function initBslCursorFeatures(context) {
+    (0, bslCompletionProvider_1.registerBslCompletion)(context);
     // Code actions for // @gen in BSL
     const detector = new GenCommentCodeActionProvider_1.GenCommentDetector();
     context.subscriptions.push(vscode.languages.registerCodeActionsProvider([{ language: 'bsl' }, { language: '1c' }, { pattern: '**/*.bsl' }], new GenCommentCodeActionProvider_1.GenCommentCodeActionProvider(detector), { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }));
@@ -176,7 +178,7 @@ function initBslCursorFeatures(context) {
             return;
         }
         const doc = ed.document;
-        if (doc.languageId !== 'bsl') {
+        if (!isBslDocument(doc)) {
             vscode.window.showWarningMessage('Команда доступна только для BSL файлов');
             return;
         }

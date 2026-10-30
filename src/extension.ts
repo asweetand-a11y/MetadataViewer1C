@@ -12,6 +12,8 @@ import { startEmbeddedMcpServer, stopEmbeddedMcpServer } from './autogen-bsl/mcp
 import { CommitFileLogger } from './utils/commitFileLogger';
 import { BookmarkManager } from './utils/bookmarkManager';
 import { validateMetadataXmlFile } from './validation/metadataXmlValidator';
+import { ensureModulePropertyState } from './utils/extensionPropertyState';
+import { insertMethodInterceptor } from './utils/methodInterceptor';
 
 // Output channel для логов расширения
 export const outputChannel = vscode.window.createOutputChannel('1C Metadata Viewer');
@@ -223,6 +225,10 @@ export function activate(context: vscode.ExtensionContext) {
 		await runValidateMetadataXml(fileUri.fsPath, context.extensionUri.fsPath);
 	});
 
+	vscode.commands.registerCommand('metadataViewer.insertMethodInterceptor', async () => {
+		await insertMethodInterceptor();
+	});
+
 	vscode.commands.registerCommand('metadataViewer.openModule', (node: TreeItem) => {
 		let filePath = '';
 		if (node.configType === 'xml') {
@@ -425,26 +431,27 @@ export function deactivate() {
 	}
 }
 
+function openBslDocument(filePath: string): void {
+	void ensureModulePropertyState(filePath);
+	vscode.workspace.openTextDocument(vscode.Uri.file(filePath)).then(doc => {
+		vscode.window.showTextDocument(doc);
+	});
+}
+
 function OpenFile(filePath: string) {
 	const openPath = vscode.Uri.file(filePath);
 	if (fs.existsSync(filePath)) {
-		vscode.workspace.openTextDocument(openPath).then(doc => {
-			vscode.window.showTextDocument(doc);
-		});
+		openBslDocument(filePath);
 	} else {
 		vscode.window
-			.showInformationMessage(`File ${filePath} does not exist. Create?`, 'Yes', 'No')
+			.showInformationMessage(`Файла нет: ${filePath}. Создать?`, 'Да', 'Нет')
 			.then(answer => {
-				if (answer === 'Yes') {
-					// TODO: Кроме собственно создания файла наверное надо что-то писать в XML? Наверняка нужно...
-					vscode.workspace.fs.writeFile(openPath, new Uint8Array).then(_ => {
-						vscode.window.showInformationMessage(`File ${filePath} is creted!`);
-						vscode.workspace.openTextDocument(openPath).then(doc => {
-							vscode.window.showTextDocument(doc);
-						});
+				if (answer === 'Да') {
+					vscode.workspace.fs.writeFile(openPath, Buffer.from('\uFEFF', 'utf8')).then(() => {
+						openBslDocument(filePath);
 					});
 				}
-			});	
+			});
 	}
 }
 

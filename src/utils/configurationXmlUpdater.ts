@@ -7,7 +7,6 @@
  * "нельзя добавлять объекты метаданных без загрузки родительского объекта".
  */
 
-import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
 import * as path from 'path';
 import { safeReadFile, safeWriteFile, createBackup, validatePath } from './fileUtils';
 
@@ -18,6 +17,10 @@ const CONFIGURATION_CHILD_TYPES = new Set([
     'ChartOfCharacteristicTypes', 'ChartOfAccounts', 'ChartOfCalculationTypes',
     'BusinessProcess', 'Task', 'Constant', 'CommonModule', 'CommonPicture', 'CommonTemplate',
     'DefinedType', 'CommandGroup', 'Subsystem', 'Language',
+    'ExchangePlan', 'DocumentJournal', 'DocumentNumerator', 'Sequence',
+    'SessionParameter', 'CommonAttribute', 'FilterCriterion', 'EventSubscription',
+    'ScheduledJob', 'FunctionalOption', 'FunctionalOptionsParameter', 'SettingsStorage',
+    'CommonCommand', 'ExternalDataSource',
 ]);
 
 /**
@@ -58,83 +61,73 @@ export async function ensureMetadataInConfigurationXml(params: {
         return { changed: false };
     }
 
-    // Удаляем BOM если есть
-    if (xml.charCodeAt(0) === 0xfeff) {
+    const tag = `<${xmlObjectType}>${objectName}</${xmlObjectType}>`;
+    if (xml.includes(tag)) {
+        return { changed: false };
+    }
+
+    const eol = xml.includes('\r\n') ? '\r\n' : '\n';
+    const line = `\t\t\t${tag}`;
+    const sameType = new RegExp(`<${xmlObjectType}>[^<]*</${xmlObjectType}>`, 'g');
+    let lastIndex = -1;
+    let lastLength = 0;
+    let match: RegExpExecArray | null;
+    while ((match = sameType.exec(xml)) !== null) {
+        lastIndex = match.index;
+        lastLength = match[0].length;
+    }
+
+    let updatedXml: string;
+    if (lastIndex >= 0) {
+        const at = lastIndex + lastLength;
+        updatedXml = xml.slice(0, at) + eol + line + xml.slice(at);
+    } else {
+        const end = xml.indexOf('</ChildObjects>');
+        if (end < 0) {
+            return { changed: false };
+        }
+        updatedXml = xml.slice(0, end) + line + eol + xml.slice(end);
+    }
+
+    await createBackup(configurationPath);
+    await safeWriteFile(configurationPath, updatedXml);
+
+    return { changed: true };
+}
+
+/**
+ * Убирает объект из Configuration.xml, не переписывая остальной документ.
+ */
+export async function removeMetadataFromConfigurationXml(params: {
+    configRoot: string;
+    xmlObjectType: string;
+    objectName: string;
+}): Promise<{ changed: boolean }> {
+    const { configRoot, xmlObjectType, objectName } = params;
+    if (!shouldAddToConfiguration(xmlObjectType) || !objectName) {
+        return { changed: false };
+    }
+
+    const configurationPath = path.join(configRoot, 'Configuration.xml');
+    if (!validatePath(configRoot, configurationPath)) {
+        return { changed: false };
+    }
+
+    let xml = await safeReadFile(configurationPath);
+    const hasBom = xml.charCodeAt(0) === 0xfeff;
+    if (hasBom) {
         xml = xml.slice(1);
     }
 
-    const parser = new DOMParser({
-        locator: {},
-        errorHandler: {
-            warning: () => {},
-            error: (e: unknown) => console.warn('[configurationXmlUpdater] XML parse error:', e),
-            fatalError: (e: unknown) => console.error('[configurationXmlUpdater] XML fatal:', e),
-        },
-    });
-
-    const doc = parser.parseFromString(xml, 'text/xml');
-    const parserError = doc.getElementsByTagName('parsererror')[0];
-    if (parserError) {
-        console.warn('[configurationXmlUpdater] Configuration.xml parse error:', parserError.textContent);
+    const escapedName = objectName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(
+        `[ \\t]*<${xmlObjectType}>${escapedName}<\\/${xmlObjectType}>[ \\t]*(?:\\r?\\n)?`
+    );
+    if (!pattern.test(xml)) {
         return { changed: false };
     }
 
-    const configuration = doc.getElementsByTagName('Configuration')[0];
-    if (!configuration) {
-        return { changed: false };
-    }
-
-    const childObjects = configuration.getElementsByTagName('ChildObjects')[0];
-    if (!childObjects) {
-        return { changed: false };
-    }
-
-    // Проверяем, есть ли уже такой объект (tagName или localName для учёта namespace)
-    const existing = Array.from(childObjects.childNodes).find((n) => {
-        if (n.nodeType !== 1) return false;
-        const el = n as Element;
-        const tag = el.localName || el.tagName;
-        return tag === xmlObjectType && el.textContent?.trim() === objectName;
-    });
-    if (existing) {
-        return { changed: false };
-    }
-
-    // Создаём новый элемент в namespace MDClasses (как у родительских элементов)
-    const ns = configuration.namespaceURI || 'http://v8.1c.ru/8.3/MDClasses';
-    const newEl = doc.createElementNS(ns, xmlObjectType);
-    newEl.appendChild(doc.createTextNode(objectName));
-
-    // Вставляем после последнего элемента того же типа
-    const children = Array.from(childObjects.childNodes).filter((n) => n.nodeType === 1);
-    let lastOfType: Element | null = null;
-    for (let i = children.length - 1; i >= 0; i--) {
-        const el = children[i] as Element;
-        const tag = el.localName || el.tagName;
-        if (tag === xmlObjectType) {
-            lastOfType = el;
-            break;
-        }
-    }
-
-    if (lastOfType && lastOfType.nextSibling) {
-        childObjects.insertBefore(newEl, lastOfType.nextSibling);
-    } else if (lastOfType) {
-        childObjects.appendChild(newEl);
-    } else {
-        // Нет элементов такого типа — добавляем в конец
-        childObjects.appendChild(newEl);
-    }
-
-    const serializer = new XMLSerializer();
-    const updatedXml = serializer.serializeToString(doc);
-
-    // Добавляем BOM
-    const bom = '\uFEFF';
-    const finalContent = bom + updatedXml;
-
-    await createBackup(configurationPath);
-    await safeWriteFile(configurationPath, finalContent);
-
+    xml = xml.replace(pattern, '');
+    await safeWriteFile(configurationPath, (hasBom ? '\uFEFF' : '') + xml);
     return { changed: true };
 }

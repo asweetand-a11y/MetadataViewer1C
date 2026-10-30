@@ -30,6 +30,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MetadataEditor = void 0;
 const react_1 = __importStar(require("react"));
 const FormEditor_1 = require("./FormEditor");
+const functionalOptionModel_1 = require("./FormEditor/functionalOptionModel");
 const ui_1 = require("../ui");
 const MetadataEditor = ({ vscode }) => {
     const [objects, setObjects] = (0, react_1.useState)([]);
@@ -38,7 +39,8 @@ const MetadataEditor = ({ vscode }) => {
     const [metadata, setMetadata] = (0, react_1.useState)({
         registers: [],
         referenceTypes: [],
-        informationRegistersSchedule: []
+        informationRegistersSchedule: [],
+        functionalOptionMembers: []
     });
     const [isDirty, setIsDirty] = (0, react_1.useState)(false);
     const [activeTab, setActiveTab] = (0, react_1.useState)('properties');
@@ -53,7 +55,8 @@ const MetadataEditor = ({ vscode }) => {
                     setMetadata({
                         referenceTypes: initMsg.metadata.referenceTypes,
                         registers: initMsg.metadata.registers ?? [],
-                        informationRegistersSchedule: initMsg.metadata.informationRegistersSchedule ?? []
+                        informationRegistersSchedule: initMsg.metadata.informationRegistersSchedule ?? [],
+                        functionalOptionMembers: initMsg.metadata.functionalOptionMembers ?? []
                     });
                 }
                 // Выбираем первый объект по умолчанию
@@ -168,14 +171,60 @@ const MetadataEditor = ({ vscode }) => {
         const isEnum = selectedObject.objectType === 'Enum' ||
             selectedObject.objectType === 'Перечисление' ||
             (selectedObject.sourcePath && selectedObject.sourcePath.includes('/Enums/'));
+        const typeName = String(selectedObject.objectType || '');
+        const sourcePath = String(selectedObject.sourcePath || '');
+        const isExchangePlan = typeName === 'ExchangePlan' || typeName === 'План обмена' || sourcePath.includes('/ExchangePlans/');
+        const isSettingsStorage = typeName === 'SettingsStorage' || typeName === 'Хранилище настроек' || sourcePath.includes('/SettingsStorages/');
+        const propertiesOnlyTypes = new Set([
+            'SessionParameter', 'Параметр сеанса',
+            'FilterCriterion', 'Критерий отбора',
+            'EventSubscription', 'Подписка на событие',
+            'ScheduledJob', 'Регламентное задание',
+            'FunctionalOption', 'Функциональная опция',
+            'FunctionalOptionsParameter', 'Параметр функциональных опций',
+            'DefinedType', 'Определяемый тип',
+            'CommonCommand', 'Общая команда',
+            'CommandGroup', 'Группа команд',
+            'XDTOPackage', 'XDTO-пакет',
+            'WebService', 'Web-сервис', 'Веб-сервис',
+            'HTTPService', 'HTTP-сервис',
+            'WSReference', 'WS-ссылка',
+            'WebSocketClient', 'WebSocket-клиент',
+        ]);
+        const propertiesOnlyFolders = [
+            '/SessionParameters/', '/FilterCriteria/', '/EventSubscriptions/', '/ScheduledJobs/',
+            '/FunctionalOptions/', '/FunctionalOptionsParameters/', '/DefinedTypes/',
+            '/CommonCommands/', '/CommandGroups/', '/XDTOPackages/',
+            '/WebServices/', '/HTTPServices/', '/WSReferences/', '/WebSocketClients/',
+        ];
+        const isPropertiesOnly = !isExchangePlan && !isSettingsStorage && (propertiesOnlyTypes.has(typeName) || propertiesOnlyFolders.some((folder) => sourcePath.includes(folder)));
+        const showChildObjects = !isPropertiesOnly && !isSettingsStorage;
+        const isWebService = typeName === 'WebService' || typeName === 'Web-сервис' || typeName === 'Веб-сервис' || sourcePath.includes('/WebServices/');
         const result = [
             { id: 'properties', label: 'Свойства' },
-            { id: 'attributes', label: 'Реквизиты', count: selectedObject.attributes?.length },
-            { id: 'tabular', label: 'Табличные части', count: selectedObject.tabularSections?.length },
-            ...(isEnum ? [{ id: 'enumValues', label: 'Значения перечисления', count: selectedObject.enumValues?.length }] : []),
-            { id: 'forms', label: 'Формы', count: selectedObject.forms?.length },
-            { id: 'commands', label: 'Команды', count: selectedObject.commands?.length }
         ];
+        if (isWebService) {
+            result.push({ id: 'operations', label: 'Операции' });
+        }
+        const functionalOptionPath = sourcePath.replace(/\\/g, '/');
+        const isFunctionalOption = typeName === 'FunctionalOption' || typeName === 'Функциональная опция'
+            || (functionalOptionPath.includes('/FunctionalOptions/') && !functionalOptionPath.includes('/FunctionalOptionsParameters/'));
+        if (isFunctionalOption) {
+            const compositionCount = (0, functionalOptionModel_1.readFunctionalOptionContent)(formData?.Content).length;
+            result.push({ id: 'composition', label: 'Состав', count: compositionCount || undefined });
+        }
+        if (showChildObjects) {
+            result.push({ id: 'attributes', label: 'Реквизиты', count: selectedObject.attributes?.length }, { id: 'tabular', label: 'Табличные части', count: selectedObject.tabularSections?.length });
+        }
+        if (isEnum) {
+            result.push({ id: 'enumValues', label: 'Значения перечисления', count: selectedObject.enumValues?.length });
+        }
+        if (showChildObjects || isSettingsStorage) {
+            result.push({ id: 'forms', label: 'Формы', count: selectedObject.forms?.length });
+        }
+        if (showChildObjects) {
+            result.push({ id: 'commands', label: 'Команды', count: selectedObject.commands?.length });
+        }
         // Добавляем вкладку "Типы значения характеристик" только для планов видов характеристик
         if (isChartOfCharacteristicTypes) {
             result.push({ id: 'characteristicTypes', label: 'Типы значения характеристик', count: characteristicTypesCount });
@@ -193,7 +242,7 @@ const MetadataEditor = ({ vscode }) => {
             });
         }
         return result;
-    }, [selectedObject]);
+    }, [selectedObject, formData]);
     // Условный возврат должен быть ПОСЛЕ всех хуков
     if (!selectedObject) {
         return (react_1.default.createElement("div", { className: "metadata-editor" },

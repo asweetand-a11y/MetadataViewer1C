@@ -7,6 +7,7 @@ import { randomUUID, randomBytes } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { createBackup, safeWriteFile } from './fileUtils';
 
 /**
  * Обновляет ConfigDumpInfo.xml для предопределенных элементов
@@ -86,7 +87,6 @@ export async function updateConfigDumpInfoForPredefined(params: {
         }
     }
     
-    // Генерируем новый configVersion (32 hex символа)
     const configVersion = generateConfigVersion();
     
     if (foundMetadata) {
@@ -104,13 +104,11 @@ export async function updateConfigDumpInfoForPredefined(params: {
     } else {
         // Создаем новую запись
         const newId = predefinedId || generatePredefinedId();
-        const newMetadata = doc.createElement('Metadata');
+        const newMetadata = createDumpMetadataElement(doc);
         newMetadata.setAttribute('name', predefinedName);
         newMetadata.setAttribute('id', newId);
         newMetadata.setAttribute('configVersion', configVersion);
-        
-        // Добавляем в конец массива Metadata (в ConfigVersions)
-        metadataParent.appendChild(newMetadata);
+        appendDumpMetadata(metadataParent, newMetadata);
         
         // Сохраняем обновленный XML
         await writeConfigDumpInfoFile(configDumpInfoPath, doc);
@@ -126,12 +124,88 @@ function generatePredefinedId(): string {
     return randomUUID() + '.1c';
 }
 
-/** Генерирует configVersion (32 hex символа) */
+/**
+ * configVersion в выгрузке 8.3: 32 hex хеша и 8 нулей (40 символов).
+ * Короткая версия не привязывается к родителю, и загрузчик пишет
+ * «нельзя добавлять объекты метаданных без загрузки родительского объекта».
+ */
 export function generateConfigVersionHex(): string {
     const bytes = randomBytes(16);
-    return Array.from(bytes)
+    const hash = Array.from(bytes)
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
+    return hash + '00000000';
+}
+
+/**
+ * Меняет configVersion только у самой конфигурации.
+ * Инкрементальная загрузка пропускает Configuration.xml, если версия совпала с базой.
+ * Новый объект из ChildObjects тогда добавляется уже без родителя.
+ * Версию самого объекта не пишем: её проставляет платформа при загрузке родителя.
+ */
+export function bumpConfigurationVersionInDumpXml(
+    dumpXml: string,
+    configurationUuid: string
+): { xml: string; changed: boolean } {
+    const version = generateConfigVersionHex();
+    const idFirst = new RegExp(
+        `(<Metadata\\b[^>]*\\bid="${configurationUuid}"[^>]*\\bconfigVersion=")[0-9a-fA-F]{40}(")`
+    );
+    if (idFirst.test(dumpXml)) {
+        return { xml: dumpXml.replace(idFirst, `$1${version}$2`), changed: true };
+    }
+    const versionFirst = new RegExp(
+        `(<Metadata\\b[^>]*\\bconfigVersion=")[0-9a-fA-F]{40}("[^>]*\\bid="${configurationUuid}")`
+    );
+    if (versionFirst.test(dumpXml)) {
+        return { xml: dumpXml.replace(versionFirst, `$1${version}$2`), changed: true };
+    }
+    return { xml: dumpXml, changed: false };
+}
+
+/**
+ * Помечает Configuration.xml изменённым для инкрементальной загрузки.
+ * Остальной файл версий не переписывается.
+ */
+export async function markConfigurationChangedInDump(configRoot: string): Promise<boolean> {
+    const configurationPath = path.join(configRoot, 'Configuration.xml');
+    const dumpPath = path.join(configRoot, 'ConfigDumpInfo.xml');
+    if (!fs.existsSync(configurationPath) || !fs.existsSync(dumpPath)) {
+        return false;
+    }
+    const configurationXml = fs.readFileSync(configurationPath, 'utf8');
+    const uuidMatch = configurationXml.match(/<Configuration\b[^>]*\buuid="([^"]+)"/);
+    if (!uuidMatch) {
+        return false;
+    }
+    const dumpXml = fs.readFileSync(dumpPath, 'utf8');
+    const bumped = bumpConfigurationVersionInDumpXml(dumpXml, uuidMatch[1]);
+    if (!bumped.changed) {
+        return false;
+    }
+    await createBackup(dumpPath);
+    await safeWriteFile(dumpPath, bumped.xml);
+    return true;
+}
+
+const CONFIG_DUMP_NS = 'http://v8.1c.ru/8.3/xcf/dumpinfo';
+
+function createDumpMetadataElement(doc: Document): Element {
+    return doc.createElementNS(CONFIG_DUMP_NS, 'Metadata');
+}
+
+/** Вставляет Metadata отдельной строкой, не склеивая тег с закрывающим ConfigVersions. */
+function appendDumpMetadata(parent: Element, element: Element): void {
+    const doc = parent.ownerDocument!;
+    const indent = parent.nodeName === 'ConfigVersions' ? '\n\t\t' : '\n\t\t\t';
+    const last = parent.lastChild;
+    if (last && last.nodeType === 3 && /^\s*$/.test(last.nodeValue || '')) {
+        parent.insertBefore(doc.createTextNode(indent), last);
+        parent.insertBefore(element, last);
+        return;
+    }
+    parent.appendChild(doc.createTextNode(indent));
+    parent.appendChild(element);
 }
 
 function generateConfigVersion(): string {
@@ -197,6 +271,12 @@ const TYPE_DIR_TO_METADATA_PREFIX: Record<string, string> = {
     'CommonAttributes': 'CommonAttribute',
     'EventSubscriptions': 'EventSubscription',
     'ScheduledJobs': 'ScheduledJob',
+    'FilterCriteria': 'FilterCriterion',
+    'FunctionalOptions': 'FunctionalOption',
+    'FunctionalOptionsParameters': 'FunctionalOptionsParameter',
+    'SettingsStorages': 'SettingsStorage',
+    'CommonCommands': 'CommonCommand',
+    'CommandGroups': 'CommandGroup',
 };
 
 /**
@@ -339,11 +419,11 @@ export async function applySyncAddsToDocument(
         }
 
         const configVersion = generateConfigVersion();
-        const newMetadata = doc.createElement('Metadata');
+        const newMetadata = createDumpMetadataElement(doc);
         newMetadata.setAttribute('name', metadataName);
         newMetadata.setAttribute('id', objectId);
         newMetadata.setAttribute('configVersion', configVersion);
-        container.appendChild(newMetadata);
+        appendDumpMetadata(container, newMetadata);
         existingNames.add(metadataName);
         result.addedCount++;
 
@@ -493,11 +573,61 @@ function bumpOrCreateMetadataEntry(
     }
 
     const container = getMetadataInsertContainer(doc);
-    const m = doc.createElement('Metadata');
+    const m = createDumpMetadataElement(doc);
     m.setAttribute('name', metadataName);
     m.setAttribute('id', id);
     m.setAttribute('configVersion', ver);
-    container.appendChild(m);
+    appendDumpMetadata(container, m);
+}
+
+/** Удаляет объект и все его вложенные записи Metadata (формы, реквизиты, модули). */
+export async function removeMetadataObjectFromConfigDump(params: {
+    configRoot: string;
+    xmlObjectType: string;
+    objectName: string;
+}): Promise<{ removed: number }> {
+    const dumpPath = path.join(params.configRoot, 'ConfigDumpInfo.xml');
+    if (!fs.existsSync(dumpPath)) {
+        return { removed: 0 };
+    }
+
+    const configDumpInfoUri = vscode.Uri.file(dumpPath);
+    const configXml = await vscode.workspace.fs.readFile(configDumpInfoUri);
+    let cleanXml = Buffer.from(configXml).toString('utf8');
+    if (cleanXml.charCodeAt(0) === 0xfeff) {
+        cleanXml = cleanXml.slice(1);
+    }
+
+    const parser = new DOMParser({
+        locator: {},
+        errorHandler: { warning: () => {}, error: () => {}, fatalError: (e: unknown) => { throw new Error(`XML parsing error: ${e}`); } },
+    });
+    const doc = parser.parseFromString(cleanXml, 'text/xml');
+    const removed = removeMetadataByPrefix(doc, `${params.xmlObjectType}.${params.objectName}`);
+    if (removed > 0) {
+        await writeConfigDumpInfoFile(dumpPath, doc);
+    }
+    return { removed };
+}
+
+function removeMetadataByPrefix(doc: Document, metadataName: string): number {
+    if (!metadataName || metadataName === 'Configuration') {
+        return 0;
+    }
+    const all = Array.from(doc.getElementsByTagName('Metadata'));
+    const matched = new Set(all.filter((el) => {
+        const name = el.getAttribute('name') || '';
+        return name === metadataName || name.startsWith(`${metadataName}.`);
+    }));
+    let removed = 0;
+    for (const el of matched) {
+        if (el.parentNode && matched.has(el.parentNode as Element)) {
+            continue;
+        }
+        el.parentNode?.removeChild(el);
+        removed++;
+    }
+    return removed;
 }
 
 function removeMetadataByName(doc: Document, metadataName: string): number {

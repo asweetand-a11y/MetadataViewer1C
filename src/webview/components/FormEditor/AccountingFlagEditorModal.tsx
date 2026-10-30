@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { UiButton } from '../../ui';
-import { SimpleMultilingualEditor } from './SimpleMultilingualEditor';
+import { SimpleMultilingualEditor, commentText } from './SimpleMultilingualEditor';
 
 interface AccountingFlagEditorModalProps {
   isOpen: boolean;
@@ -101,9 +101,11 @@ export const AccountingFlagEditorModal: React.FC<AccountingFlagEditorModalProps>
 
       <div className="form-field" style={{ marginBottom: '16px' }}>
         <label>Комментарий</label>
-        <SimpleMultilingualEditor
-          value={comment}
-          onChange={setComment}
+        <input
+          type="text"
+          value={commentText(comment)}
+          onChange={(e) => setComment(e.target.value)}
+          className="property-input"
         />
       </div>
 

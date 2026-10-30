@@ -48,12 +48,35 @@ const EnumValueEditorModal_1 = require("./FormEditor/EnumValueEditorModal");
 const SimpleMultilingualEditor_1 = require("./FormEditor/SimpleMultilingualEditor");
 const CharacteristicTypeEditorModal_1 = require("./FormEditor/CharacteristicTypeEditorModal");
 const AccountingFlagEditorModal_1 = require("./FormEditor/AccountingFlagEditorModal");
+const WebServiceOperationsTab_1 = require("./FormEditor/WebServiceOperationsTab");
+const WebServiceXdtoPackagesField_1 = require("./FormEditor/WebServiceXdtoPackagesField");
+const webServiceXml_1 = require("./FormEditor/webServiceXml");
+const EventSubscriptionFields_1 = require("./FormEditor/EventSubscriptionFields");
+const FunctionalOptionFields_1 = require("./FormEditor/FunctionalOptionFields");
 const ui_1 = require("../ui");
 const field_values_1 = require("../../metadata/field-values");
 const widgets = {
     TypeWidget: TypeWidget_1.TypeWidget,
     MultilingualWidget: MultilingualWidget_1.MultilingualWidget
 };
+/** Объекты, у которых свойство Type — это тип значения, а не произвольная строка. */
+const VALUE_TYPE_EDITOR_OBJECT_TYPES = new Set([
+    'DefinedType', 'Определяемый тип',
+    'SessionParameter', 'Параметр сеанса',
+    'FilterCriterion', 'Критерий отбора',
+    'Constant', 'Константа',
+    'CommonAttribute', 'Общий реквизит',
+    'ChartOfCharacteristicTypes', 'План видов характеристик',
+]);
+function usesValueTypeEditor(objectType, xmlObjectType) {
+    return VALUE_TYPE_EDITOR_OBJECT_TYPES.has(objectType)
+        || (!!xmlObjectType && VALUE_TYPE_EDITOR_OBJECT_TYPES.has(xmlObjectType));
+}
+function isDefinedTypeObject(objectType, xmlObjectType) {
+    return objectType === 'DefinedType'
+        || objectType === 'Определяемый тип'
+        || xmlObjectType === 'DefinedType';
+}
 /**
  * Свойства вкладки «Данные» плана счетов в конфигураторе 1С (порядок отображения).
  */
@@ -148,6 +171,50 @@ const CALCULATION_REGISTER_PROPERTY_KEYS = [
     'AuxiliaryListForm',
 ];
 /** Извлекает ссылки ChartOfCalculationTypes.<Имя> из свойства BaseCalculationTypes (formData). */
+/** Текст локализованной строки 1С: строка, v8:item или content. */
+function readLocalString(value) {
+    if (value == null || value === '') {
+        return '';
+    }
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (typeof value !== 'object') {
+        return String(value);
+    }
+    const obj = value;
+    const rawItem = obj['v8:item'];
+    if (rawItem != null) {
+        const items = Array.isArray(rawItem) ? rawItem : [rawItem];
+        return items
+            .map((item) => {
+            if (item && typeof item === 'object') {
+                const rec = item;
+                return String(rec['v8:content'] ?? rec.content ?? '');
+            }
+            return String(item ?? '');
+        })
+            .filter((part) => part.length > 0)
+            .join(', ');
+    }
+    if (obj.content != null) {
+        return String(obj.content);
+    }
+    if (obj['v8:content'] != null) {
+        return String(obj['v8:content']);
+    }
+    return '';
+}
+/** Имя реквизита или табличной части для списка. */
+function childObjectDisplayName(attr, fallback) {
+    if (!attr) {
+        return fallback;
+    }
+    if (typeof attr.name === 'string' && attr.name.trim()) {
+        return attr.name;
+    }
+    return readLocalString(attr.name) || readLocalString(attr.properties?.Name) || fallback;
+}
 function extractBaseCalculationTypeRefs(raw) {
     if (!raw || typeof raw !== 'object') {
         return [];
@@ -273,6 +340,17 @@ function collectDocumentSelectOptions(referenceTypes) {
     }
     return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru'));
 }
+/** LocalString в метаданных: пустой тег или v8:item, не голый текст. */
+const MULTILINGUAL_METADATA_FIELDS = new Set([
+    'Synonym', 'Format', 'EditFormat', 'ToolTip',
+    'ObjectPresentation', 'ExtendedObjectPresentation',
+    'ListPresentation', 'ExtendedListPresentation',
+    'Explanation', 'ExtendedPresentation',
+    'RecordPresentation', 'ExtendedRecordPresentation',
+]);
+function isMultilingualMetadataField(field) {
+    return MULTILINGUAL_METADATA_FIELDS.has(field);
+}
 /** Генерирует UUID через Web Crypto API или простой fallback (webview/браузер). */
 function getRandomUUID() {
     const c = globalThis?.crypto;
@@ -392,19 +470,15 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
             },
             Synonym: {
                 'ui:widget': 'MultilingualWidget'
-            },
-            Comment: {
-                'ui:widget': 'MultilingualWidget'
             }
         };
-        // Редактор типов для определяемых типов (DefinedType)
-        if (objectType === 'DefinedType') {
+        if (usesValueTypeEditor(objectType, selectedObject?.xmlObjectType)) {
             ui.Type = {
                 'ui:widget': 'TypeWidget',
                 'ui:options': {
                     registers: metadata.registers,
                     referenceTypes: metadata.referenceTypes,
-                    definedTypeMode: true
+                    definedTypeMode: isDefinedTypeObject(objectType, selectedObject?.xmlObjectType)
                 }
             };
         }
@@ -421,7 +495,7 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
             });
         }
         return ui;
-    }, [formData, metadata, objectType]);
+    }, [formData, metadata, objectType, selectedObject?.xmlObjectType]);
     const handleSubmit = (data) => {
         onChange(data.formData);
     };
@@ -836,6 +910,7 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                 ChoiceForm: null,
                 LinkByType: null,
                 ChoiceHistoryOnInput: 'Auto',
+                Use: 'ForItem',
                 Indexing: 'DontIndex',
                 FullTextSearch: 'Use',
                 DataHistory: 'Use'
@@ -1189,7 +1264,8 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
     if (activeTab === 'attributes' && (selectedObject?.attributes || formData?.attributes)) {
         const baseAttrs = (formData?.attributes ?? selectedObject?.attributes);
         const attributes = Array.isArray(baseAttrs) ? baseAttrs : [];
-        const isRegister = String(objectType || '').toLowerCase().includes('регистр');
+        const typeKey = String(objectType || '').toLowerCase();
+        const isRegister = typeKey.includes('регистр') || typeKey.includes('register');
         const openAddObjectChildModal = (kind) => {
             setNewObjectChildKind(kind);
             setShowAddAttributeToObjectModal(true);
@@ -1197,7 +1273,8 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
         content = (react_1.default.createElement("div", { className: "form-editor" },
             react_1.default.createElement("div", { className: "section-header", style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
                 react_1.default.createElement("h3", null,
-                    "\u0420\u0435\u043A\u0432\u0438\u0437\u0438\u0442\u044B (",
+                    isRegister ? 'Состав' : 'Реквизиты',
+                    " (",
                     attributes.length,
                     ")"),
                 react_1.default.createElement("div", { style: { display: 'flex', gap: '8px', alignItems: 'center' } },
@@ -1207,34 +1284,43 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: () => openAddObjectChildModal('Attribute') }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442"))),
             react_1.default.createElement("div", { className: "ui-toolbar" },
                 react_1.default.createElement(ui_1.UiTextField, { className: "ui-filter", value: listFilter, onChange: setListFilter, placeholder: "\u0424\u0438\u043B\u044C\u0442\u0440 \u043F\u043E \u0438\u043C\u0435\u043D\u0438\u2026" })),
-            react_1.default.createElement(ui_1.UiTable, { columns: ['Вид', 'Имя', 'Тип', ''] }, attributes
-                .map((attr, index) => ({ attr, index }))
-                .filter(({ attr }) => {
-                if (!attr)
-                    return false;
-                const name = typeof attr.name === 'string'
-                    ? attr.name
-                    : (attr.name?.content || attr.name?.['v8:content'] || attr.properties?.Name || '');
-                return String(name).toLowerCase().includes(listFilter.toLowerCase());
-            })
-                .map(({ attr, index }) => {
-                const kind = attr.childObjectKind === 'Resource'
-                    ? 'Ресурс'
-                    : attr.childObjectKind === 'Dimension'
-                        ? 'Измерение'
-                        : 'Реквизит';
-                const name = typeof attr.name === 'string'
-                    ? attr.name
-                    : (attr.name?.content || attr.name?.['v8:content'] || attr.properties?.Name || 'Без имени');
-                return (react_1.default.createElement(ui_1.UiTableRow, { key: index },
-                    react_1.default.createElement(ui_1.UiTableCell, null, kind),
-                    react_1.default.createElement(ui_1.UiTableCell, null, name),
+            (() => {
+                const kindOf = (attr) => attr?.childObjectKind === 'Resource' || attr?.childObjectKind === 'Dimension'
+                    ? attr.childObjectKind
+                    : 'Attribute';
+                const filtered = attributes
+                    .map((attr, index) => ({ attr, index }))
+                    .filter(({ attr }) => {
+                    if (!attr)
+                        return false;
+                    return childObjectDisplayName(attr, '').toLowerCase().includes(listFilter.toLowerCase());
+                });
+                const renderRow = (attr, index) => (react_1.default.createElement(ui_1.UiTableRow, { key: index },
+                    react_1.default.createElement(ui_1.UiTableCell, null, childObjectDisplayName(attr, 'Без имени')),
                     react_1.default.createElement(ui_1.UiTableCell, null, (0, typeUtils_1.formatTypeForDisplay)(attr.type)),
                     react_1.default.createElement(ui_1.UiTableCell, null,
                         react_1.default.createElement("div", { className: "ui-row-actions" },
                             react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u0422\u0438\u043F", onClick: () => setEditingAttributeType(index) }),
                             react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: () => handleDeleteObjectAttribute(index) })))));
-            }))));
+                if (!isRegister) {
+                    return (react_1.default.createElement(ui_1.UiTable, { columns: ['Имя', 'Тип', ''] }, filtered.map(({ attr, index }) => renderRow(attr, index))));
+                }
+                const groups = [
+                    { kind: 'Dimension', title: 'Измерения' },
+                    { kind: 'Resource', title: 'Ресурсы' },
+                    { kind: 'Attribute', title: 'Реквизиты' },
+                ];
+                return (react_1.default.createElement("div", { className: "child-kind-groups" }, groups.map((group) => {
+                    const rows = filtered.filter(({ attr }) => kindOf(attr) === group.kind);
+                    return (react_1.default.createElement("section", { key: group.kind, className: "child-kind-group" },
+                        react_1.default.createElement("h4", null,
+                            group.title,
+                            " (",
+                            rows.length,
+                            ")"),
+                        rows.length === 0 ? (react_1.default.createElement("p", { className: "child-kind-empty" }, "\u041D\u0435\u0442 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432")) : (react_1.default.createElement(ui_1.UiTable, { columns: ['Имя', 'Тип', ''] }, rows.map(({ attr, index }) => renderRow(attr, index))))));
+                })));
+            })()));
     }
     else if (activeTab === 'tabular' && (selectedObject?.tabularSections || formData?.tabularSections)) {
         const baseTs = (formData?.tabularSections ?? selectedObject?.tabularSections);
@@ -1246,136 +1332,49 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     tabularSections.length,
                     ")"),
                 react_1.default.createElement(ui_1.UiButton, { icon: "add", onClick: () => setShowAddTabularModal(true) }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0442\u0430\u0431\u043B\u0438\u0447\u043D\u0443\u044E \u0447\u0430\u0441\u0442\u044C")),
-            react_1.default.createElement("div", { className: "tabular-list" }, tabularSections.map((ts, tsIndex) => {
+            react_1.default.createElement("div", { className: "tabular-sections" }, tabularSections.map((ts, tsIndex) => {
                 if (!ts)
                     return null;
-                return (react_1.default.createElement("div", { key: tsIndex, className: "tabular-card" },
-                    react_1.default.createElement("div", { className: "tabular-header" },
-                        react_1.default.createElement("div", null,
-                            react_1.default.createElement("h4", null, ts.name),
-                            ts.properties?.Synonym && (react_1.default.createElement("div", { className: "tabular-synonym" }, (() => {
-                                const syn = ts.properties.Synonym;
-                                if (!syn)
-                                    return '';
-                                if (typeof syn === 'string')
-                                    return syn;
-                                if (typeof syn === 'object' && syn !== null) {
-                                    if (syn['v8:item']) {
-                                        const items = Array.isArray(syn['v8:item']) ? syn['v8:item'] : [syn['v8:item']];
-                                        return items.map((item) => {
-                                            if (typeof item === 'object' && item !== null) {
-                                                return item['v8:content'] || '';
-                                            }
-                                            return String(item || '');
-                                        }).filter((s) => s).join(', ');
-                                    }
-                                    if (syn.content)
-                                        return String(syn.content);
-                                    if (syn['v8:content'])
-                                        return String(syn['v8:content']);
-                                }
-                                return '';
-                            })())),
-                            ts.properties?.Comment && (react_1.default.createElement("div", { className: "tabular-comment" }, (() => {
-                                const com = ts.properties.Comment;
-                                if (!com)
-                                    return '';
-                                if (typeof com === 'string')
-                                    return com;
-                                if (typeof com === 'object' && com !== null) {
-                                    if (com['v8:item']) {
-                                        const items = Array.isArray(com['v8:item']) ? com['v8:item'] : [com['v8:item']];
-                                        return items.map((item) => {
-                                            if (typeof item === 'object' && item !== null) {
-                                                return item['v8:content'] || '';
-                                            }
-                                            return String(item || '');
-                                        }).filter((s) => s).join(', ');
-                                    }
-                                    if (com.content)
-                                        return String(com.content);
-                                    if (com['v8:content'])
-                                        return String(com['v8:content']);
-                                }
-                                return '';
-                            })()))),
-                        react_1.default.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                const synonym = readLocalString(ts.properties?.Synonym);
+                const comment = readLocalString(ts.properties?.Comment);
+                const attrs = Array.isArray(ts.attributes) ? ts.attributes : [];
+                return (react_1.default.createElement("section", { key: ts.uuid || tsIndex, className: "tabular-section" },
+                    react_1.default.createElement("div", { className: "tabular-section__header" },
+                        react_1.default.createElement("div", { className: "tabular-section__heading" },
+                            react_1.default.createElement("span", { className: "tabular-section__title" }, ts.name),
+                            synonym ? react_1.default.createElement("span", { className: "tabular-section__meta" }, synonym) : null,
+                            comment ? react_1.default.createElement("span", { className: "tabular-section__meta tabular-section__meta--comment" }, comment) : null),
+                        react_1.default.createElement("div", { className: "tabular-section__tools" },
                             react_1.default.createElement("span", { className: "tabular-attributes-count" },
                                 "\u0420\u0435\u043A\u0432\u0438\u0437\u0438\u0442\u043E\u0432: ",
-                                ts.attributes?.length || 0),
+                                attrs.length),
                             react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: (e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     handleDeleteTabularSection(tsIndex);
                                 } }))),
-                    ts.attributes && Array.isArray(ts.attributes) && ts.attributes.length > 0 && (react_1.default.createElement("div", { className: "tabular-attributes-list" }, ts.attributes.map((attr, attrIndex) => {
+                    attrs.length > 0 && (react_1.default.createElement(ui_1.UiTable, { columns: ['Имя', 'Синоним', 'Тип', ''] }, attrs.map((attr, attrIndex) => {
                         if (!attr)
                             return null;
-                        return (react_1.default.createElement("div", { key: attrIndex, className: "tabular-attribute-item" },
-                            react_1.default.createElement("div", { className: "attribute-info" },
-                                react_1.default.createElement("span", { className: "attribute-name" }, attr.name || `Реквизит ${attrIndex + 1}`),
-                                attr.properties?.Synonym && (react_1.default.createElement("span", { className: "attribute-synonym" }, (() => {
-                                    const syn = attr.properties.Synonym;
-                                    if (!syn)
-                                        return '';
-                                    if (typeof syn === 'string')
-                                        return syn;
-                                    if (typeof syn === 'object' && syn !== null) {
-                                        if (syn['v8:item']) {
-                                            const items = Array.isArray(syn['v8:item']) ? syn['v8:item'] : [syn['v8:item']];
-                                            return items.map((item) => {
-                                                if (typeof item === 'object' && item !== null) {
-                                                    return item['v8:content'] || '';
-                                                }
-                                                return String(item || '');
-                                            }).filter((s) => s).join(', ');
-                                        }
-                                        // Если это объект без v8:item, пробуем найти content напрямую
-                                        if (syn.content)
-                                            return String(syn.content);
-                                        if (syn['v8:content'])
-                                            return String(syn['v8:content']);
-                                    }
-                                    return '';
-                                })())),
-                                attr.properties?.Comment && (react_1.default.createElement("span", { className: "attribute-comment" }, (() => {
-                                    const com = attr.properties.Comment;
-                                    if (!com)
-                                        return '';
-                                    if (typeof com === 'string')
-                                        return com;
-                                    if (typeof com === 'object' && com !== null) {
-                                        if (com['v8:item']) {
-                                            const items = Array.isArray(com['v8:item']) ? com['v8:item'] : [com['v8:item']];
-                                            return items.map((item) => {
-                                                if (typeof item === 'object' && item !== null) {
-                                                    return item['v8:content'] || '';
-                                                }
-                                                return String(item || '');
-                                            }).filter((s) => s).join(', ');
-                                        }
-                                        // Если это объект без v8:item, пробуем найти content напрямую
-                                        if (com.content)
-                                            return String(com.content);
-                                        if (com['v8:content'])
-                                            return String(com['v8:content']);
-                                    }
-                                    return '';
-                                })())),
-                                react_1.default.createElement("span", { className: "attribute-type" }, (0, typeUtils_1.formatTypeForDisplay)(attr.type))),
-                            react_1.default.createElement("div", { className: "ui-row-actions" },
-                                react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", onClick: (e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleEditAttributeType(tsIndex, attrIndex);
-                                    } }),
-                                react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: (e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleDeleteTabularAttribute(tsIndex, attrIndex);
-                                    } }))));
+                        return (react_1.default.createElement(ui_1.UiTableRow, { key: attr.uuid || attrIndex },
+                            react_1.default.createElement(ui_1.UiTableCell, null, childObjectDisplayName(attr, `Реквизит ${attrIndex + 1}`)),
+                            react_1.default.createElement(ui_1.UiTableCell, null, readLocalString(attr.properties?.Synonym)),
+                            react_1.default.createElement(ui_1.UiTableCell, null, (0, typeUtils_1.formatTypeForDisplay)(attr.type)),
+                            react_1.default.createElement(ui_1.UiTableCell, null,
+                                react_1.default.createElement("div", { className: "ui-row-actions" },
+                                    react_1.default.createElement(ui_1.UiButton, { icon: "edit", title: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0442\u0438\u043F\u043E\u0432", onClick: (e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleEditAttributeType(tsIndex, attrIndex);
+                                        } }),
+                                    react_1.default.createElement(ui_1.UiButton, { icon: "close", danger: true, title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", onClick: (e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleDeleteTabularAttribute(tsIndex, attrIndex);
+                                        } })))));
                     }))),
-                    react_1.default.createElement(ui_1.UiButton, { secondary: true, block: true, icon: "add", onClick: () => setShowAddAttributeModal(tsIndex) }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442")));
+                    react_1.default.createElement("div", { className: "tabular-section__footer" },
+                        react_1.default.createElement(ui_1.UiButton, { secondary: true, icon: "add", onClick: () => setShowAddAttributeModal(tsIndex) }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442"))));
             }))));
     }
     else if (activeTab === 'enumValues') {
@@ -1430,6 +1429,19 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                 react_1.default.createElement(ui_1.UiTable, { columns: ['Имя'] }, selectedObject.commands.map((cmd, index) => (react_1.default.createElement(ui_1.UiTableRow, { key: index },
                     react_1.default.createElement(ui_1.UiTableCell, null, cmd.name || `Команда ${index + 1}`))))))));
     }
+    else if (activeTab === 'composition') {
+        content = (react_1.default.createElement(FunctionalOptionFields_1.FunctionalOptionContentEditor, { value: formData?.Content, referenceTypes: metadata.referenceTypes || [], members: metadata.functionalOptionMembers || [], onChange: (next) => {
+                handleChange({ formData: { ...formData, Content: next } });
+            } }));
+    }
+    else if (activeTab === 'operations') {
+        content = (react_1.default.createElement(WebServiceOperationsTab_1.WebServiceOperationsTab, { xml: selectedObject?._originalXml || '', onXmlChange: (xml) => {
+                if (!selectedObject || !onSelectedObjectChange) {
+                    return;
+                }
+                onSelectedObjectChange({ ...selectedObject, _originalXml: xml });
+            } }));
+    }
     else if (activeTab === 'properties' && formData) {
         // Группируем свойства
         const basicFields = ['Name', 'Synonym', 'Comment'];
@@ -1437,6 +1449,16 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
         const registerRecords = formData.RegisterRecords;
         const isDocument = String(objectType || '').toLowerCase() === 'документ' ||
             String(objectType || '').toLowerCase() === 'document';
+        const isWebService = objectType === 'WebService' ||
+            objectType === 'Web-сервис' ||
+            objectType === 'Веб-сервис' ||
+            (selectedObject?.sourcePath && String(selectedObject.sourcePath).replace(/\\/g, '/').includes('/WebServices/'));
+        const functionalOptionPath = selectedObject?.sourcePath
+            ? String(selectedObject.sourcePath).replace(/\\/g, '/')
+            : '';
+        const isFunctionalOption = objectType === 'FunctionalOption' ||
+            objectType === 'Функциональная опция' ||
+            (functionalOptionPath.includes('/FunctionalOptions/') && !functionalOptionPath.includes('/FunctionalOptionsParameters/'));
         const isChartOfAccountsProps = objectType === 'ChartOfAccounts' ||
             objectType === 'План счетов' ||
             (selectedObject?.sourcePath &&
@@ -1473,7 +1495,10 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
             !(isInformationRegister && INFORMATION_REGISTER_PROPERTY_KEYS.includes(key)) &&
             !(isAccumulationRegister && ACCUMULATION_REGISTER_PROPERTY_KEYS.includes(key)) &&
             !(isAccountingRegister && ACCOUNTING_REGISTER_PROPERTY_KEYS.includes(key)) &&
-            !(isCalculationRegister && CALCULATION_REGISTER_PROPERTY_KEYS.includes(key)));
+            !(isCalculationRegister && CALCULATION_REGISTER_PROPERTY_KEYS.includes(key)) &&
+            !(isWebService && webServiceXml_1.WEB_SERVICE_OTHER_KEYS.includes(key)) &&
+            !(isWebService && webServiceXml_1.WEB_SERVICE_SESSION_KEYS.includes(key)) &&
+            !(isFunctionalOption && key === 'Content'));
         /** Карточка свойства регистра (скаляр или JSON-объект из XML). */
         const renderRegisterScalarField = (field, scheduleHint) => {
             const raw = formData[field];
@@ -1508,13 +1533,34 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     return (react_1.default.createElement("div", { key: field, className: "property-card" },
                         react_1.default.createElement("div", { className: "property-header" },
                             react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
-                        react_1.default.createElement("div", { className: "property-value" }, (field === 'Synonym' || field === 'Comment') && typeof value === 'object' && value?.['v8:item'] ? (react_1.default.createElement("div", { className: "multilingual-wrapper" },
+                        react_1.default.createElement("div", { className: "property-value" }, field === 'Synonym' && typeof value === 'object' && value?.['v8:item'] ? (react_1.default.createElement("div", { className: "multilingual-wrapper" },
                             react_1.default.createElement(SimpleMultilingualEditor_1.SimpleMultilingualEditor, { value: value, onChange: (newValue) => {
                                     handleChange({ formData: { ...formData, [field]: newValue } });
                                 } }))) : (react_1.default.createElement(FieldInput, { field: field, value: value, onChange: (newValue) => {
                                 handleChange({ formData: { ...formData, [field]: newValue } });
                             }, objectType: objectType, label: (0, field_values_1.getFieldLabel)(field) })))));
                 }))),
+            isWebService && (react_1.default.createElement("div", { className: "properties-group" },
+                react_1.default.createElement("div", { className: "section-header" },
+                    react_1.default.createElement("h3", null, "\u041F\u0440\u043E\u0447\u0435\u0435")),
+                react_1.default.createElement("div", { className: "properties-cards" }, webServiceXml_1.WEB_SERVICE_OTHER_KEYS.filter((field) => field in formData || field === 'XDTOPackages').map((field) => (react_1.default.createElement("div", { key: field, className: "property-card" },
+                    react_1.default.createElement("div", { className: "property-header" },
+                        react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                    react_1.default.createElement("div", { className: "property-value" }, field === 'XDTOPackages' ? (react_1.default.createElement(WebServiceXdtoPackagesField_1.WebServiceXdtoPackagesField, { value: formData[field], onChange: (newValue) => {
+                            handleChange({ formData: { ...formData, [field]: newValue } });
+                        } })) : (react_1.default.createElement(FieldInput, { field: field, value: formData[field] ?? '', onChange: (newValue) => {
+                            handleChange({ formData: { ...formData, [field]: newValue } });
+                        }, objectType: objectType, label: (0, field_values_1.getFieldLabel)(field) }))))))))),
+            isWebService && (react_1.default.createElement("div", { className: "properties-group" },
+                react_1.default.createElement("div", { className: "section-header" },
+                    react_1.default.createElement("h3", null, "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0441\u0435\u0430\u043D\u0441\u0430\u043C\u0438")),
+                react_1.default.createElement("div", { className: "properties-cards" }, webServiceXml_1.WEB_SERVICE_SESSION_KEYS.filter((field) => field in formData || field === 'ReuseSessions' || field === 'SessionMaxAge').map((field) => (react_1.default.createElement("div", { key: field, className: "property-card" },
+                    react_1.default.createElement("div", { className: "property-header" },
+                        react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                    react_1.default.createElement("div", { className: "property-value" },
+                        react_1.default.createElement(FieldInput, { field: field, value: formData[field] ?? '', onChange: (newValue) => {
+                                handleChange({ formData: { ...formData, [field]: newValue } });
+                            }, objectType: objectType, label: (0, field_values_1.getFieldLabel)(field) })))))))),
             isChartOfCalculationTypesProps && (react_1.default.createElement("div", { className: "properties-group chart-of-calculation-types-calc" },
                 react_1.default.createElement("div", { className: "section-header" },
                     react_1.default.createElement("h3", null, "\u0420\u0430\u0441\u0447\u0451\u0442")),
@@ -1591,7 +1637,9 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     return (react_1.default.createElement("div", { key: field, className: "property-card" },
                         react_1.default.createElement("div", { className: "property-header" },
                             react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
-                        react_1.default.createElement("div", { className: "property-value" }, typeof value === 'object' && value !== null ? (react_1.default.createElement("textarea", { value: JSON.stringify(value, null, 2), onChange: e => {
+                        react_1.default.createElement("div", { className: "property-value" }, isMultilingualMetadataField(field) ? (react_1.default.createElement(SimpleMultilingualEditor_1.SimpleMultilingualEditor, { value: value, onChange: (newValue) => {
+                                handleChange({ formData: { ...formData, [field]: newValue } });
+                            } })) : typeof value === 'object' && value !== null ? (react_1.default.createElement("textarea", { value: JSON.stringify(value, null, 2), onChange: e => {
                                 try {
                                     const parsed = JSON.parse(e.target.value);
                                     handleChange({ formData: { ...formData, [field]: parsed } });
@@ -1616,7 +1664,9 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                     return (react_1.default.createElement("div", { key: field, className: "property-card" },
                         react_1.default.createElement("div", { className: "property-header" },
                             react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
-                        react_1.default.createElement("div", { className: "property-value" }, typeof value === 'object' && value !== null ? (react_1.default.createElement("textarea", { value: JSON.stringify(value, null, 2), onChange: e => {
+                        react_1.default.createElement("div", { className: "property-value" }, isMultilingualMetadataField(field) ? (react_1.default.createElement(SimpleMultilingualEditor_1.SimpleMultilingualEditor, { value: value, onChange: (newValue) => {
+                                handleChange({ formData: { ...formData, [field]: newValue } });
+                            } })) : typeof value === 'object' && value !== null ? (react_1.default.createElement("textarea", { value: JSON.stringify(value, null, 2), onChange: e => {
                                 try {
                                     const parsed = JSON.parse(e.target.value);
                                     handleChange({ formData: { ...formData, [field]: parsed } });
@@ -2141,8 +2191,7 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                                         color: 'var(--vscode-descriptionForeground)'
                                     } }, "\u0422\u0438\u043F \u043C\u043E\u0436\u0435\u0442 \u0431\u044B\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E ChartOfCharacteristicTypes"))));
                     }
-                    // Редактор типов для определяемых типов (DefinedType)
-                    if (field === 'Type' && objectType === 'DefinedType') {
+                    if (field === 'Type' && usesValueTypeEditor(objectType, selectedObject?.xmlObjectType)) {
                         return (react_1.default.createElement("div", { key: field, className: "property-card" },
                             react_1.default.createElement("div", { className: "property-header" },
                                 react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
@@ -2164,14 +2213,68 @@ const FormEditor = ({ objectType, formData, onChange, metadata, activeTab = 'pro
                                         options: {
                                             registers: metadata.registers,
                                             referenceTypes: metadata.referenceTypes,
-                                            definedTypeMode: true
+                                            definedTypeMode: isDefinedTypeObject(objectType, selectedObject?.xmlObjectType)
                                         }
+                                    } }))));
+                    }
+                    if (field === 'Location' && isFunctionalOption) {
+                        return (react_1.default.createElement("div", { key: field, className: "property-card property-card-wide" },
+                            react_1.default.createElement("div", { className: "property-header" },
+                                react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                            react_1.default.createElement("div", { className: "property-value" },
+                                react_1.default.createElement(FunctionalOptionFields_1.FunctionalOptionLocationField, { value: value, referenceTypes: metadata.referenceTypes || [], members: metadata.functionalOptionMembers || [], onChange: (newValue) => {
+                                        handleChange({ formData: { ...formData, Location: newValue } });
+                                    } }))));
+                    }
+                    if (field === 'PrivilegedGetMode' && isFunctionalOption) {
+                        const privileged = value === true || value === 'true' || value === 'True';
+                        return (react_1.default.createElement("div", { key: field, className: "property-card property-card-wide" },
+                            react_1.default.createElement("div", { className: "property-header" },
+                                react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                            react_1.default.createElement("div", { className: "property-value" },
+                                react_1.default.createElement(ui_1.UiCheckbox, { checked: privileged, onChange: (checked) => {
+                                        handleChange({ formData: { ...formData, PrivilegedGetMode: checked ? 'true' : 'false' } });
+                                    }, label: privileged ? 'Да' : 'Нет' }))));
+                    }
+                    if (field === 'Source') {
+                        return (react_1.default.createElement("div", { key: field, className: "property-card property-card-wide" },
+                            react_1.default.createElement("div", { className: "property-header" },
+                                react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                            react_1.default.createElement("div", { className: "property-value" },
+                                react_1.default.createElement(EventSubscriptionFields_1.EventSubscriptionSourceField, { value: value, referenceTypes: metadata.referenceTypes || [], currentEvent: typeof formData.Event === 'string' ? formData.Event : '', onChange: (newValue, eventStillValid) => {
+                                        handleChange({
+                                            formData: {
+                                                ...formData,
+                                                Source: newValue,
+                                                Event: eventStillValid ? formData.Event : '',
+                                            },
+                                        });
+                                    } }))));
+                    }
+                    if (field === 'Event') {
+                        return (react_1.default.createElement("div", { key: field, className: "property-card property-card-wide" },
+                            react_1.default.createElement("div", { className: "property-header" },
+                                react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                            react_1.default.createElement("div", { className: "property-value" },
+                                react_1.default.createElement(EventSubscriptionFields_1.EventSubscriptionEventField, { value: value, source: formData.Source, onChange: (newValue) => {
+                                        handleChange({ formData: { ...formData, Event: newValue } });
+                                    } }))));
+                    }
+                    if (field === 'Handler') {
+                        return (react_1.default.createElement("div", { key: field, className: "property-card property-card-wide" },
+                            react_1.default.createElement("div", { className: "property-header" },
+                                react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
+                            react_1.default.createElement("div", { className: "property-value" },
+                                react_1.default.createElement(ui_1.UiTextField, { value: typeof value === 'string' ? value : '', placeholder: "\u041E\u0431\u0449\u0438\u0439\u041C\u043E\u0434\u0443\u043B\u044C.\u0418\u043C\u044F\u041C\u043E\u0434\u0443\u043B\u044F.\u0418\u043C\u044F\u041F\u0440\u043E\u0446\u0435\u0434\u0443\u0440\u044B", onChange: (newValue) => {
+                                        handleChange({ formData: { ...formData, [field]: newValue } });
                                     } }))));
                     }
                     return (react_1.default.createElement("div", { key: field, className: "property-card" },
                         react_1.default.createElement("div", { className: "property-header" },
                             react_1.default.createElement("h4", null, (0, field_values_1.getFieldLabel)(field))),
-                        react_1.default.createElement("div", { className: "property-value" }, typeof value === 'object' && value !== null ? (react_1.default.createElement("textarea", { value: JSON.stringify(value, null, 2), onChange: (e) => {
+                        react_1.default.createElement("div", { className: "property-value" }, isMultilingualMetadataField(field) ? (react_1.default.createElement(SimpleMultilingualEditor_1.SimpleMultilingualEditor, { value: value, onChange: (newValue) => {
+                                handleChange({ formData: { ...formData, [field]: newValue } });
+                            } })) : typeof value === 'object' && value !== null ? (react_1.default.createElement("textarea", { value: JSON.stringify(value, null, 2), onChange: (e) => {
                                 try {
                                     const parsed = JSON.parse(e.target.value);
                                     handleChange({ formData: { ...formData, [field]: parsed } });
