@@ -16,10 +16,10 @@ function treeFromPanel(node) {
     const props = node.props;
     return props.tree ?? null;
 }
-const QueryEditorEnhanced = ({ isOpen, queryText, rightPanel, onSave, onCancel, fullscreen = false, dataCompositionMode = false, metadataTree = null, }) => {
+const QueryEditorEnhanced = ({ isOpen, queryText, rightPanel, onSave, onCancel, fullscreen = false, dataCompositionMode = false, metadataTree = null, queryModel = null, }) => {
     if (!isOpen)
         return null;
-    return (react_1.default.createElement(QueryWizard_1.QueryWizard, { isOpen: isOpen, queryText: queryText, onSave: onSave, onCancel: onCancel, fullscreen: fullscreen, dataCompositionMode: dataCompositionMode, metadataTree: metadataTree || treeFromPanel(rightPanel) }));
+    return (react_1.default.createElement(QueryWizard_1.QueryWizard, { isOpen: isOpen, queryText: queryText, onSave: onSave, onCancel: onCancel, fullscreen: fullscreen, dataCompositionMode: dataCompositionMode, metadataTree: metadataTree || treeFromPanel(rightPanel), queryModel: queryModel }));
 };
 exports.QueryEditorEnhanced = QueryEditorEnhanced;
 //# sourceMappingURL=QueryEditorEnhanced.js.map

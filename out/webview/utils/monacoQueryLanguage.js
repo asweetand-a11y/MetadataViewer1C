@@ -25,7 +25,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.register1cQueryLanguage = exports.getCalculationRegisterVirtualTableFields = exports.getAccountingRegisterVirtualTableFields = exports.getQueryMetadataFieldNames = exports.setQueryMetadataCompletionTree = void 0;
 const monaco = __importStar(require("monaco-editor"));
-let registered = false;
+const register_1 = require("../queryLanguage/register");
 let completionRegistered = false;
 let hoverRegistered = false;
 let suggestWidgetPatchInstalled = false;
@@ -1557,64 +1557,7 @@ function registerHoverProvider() {
     });
 }
 function register1cQueryLanguage() {
-    if (!registered) {
-        registered = true;
-        monaco.languages.register({ id: '1c-query' });
-        monaco.languages.setMonarchTokensProvider('1c-query', {
-            defaultToken: '',
-            keywords: KEYWORDS,
-            functions: FUNCTIONS,
-            tokenizer: {
-                root: [
-                    [/\/\/.*$/, 'comment'],
-                    [/\/\*/, 'comment', '@comment'],
-                    [/"([^"\\]|\\.)*"/, 'string'],
-                    [/\d+(\.\d+)?/, 'number'],
-                    [/[()\[\]{},;]/, 'delimiter'],
-                    [/[=<>!]+/, 'operator'],
-                    [/[A-Za-zА-Яа-я_][0-9A-Za-zА-Яа-я_]*/, {
-                            cases: {
-                                '@keywords': 'keyword',
-                                '@functions': 'function',
-                                '@default': 'identifier',
-                            },
-                        }],
-                    [/\./, 'delimiter'],
-                    [/\s+/, 'white'],
-                ],
-                comment: [
-                    [/[^/*]+/, 'comment'],
-                    [/\*\//, 'comment', '@pop'],
-                    [/[/*]/, 'comment'],
-                ],
-            },
-        });
-        monaco.languages.setLanguageConfiguration('1c-query', {
-            comments: {
-                lineComment: '//',
-                blockComment: ['/*', '*/'],
-            },
-            brackets: [
-                ['{', '}'],
-                ['[', ']'],
-                ['(', ')'],
-            ],
-            autoClosingPairs: [
-                { open: '{', close: '}' },
-                { open: '[', close: ']' },
-                { open: '(', close: ')' },
-                { open: '"', close: '"' },
-            ],
-            surroundingPairs: [
-                { open: '{', close: '}' },
-                { open: '[', close: ']' },
-                { open: '(', close: ')' },
-                { open: '"', close: '"' },
-            ],
-        });
-    }
-    registerCompletionProvider();
-    registerHoverProvider();
+    (0, register_1.registerQueryLanguage)(monaco);
 }
 exports.register1cQueryLanguage = register1cQueryLanguage;
 //# sourceMappingURL=monacoQueryLanguage.js.map

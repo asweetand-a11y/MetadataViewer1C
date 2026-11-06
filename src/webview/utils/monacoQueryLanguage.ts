@@ -1,6 +1,6 @@
 import * as monaco from 'monaco-editor';
+import { registerQueryLanguage } from '../queryLanguage/register';
 
-let registered = false;
 let completionRegistered = false;
 let hoverRegistered = false;
 
@@ -1680,72 +1680,5 @@ function registerHoverProvider(): void {
 }
 
 export function register1cQueryLanguage(): void {
-  if (!registered) {
-    registered = true;
-
-    monaco.languages.register({ id: '1c-query' });
-
-    monaco.languages.setMonarchTokensProvider('1c-query', {
-      defaultToken: '',
-      keywords: KEYWORDS,
-      functions: FUNCTIONS,
-      tokenizer: {
-        root: [
-          [/\/\/.*$/, 'comment'],
-          [/\/\*/, 'comment', '@comment'],
-
-          [/"([^"\\]|\\.)*"/, 'string'],
-          [/\d+(\.\d+)?/, 'number'],
-
-          [/[()\[\]{},;]/, 'delimiter'],
-          [/[=<>!]+/, 'operator'],
-
-          [/[A-Za-zА-Яа-я_][0-9A-Za-zА-Яа-я_]*/, {
-            cases: {
-              '@keywords': 'keyword',
-              '@functions': 'function',
-              '@default': 'identifier',
-            },
-          }],
-
-          [/\./, 'delimiter'],
-          [/\s+/, 'white'],
-        ],
-
-        comment: [
-          [/[^/*]+/, 'comment'],
-          [/\*\//, 'comment', '@pop'],
-          [/[/*]/, 'comment'],
-        ],
-      },
-    } as any);
-
-    monaco.languages.setLanguageConfiguration('1c-query', {
-      comments: {
-        lineComment: '//',
-        blockComment: ['/*', '*/'],
-      },
-      brackets: [
-        ['{', '}'],
-        ['[', ']'],
-        ['(', ')'],
-      ],
-      autoClosingPairs: [
-        { open: '{', close: '}' },
-        { open: '[', close: ']' },
-        { open: '(', close: ')' },
-        { open: '"', close: '"' },
-      ],
-      surroundingPairs: [
-        { open: '{', close: '}' },
-        { open: '[', close: ']' },
-        { open: '(', close: ')' },
-        { open: '"', close: '"' },
-      ],
-    });
-  }
-
-  registerCompletionProvider();
-  registerHoverProvider();
+  registerQueryLanguage(monaco);
 }
-

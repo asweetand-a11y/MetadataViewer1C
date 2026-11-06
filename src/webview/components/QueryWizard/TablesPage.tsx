@@ -4,6 +4,8 @@
 
 import React, { useRef, useState } from 'react';
 import type { QueryMetadataNode } from '../DcsEditor/MetadataTreePanel';
+import type { ConfigurationModel } from '../../../queryModel/model';
+import { QueryMetadataTree, type QueryTreeNode } from './QueryMetadataTree';
 import { ArbitraryConditionModal } from '../DcsEditor/ArbitraryConditionModal';
 import { VirtualTableParamsModal } from '../DcsEditor/VirtualTableParamsModal';
 import {
@@ -12,6 +14,7 @@ import {
   createField,
   createSelectQuery,
   createSource,
+  generateQueryText,
   getSelect,
   newId,
   usedAliases,
@@ -28,6 +31,7 @@ export interface TablesPageProps {
   batchIndex: number;
   operatorIndex: number;
   metadataTree: QueryMetadataNode | null;
+  queryModel?: ConfigurationModel | null;
   onChange: (schema: QuerySchema) => void;
   onEditNested: (sourceId: string) => void;
 }
@@ -75,6 +79,24 @@ function MetadataBrowser(props: {
   };
 
   return <div className="qw-tree">{render(props.tree, 0)}</div>;
+}
+
+function activateTreeNode(props: TablesPageProps, node: QueryTreeNode): void {
+  // ЗНАЧЕНИЕ(Справочник.Валюты.РоссийскийРубль) — выражение целиком, не путь таблицы.
+  if (node.insert && node.insert.startsWith('ЗНАЧЕНИЕ(')) {
+    mutate(props, (op) => op.fields.push(createField(node.insert as string)));
+    return;
+  }
+  const target = node.target;
+  if (target?.kind === 'table') {
+    addSource(props, normalizeTableName(target.path.join('.')));
+    return;
+  }
+  if (target?.kind === 'field') {
+    addFieldPath(props, [...target.table, target.field].join('.'));
+    return;
+  }
+  if (node.insert) addFieldPath(props, node.insert);
 }
 
 function applyNode(props: TablesPageProps, node: QueryMetadataNode): void {
@@ -172,17 +194,25 @@ export const TablesPage: React.FC<TablesPageProps> = (props) => {
         </label>
       </div>
       <div className="qw-split is-3">
-        <div>
+        <div className="qw-db">
           <div className="qw-list__title">База данных</div>
-          <MetadataBrowser
-            tree={props.metadataTree}
-            selectedId={metaId}
-            onSelect={(node) => {
-              setMetaId(node.id);
-              setMetaNode(node);
-            }}
-            onActivate={(node) => applyNode(props, node)}
-          />
+          {props.queryModel ? (
+            <QueryMetadataTree
+              model={props.queryModel}
+              text={generateQueryText(props.schema)}
+              onActivate={(node) => activateTreeNode(props, node)}
+            />
+          ) : (
+            <MetadataBrowser
+              tree={props.metadataTree}
+              selectedId={metaId}
+              onSelect={(node) => {
+                setMetaId(node.id);
+                setMetaNode(node);
+              }}
+              onActivate={(node) => applyNode(props, node)}
+            />
+          )}
         </div>
         <div>
           <div className="qw-list">
@@ -239,7 +269,7 @@ export const TablesPage: React.FC<TablesPageProps> = (props) => {
             </div>
           </div>
         </div>
-        <div className="qw-colbtns">
+        <div className="qw-colbtns is-top">
           <SmallButton disabled={!metaNode?.insertText} onClick={() => metaNode && applyNode(props, metaNode)}>Добавить</SmallButton>
           <SmallButton disabled={!source} onClick={() => mutate(props, (item) => { item.sources = item.sources.filter((s) => s.id !== sourceId); })}>Удалить</SmallButton>
           <SmallButton onClick={() => mutate(props, (item) => { item.sources = []; })}>Удалить все</SmallButton>

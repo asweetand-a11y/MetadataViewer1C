@@ -16,10 +16,13 @@ import type {
   TotalGrouping,
 } from './types';
 
+/** Между запросами пакета: «;» на своей строке и разделитель конструктора 1С. */
+export const QUERY_BATCH_SEPARATOR = `\n;\n\n${'/'.repeat(80)}\n`;
+
 /** Собирает текст пакета запросов. */
 export function generateQueryText(schema: QuerySchema): string {
   const parts = schema.batch.map((item) => generateBatchItem(item));
-  return parts.join(';\n\n');
+  return parts.join(QUERY_BATCH_SEPARATOR);
 }
 
 function generateBatchItem(item: BatchItem): string {

@@ -7,6 +7,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as monaco from 'monaco-editor';
 import { register1cQueryLanguage } from '../utils/monacoQueryLanguage';
 import { attachQuerySyntaxCheck } from '../querySyntax/attachQuerySyntaxCheck';
+import { completionMetadata, setCompletionMetadata } from '../queryLanguage/completion/provider';
+import { applySmartInsert, dragInsertText } from '../queryLanguage/editorActions';
+import type { ConfigurationModel } from '../../queryModel/model';
+import { QueryMetadataTree } from './QueryWizard/QueryMetadataTree';
+import { QueryStructurePanel } from './QueryWizard/QueryStructurePanel';
 import '../styles/editor.css';
 
 interface SimpleQueryEditorProps {
@@ -15,6 +20,8 @@ interface SimpleQueryEditorProps {
 
 export const SimpleQueryEditor: React.FC<SimpleQueryEditorProps> = ({ vscode }) => {
   const [queryText, setQueryText] = useState('');
+  const [queryModel, setQueryModel] = useState<ConfigurationModel | null>(null);
+  const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -23,6 +30,11 @@ export const SimpleQueryEditor: React.FC<SimpleQueryEditorProps> = ({ vscode }) 
     const handleMessage = (event: MessageEvent) => {
       const message = event.data;
       if (!message || typeof message !== 'object') return;
+
+      if (message.type === 'queryMetadataReady' && message.queryModel) {
+        setQueryModel(message.queryModel);
+        setCompletionMetadata(message.queryModel);
+      }
 
       if (message.type === 'queryEditorInit') {
         const text = message.payload?.queryText || '';
@@ -48,6 +60,7 @@ export const SimpleQueryEditor: React.FC<SimpleQueryEditorProps> = ({ vscode }) 
       value: queryText,
       language: '1c-query',
       theme: 'vs-dark',
+      linkedEditing: true,
       automaticLayout: true,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
@@ -61,6 +74,7 @@ export const SimpleQueryEditor: React.FC<SimpleQueryEditorProps> = ({ vscode }) 
     });
 
     editorRef.current = editor;
+    setEditor(editor);
     const syntax = attachQuerySyntaxCheck(editor);
 
     const disposable = editor.onDidChangeModelContent(() => {
@@ -83,6 +97,7 @@ export const SimpleQueryEditor: React.FC<SimpleQueryEditorProps> = ({ vscode }) 
       syntax.dispose();
       editor.dispose();
       editorRef.current = null;
+      setEditor(null);
     };
   }, []);
 
@@ -153,14 +168,40 @@ export const SimpleQueryEditor: React.FC<SimpleQueryEditorProps> = ({ vscode }) 
         </div>
       </div>
 
-      <div
-        ref={containerRef}
-        style={{
-          flex: 1,
-          width: '100%',
-          overflow: 'hidden',
-        }}
-      />
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <div style={{ width: 280, flex: 'none', minWidth: 0 }}>
+          <QueryMetadataTree
+            model={queryModel}
+            text={queryText}
+            onSmartInsert={(target) => {
+              const index = completionMetadata();
+              const instance = editorRef.current;
+              if (index && instance) applySmartInsert(instance, target, index);
+            }}
+          />
+        </div>
+        <div
+          ref={containerRef}
+          style={{ flex: 1, minWidth: 0 }}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            const instance = editorRef.current;
+            const plain = event.dataTransfer.getData('text/plain');
+            const position = instance?.getPosition();
+            const model = instance?.getModel();
+            if (!instance || !position || !plain || !model) return;
+            const offset = model.getOffsetAt(position);
+            const inserted = dragInsertText(event.dataTransfer, model.getValue(), offset, plain);
+            instance.executeEdits('drop', [{
+              range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+              text: inserted,
+              forceMoveMarkers: true,
+            }]);
+          }}
+        />
+        <QueryStructurePanel text={queryText} editor={editor} />
+      </div>
 
       <div style={{
         padding: '8px 16px',

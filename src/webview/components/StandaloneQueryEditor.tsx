@@ -7,6 +7,8 @@ import React, { useEffect, useState } from 'react';
 import { QueryEditorEnhanced } from './DcsEditor/QueryEditorEnhanced';
 import { MetadataTreePanel, type QueryMetadataNode } from './DcsEditor/MetadataTreePanel';
 import { setQueryMetadataCompletionTree } from '../utils/monacoQueryLanguage';
+import { setCompletionMetadata } from '../queryLanguage/completion/provider';
+import type { ConfigurationModel } from '../../queryModel/model';
 
 interface StandaloneQueryEditorProps {
   vscode: any;
@@ -29,6 +31,7 @@ export const StandaloneQueryEditor: React.FC<StandaloneQueryEditorProps> = ({ vs
   });
   const [isLoading, setIsLoading] = useState(true);
   const [queryText, setQueryText] = useState('');
+  const [queryModel, setQueryModel] = useState<ConfigurationModel | null>(null);
 
   // Обработка сообщений от расширения
   useEffect(() => {
@@ -58,6 +61,11 @@ export const StandaloneQueryEditor: React.FC<StandaloneQueryEditorProps> = ({ vs
         const tree = message.metadataTree ?? null;
         setData((prev) => ({ ...prev, metadataTree: tree }));
         setQueryMetadataCompletionTree(tree);
+      }
+
+      if (message.type === 'queryMetadataReady' && message.queryModel) {
+        setQueryModel(message.queryModel);
+        setCompletionMetadata(message.queryModel);
       }
     };
 
@@ -100,6 +108,7 @@ export const StandaloneQueryEditor: React.FC<StandaloneQueryEditorProps> = ({ vs
       fullscreen
       dataCompositionMode={false}
       metadataTree={data.metadataTree}
+      queryModel={queryModel}
       rightPanel={data.metadataTree ? (
         <MetadataTreePanel tree={data.metadataTree} />
       ) : (

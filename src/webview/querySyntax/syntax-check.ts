@@ -18,7 +18,7 @@ import {
 } from "antlr4ng";
 import { SDBLLexer } from "./sdbl/generated/SDBLLexer";
 import { SDBLParser } from "./sdbl/generated/SDBLParser";
-import { splitStatements, tokenize } from "./lexer";
+import { splitStatements, tokenize } from "../queryLanguage/lexer";
 
 export type SyntaxError = {
   /** Смещения в тексте: начало и конец ошибочного места. */

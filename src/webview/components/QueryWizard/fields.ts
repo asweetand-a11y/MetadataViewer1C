@@ -4,6 +4,7 @@
 
 import type { QueryMetadataNode } from '../DcsEditor/MetadataTreePanel';
 import { baseTableKey } from '../../../querySchema';
+import { completionMetadata } from '../../queryLanguage/completion/provider';
 import type { QueryOperator, QuerySource } from '../../../querySchema';
 import { detectVirtualTable } from './virtual';
 
@@ -175,12 +176,23 @@ function virtualFieldNames(tableName: string, groups: FieldGroups): string[] | n
   return null;
 }
 
+/** Поля таблицы из индекса конфигурации. null — индекс ещё не загружен или таблица в нём не найдена. */
+function namesFromIndex(tableName: string): string[] | null {
+  const index = completionMetadata();
+  if (!index || !tableName) return null;
+  const table = index.resolveTable(tableName.split('.'));
+  if (!table) return null;
+  return index.fieldsOf(table).map((field) => field.name);
+}
+
 /** Имена полей источника без псевдонима. Для виртуальной таблицы — поля результата. */
 export function sourceFieldNames(source: QuerySource, tree: QueryMetadataNode | null): string[] {
   if (source.kind === 'nested' && source.nested) {
     return (source.nested.operators[0]?.fields ?? []).map((field) => field.alias || field.expression);
   }
   if (source.tempFields.length) return source.tempFields.slice();
+  const indexed = namesFromIndex(source.tableName);
+  if (indexed) return indexed;
   const tableKey = baseTableKey(source.tableName);
   const groups = fieldGroups(tree, tableKey);
   const virtual = virtualFieldNames(source.tableName, groups);
@@ -195,6 +207,14 @@ export function sourceFieldNames(source: QuerySource, tree: QueryMetadataNode | 
  * Это измерения и реквизиты регистра, без суффиксов остатка и оборота.
  */
 export function virtualConditionFieldNames(source: QuerySource, tree: QueryMetadataNode | null): string[] {
+  const index = completionMetadata();
+  const base = baseTableKey(source.tableName);
+  if (index && base) {
+    const table = index.resolveTable(base.split('.'));
+    if (table && table.type !== 'derived') {
+      return index.fieldsOf({ type: 'object', object: table.object }).filter((field) => field.group !== 'standard').map((field) => field.name);
+    }
+  }
   const groups = fieldGroups(tree, baseTableKey(source.tableName));
   return unique([...groups.dimensions, ...groups.resources, ...groups.attributes]);
 }

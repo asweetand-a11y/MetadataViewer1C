@@ -32,6 +32,7 @@ const react_1 = __importStar(require("react"));
 const QueryEditorEnhanced_1 = require("./DcsEditor/QueryEditorEnhanced");
 const MetadataTreePanel_1 = require("./DcsEditor/MetadataTreePanel");
 const monacoQueryLanguage_1 = require("../utils/monacoQueryLanguage");
+const provider_1 = require("../queryLanguage/completion/provider");
 const StandaloneQueryEditor = ({ vscode }) => {
     const [data, setData] = (0, react_1.useState)({
         queryText: '',
@@ -40,6 +41,7 @@ const StandaloneQueryEditor = ({ vscode }) => {
     });
     const [isLoading, setIsLoading] = (0, react_1.useState)(true);
     const [queryText, setQueryText] = (0, react_1.useState)('');
+    const [queryModel, setQueryModel] = (0, react_1.useState)(null);
     // Обработка сообщений от расширения
     (0, react_1.useEffect)(() => {
         const handleMessage = (event) => {
@@ -66,6 +68,10 @@ const StandaloneQueryEditor = ({ vscode }) => {
                 setData((prev) => ({ ...prev, metadataTree: tree }));
                 (0, monacoQueryLanguage_1.setQueryMetadataCompletionTree)(tree);
             }
+            if (message.type === 'queryMetadataReady' && message.queryModel) {
+                setQueryModel(message.queryModel);
+                (0, provider_1.setCompletionMetadata)(message.queryModel);
+            }
         };
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
@@ -91,7 +97,7 @@ const StandaloneQueryEditor = ({ vscode }) => {
                 backgroundColor: 'var(--vscode-editor-background)',
             } }, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445..."));
     }
-    return (react_1.default.createElement(QueryEditorEnhanced_1.QueryEditorEnhanced, { isOpen: true, queryText: queryText, fullscreen: true, dataCompositionMode: false, metadataTree: data.metadataTree, rightPanel: data.metadataTree ? (react_1.default.createElement(MetadataTreePanel_1.MetadataTreePanel, { tree: data.metadataTree })) : (react_1.default.createElement("div", { style: { padding: '1rem', color: 'var(--vscode-foreground)' } }, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0435\u0440\u0435\u0432\u0430 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445\u2026")), onSave: handleSave, onCancel: handleCancel }));
+    return (react_1.default.createElement(QueryEditorEnhanced_1.QueryEditorEnhanced, { isOpen: true, queryText: queryText, fullscreen: true, dataCompositionMode: false, metadataTree: data.metadataTree, queryModel: queryModel, rightPanel: data.metadataTree ? (react_1.default.createElement(MetadataTreePanel_1.MetadataTreePanel, { tree: data.metadataTree })) : (react_1.default.createElement("div", { style: { padding: '1rem', color: 'var(--vscode-foreground)' } }, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0435\u0440\u0435\u0432\u0430 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445\u2026")), onSave: handleSave, onCancel: handleCancel }));
 };
 exports.StandaloneQueryEditor = StandaloneQueryEditor;
 //# sourceMappingURL=StandaloneQueryEditor.js.map

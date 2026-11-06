@@ -34,6 +34,8 @@ const fs = __importStar(require("fs"));
 const vscode = __importStar(require("vscode"));
 const MetadataScanner_1 = require("./metadata_utils/MetadataScanner");
 const MetadataRepository_1 = require("./metadata_utils/MetadataRepository");
+const buildQueryConfigurationModel_1 = require("./queryModel/buildQueryConfigurationModel");
+const path = __importStar(require("path"));
 const dcsParserXmldom_1 = require("./xmlParsers/dcsParserXmldom");
 const dcsSerializerXmldom_1 = require("./xmlParsers/dcsSerializerXmldom");
 const xmlUtils_1 = require("./utils/xmlUtils");
@@ -349,9 +351,26 @@ class DcsEditor {
             return null;
         }
     }
+    /** Модель языка запросов из уже разобранных объектов конфигурации. */
+    async publishQueryModel() {
+        try {
+            if (!this.queryModelCache) {
+                const { objects } = await this.metadataRepository.load(this.sourceRoot);
+                this.queryModelCache = (0, buildQueryConfigurationModel_1.buildQueryConfigurationModel)(objects, {
+                    id: this.sourceRoot,
+                    name: path.basename(this.sourceRoot),
+                });
+            }
+            this.webpanel?.webview.postMessage({ type: "queryMetadataReady", queryModel: this.queryModelCache });
+        }
+        catch {
+            // Редактор остаётся открытым и без модели.
+        }
+    }
     constructor(sourceRoot, reportXmlPath) {
         this.metadataRepository = new MetadataRepository_1.MetadataRepository(30000);
         this.metadataTreeCache = null;
+        this.queryModelCache = null;
         this.metadataCache = null;
         this.webviewReady = false;
         this.pendingInitMessage = null;
@@ -425,6 +444,7 @@ class DcsEditor {
                 }
                 // Запрос дерева метаданных (fallback при потере metadataTreeReady)
                 if (message.type === 'requestMetadataTree' && panel) {
+                    void this.publishQueryModel();
                     const tree = this.metadataTreeCache ?? (await this.loadMetadataTreeForWebview());
                     if (tree) {
                         panel.webview.postMessage({ type: "metadataTreeReady", metadataTree: tree });
@@ -470,6 +490,7 @@ class DcsEditor {
             else {
                 panel.webview.postMessage(initMessage);
             }
+            void this.publishQueryModel();
             // Дерево метаданных загружаем в фоне с прогрессивной отдачей — UI обновляется по мере готовности типов
             void this.loadMetadataTreeForWebview((partialTree) => {
                 if (this.webpanel) {

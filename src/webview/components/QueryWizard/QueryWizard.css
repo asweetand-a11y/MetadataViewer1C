@@ -69,6 +69,31 @@
   justify-content: center;
 }
 
+.qw-colbtns.is-top {
+  align-self: start;
+  justify-content: flex-start;
+  padding-top: 28px;
+}
+
+.qw-db {
+  display: flex;
+  flex-direction: column;
+  height: 420px;
+  min-height: 0;
+  border: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-input-background, transparent);
+  overflow: hidden;
+}
+
+.qw-db .md-tree,
+.qw-db .qw-tree {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  border: none;
+}
+
 .qw-btn {
   border: 1px solid var(--vscode-panel-border);
   background: var(--vscode-button-secondaryBackground, var(--vscode-editor-background));

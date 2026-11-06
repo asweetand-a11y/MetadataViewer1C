@@ -36,6 +36,7 @@ const ui_1 = require("../../ui");
 const QueryEditorEnhanced_1 = require("./QueryEditorEnhanced");
 const MetadataTreePanel_1 = require("./MetadataTreePanel");
 const monacoQueryLanguage_1 = require("../../utils/monacoQueryLanguage");
+const provider_1 = require("../../queryLanguage/completion/provider");
 const dcsGroupingParams_1 = require("./dcsGroupingParams");
 function normalizeTextForSearch(s) {
     return String(s || '')
@@ -2647,6 +2648,7 @@ const DcsEditorApp = ({ vscode }) => {
     const [report, setReport] = (0, react_1.useState)(null);
     const [metadata, setMetadata] = (0, react_1.useState)({ registers: [], referenceTypes: [] });
     const [metadataTree, setMetadataTree] = (0, react_1.useState)(null);
+    const [queryModel, setQueryModel] = (0, react_1.useState)(null);
     const [treeQuery, setTreeQuery] = (0, react_1.useState)('');
     const [selectedPath, setSelectedPath] = (0, react_1.useState)('');
     const [dcsTab, setDcsTab] = (0, react_1.useState)('datasets');
@@ -2706,6 +2708,11 @@ const DcsEditorApp = ({ vscode }) => {
                 setSelectedFieldKey('');
                 setDcsTab('datasets');
                 return;
+            }
+            if (msg.type === 'queryMetadataReady') {
+                const model = msg.queryModel ?? null;
+                setQueryModel(model);
+                (0, provider_1.setCompletionMetadata)(model);
             }
             if (msg.type === 'metadataTreeReady') {
                 const mt = msg.metadataTree;
@@ -3331,7 +3338,7 @@ const DcsEditorApp = ({ vscode }) => {
                         "MVP: \u0440\u0430\u0437\u0434\u0435\u043B \u00AB",
                         dcsTabs.find((t) => t.id === dcsTab)?.label,
                         "\u00BB \u0431\u0443\u0434\u0435\u0442 \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u043C \u0448\u0430\u0433\u043E\u043C.")))))),
-        react_1.default.createElement(QueryEditorEnhanced_1.QueryEditorEnhanced, { isOpen: isQueryEditorOpen, queryText: queryBeingEdited.queryText, dataCompositionMode: true, metadataTree: metadataTree, rightPanel: metadataTree ? (react_1.default.createElement(MetadataTreePanel_1.MetadataTreePanel, { tree: metadataTree })) : (react_1.default.createElement("div", { className: "dcs-metadata-tree-loading" }, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0435\u0440\u0435\u0432\u0430 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445\u2026")), onSave: (newQuery) => {
+        react_1.default.createElement(QueryEditorEnhanced_1.QueryEditorEnhanced, { isOpen: isQueryEditorOpen, queryText: queryBeingEdited.queryText, dataCompositionMode: true, metadataTree: metadataTree, queryModel: queryModel, rightPanel: metadataTree ? (react_1.default.createElement(MetadataTreePanel_1.MetadataTreePanel, { tree: metadataTree })) : (react_1.default.createElement("div", { className: "dcs-metadata-tree-loading" }, "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0435\u0440\u0435\u0432\u0430 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445\u2026")), onSave: (newQuery) => {
                 handleChangeDataSetQuery(queryBeingEdited.dataSetPath, newQuery);
                 setIsQueryEditorOpen(false);
             }, onCancel: () => setIsQueryEditorOpen(false) })));

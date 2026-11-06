@@ -5,6 +5,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { QueryMetadataNode } from '../DcsEditor/MetadataTreePanel';
+import type { ConfigurationModel } from '../../../queryModel/model';
 import {
   cloneData,
   createEmptySchema,
@@ -65,6 +66,7 @@ export interface QueryWizardProps {
   fullscreen?: boolean;
   dataCompositionMode?: boolean;
   metadataTree?: QueryMetadataNode | null;
+  queryModel?: ConfigurationModel | null;
   nested?: boolean;
 }
 
@@ -90,6 +92,7 @@ export const QueryWizard: React.FC<QueryWizardProps> = ({
   fullscreen = false,
   dataCompositionMode = false,
   metadataTree = null,
+  queryModel = null,
   nested = false,
 }) => {
   const [schema, setSchema] = useState<QuerySchema | null>(null);
@@ -237,7 +240,7 @@ export const QueryWizard: React.FC<QueryWizardProps> = ({
             </div>
           </div>
         ) : null}
-        {schema && tab === 'tables' ? <TablesPage {...pageProps} onEditNested={setNestedSourceId} /> : null}
+        {schema && tab === 'tables' ? <TablesPage {...pageProps} queryModel={queryModel} onEditNested={setNestedSourceId} /> : null}
         {schema && tab === 'joins' ? <JoinsPage {...pageProps} /> : null}
         {schema && tab === 'grouping' ? <GroupingPage {...pageProps} /> : null}
         {schema && tab === 'conditions' ? <ConditionsPage {...pageProps} /> : null}
@@ -253,6 +256,7 @@ export const QueryWizard: React.FC<QueryWizardProps> = ({
         {tab === 'text' ? (
           <QueryTextPage
             value={raw}
+            model={queryModel}
             onChange={(value) => {
               setRaw(value);
               setTextDirty(true);
@@ -274,6 +278,7 @@ export const QueryWizard: React.FC<QueryWizardProps> = ({
           nested
           queryText={nestedSource.nested ? generateSelect(nestedSource.nested) : 'ВЫБРАТЬ'}
           metadataTree={metadataTree}
+          queryModel={queryModel}
           onCancel={() => setNestedSourceId(null)}
           onSave={(text) => {
             const parsed = parseQueryText(text, false);

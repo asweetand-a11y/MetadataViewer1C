@@ -5,6 +5,7 @@
 
 import React from 'react';
 import type { QueryMetadataNode } from './MetadataTreePanel';
+import type { ConfigurationModel } from '../../../queryModel/model';
 import { QueryWizard } from '../QueryWizard/QueryWizard';
 
 export interface QueryEditorEnhancedProps {
@@ -18,6 +19,7 @@ export interface QueryEditorEnhancedProps {
   /** Вкладки компоновки данных и характеристик, как в конструкторе СКД. */
   dataCompositionMode?: boolean;
   metadataTree?: QueryMetadataNode | null;
+  queryModel?: ConfigurationModel | null;
 }
 
 function treeFromPanel(node: React.ReactNode): QueryMetadataNode | null {
@@ -35,6 +37,7 @@ export const QueryEditorEnhanced: React.FC<QueryEditorEnhancedProps> = ({
   fullscreen = false,
   dataCompositionMode = false,
   metadataTree = null,
+  queryModel = null,
 }) => {
   if (!isOpen) return null;
   return (
@@ -46,6 +49,7 @@ export const QueryEditorEnhanced: React.FC<QueryEditorEnhancedProps> = ({
       fullscreen={fullscreen}
       dataCompositionMode={dataCompositionMode}
       metadataTree={metadataTree || treeFromPanel(rightPanel)}
+      queryModel={queryModel}
     />
   );
 };

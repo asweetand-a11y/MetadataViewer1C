@@ -32,12 +32,14 @@ const vscode = __importStar(require("vscode"));
 const path = __importStar(require("path"));
 const MetadataScanner_1 = require("./metadata_utils/MetadataScanner");
 const MetadataRepository_1 = require("./metadata_utils/MetadataRepository");
+const buildQueryConfigurationModel_1 = require("./queryModel/buildQueryConfigurationModel");
 const webviewAssets_1 = require("./utils/webviewAssets");
 class QueryStringEditor {
     constructor() {
         /** TTL 5 минут — дерево метаданных редко меняется при редактировании запросов */
         this.metadataRepository = new MetadataRepository_1.MetadataRepository(300000);
         this.metadataTreeCacheByRoot = new Map();
+        this.queryModelCacheByRoot = new Map();
         this.metadataCacheByRoot = new Map();
         this.lastConfigRoot = null;
         this.webviewReady = false;
@@ -546,6 +548,8 @@ class QueryStringEditor {
                     return;
                 }
                 if (message.type === 'requestMetadataTree' && panel) {
+                    if (this.lastConfigRoot)
+                        void this.publishQueryModel(this.lastConfigRoot);
                     // Webview запрашивает дерево (на случай потери сообщения metadataTreeReady)
                     const tree = this.pendingMetadataTree ?? (this.lastConfigRoot ? this.metadataTreeCacheByRoot.get(this.lastConfigRoot) : undefined) ?? null;
                     if (tree !== null) {
@@ -615,6 +619,7 @@ class QueryStringEditor {
                 this.pendingMetadataTree = tree;
             }
         };
+        void this.publishQueryModel(configRoot);
         void this.loadMetadataTreeForWebview(configRoot, sendTree).then((metadataTree) => {
             if (!this.webpanel)
                 return;
@@ -624,6 +629,21 @@ class QueryStringEditor {
                 this.pendingMetadataTree = null;
             }
         });
+    }
+    /** Модель языка запросов из уже разобранных объектов конфигурации. */
+    async publishQueryModel(configRoot) {
+        try {
+            let model = this.queryModelCacheByRoot.get(configRoot);
+            if (!model) {
+                const { objects } = await this.metadataRepository.load(configRoot);
+                model = (0, buildQueryConfigurationModel_1.buildQueryConfigurationModel)(objects, { id: configRoot, name: path.basename(configRoot) });
+                this.queryModelCacheByRoot.set(configRoot, model);
+            }
+            this.webpanel?.webview.postMessage({ type: "queryMetadataReady", queryModel: model });
+        }
+        catch {
+            // Редактор остаётся открытым и без модели.
+        }
     }
     /**
      * Обработка сохранения запроса

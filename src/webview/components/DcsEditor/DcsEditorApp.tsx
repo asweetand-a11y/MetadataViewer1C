@@ -11,6 +11,8 @@ import { UiButton } from '../../ui';
 import { QueryEditorEnhanced } from './QueryEditorEnhanced';
 import { MetadataTreePanel, type QueryMetadataNode } from './MetadataTreePanel';
 import { setQueryMetadataCompletionTree } from '../../utils/monacoQueryLanguage';
+import { setCompletionMetadata } from '../../queryLanguage/completion/provider';
+import type { ConfigurationModel } from '../../../queryModel/model';
 import { GROUPING_OUTPUT_PARAMS, GROUPING_PARAM_MAP } from './dcsGroupingParams';
 type DcsNode = {
   path: string;
@@ -3628,6 +3630,7 @@ export const DcsEditorApp: React.FC<{ vscode: any }> = ({ vscode }) => {
   const [report, setReport] = useState<ParsedReportDcs | null>(null);
   const [metadata, setMetadata] = useState<{ registers: string[]; referenceTypes: string[] }>({ registers: [], referenceTypes: [] });
   const [metadataTree, setMetadataTree] = useState<QueryMetadataNode | null>(null);
+  const [queryModel, setQueryModel] = useState<ConfigurationModel | null>(null);
   const [treeQuery, setTreeQuery] = useState('');
   const [selectedPath, setSelectedPath] = useState('');
   const [dcsTab, setDcsTab] = useState<DcsTabId>('datasets');
@@ -3691,6 +3694,12 @@ export const DcsEditorApp: React.FC<{ vscode: any }> = ({ vscode }) => {
 
         setDcsTab('datasets');
         return;
+      }
+
+      if ((msg as { type?: string }).type === 'queryMetadataReady') {
+        const model = (msg as { queryModel?: ConfigurationModel }).queryModel ?? null;
+        setQueryModel(model);
+        setCompletionMetadata(model);
       }
 
       if (msg.type === 'metadataTreeReady') {
@@ -4429,6 +4438,7 @@ export const DcsEditorApp: React.FC<{ vscode: any }> = ({ vscode }) => {
         queryText={queryBeingEdited.queryText}
         dataCompositionMode
         metadataTree={metadataTree}
+        queryModel={queryModel}
         rightPanel={metadataTree ? (
           <MetadataTreePanel tree={metadataTree} />
         ) : (

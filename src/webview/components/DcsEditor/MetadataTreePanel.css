@@ -72,6 +72,72 @@
   cursor: grabbing;
 }
 
+.md-tree__detail {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.md-tree__filter,
+.md-tree__more {
+  margin-top: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.qw-structure {
+  width: 240px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.qw-structure section {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.qw-structure__body {
+  overflow: auto;
+  min-height: 0;
+}
+
+.qw-structure__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.qw-structure__item.is-active,
+.qw-structure__item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.qw-text {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+}
+
+.qw-text__editor {
+  flex: 1;
+  min-width: 0;
+}
+
 .md-tree__hint {
   padding: 8px 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.10);
