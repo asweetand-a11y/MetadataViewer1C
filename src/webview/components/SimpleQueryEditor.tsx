@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as monaco from 'monaco-editor';
 import { register1cQueryLanguage } from '../utils/monacoQueryLanguage';
+import { attachQuerySyntaxCheck } from '../querySyntax/attachQuerySyntaxCheck';
 import '../styles/editor.css';
 
 interface SimpleQueryEditorProps {
@@ -60,6 +61,7 @@ export const SimpleQueryEditor: React.FC<SimpleQueryEditorProps> = ({ vscode }) 
     });
 
     editorRef.current = editor;
+    const syntax = attachQuerySyntaxCheck(editor);
 
     const disposable = editor.onDidChangeModelContent(() => {
       setQueryText(editor.getValue());
@@ -78,6 +80,7 @@ export const SimpleQueryEditor: React.FC<SimpleQueryEditorProps> = ({ vscode }) 
 
     return () => {
       disposable.dispose();
+      syntax.dispose();
       editor.dispose();
       editorRef.current = null;
     };

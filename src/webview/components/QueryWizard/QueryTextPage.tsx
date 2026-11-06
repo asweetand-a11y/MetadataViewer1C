@@ -5,6 +5,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as monaco from 'monaco-editor';
 import { register1cQueryLanguage } from '../../utils/monacoQueryLanguage';
+import { attachQuerySyntaxCheck } from '../../querySyntax/attachQuerySyntaxCheck';
 
 export const QueryTextPage: React.FC<{
   value: string;
@@ -32,9 +33,11 @@ export const QueryTextPage: React.FC<{
       unicodeHighlight: { ambiguousCharacters: false },
     });
     editorRef.current = editor;
+    const syntax = attachQuerySyntaxCheck(editor);
     const sub = editor.onDidChangeModelContent(() => onChangeRef.current(editor.getValue()));
     return () => {
       sub.dispose();
+      syntax.dispose();
       editor.dispose();
       editorRef.current = null;
     };

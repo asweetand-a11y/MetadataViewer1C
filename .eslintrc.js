@@ -2,6 +2,7 @@
 // eslint-disable-next-line no-undef
 module.exports = {
 	root: true,
+	ignorePatterns: ['src/webview/querySyntax/sdbl/generated/**'],
 	parser: '@typescript-eslint/parser',
 	plugins: [
 		'@typescript-eslint',
