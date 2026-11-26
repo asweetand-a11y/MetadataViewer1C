@@ -122,7 +122,7 @@ VS Code (Cursor) расширение для работы с метаданны�
 ### `metadataViewer.commitFilePath`
 
 * **Тип:** `string`
-* **По умолчанию:** `${workspaceFolder}/commit_devtools/commit_devtools.txt`
+* **По умолчанию:** `${workspaceFolder}/build/commit_devtools/commit_devtools.txt`
 * **Описание:** Путь к файлу commit_devtools.txt, в который записываются имена изменённых BSL файлов при их сохранении.
 
 ### `metadataViewer.onecAiAccessToken`

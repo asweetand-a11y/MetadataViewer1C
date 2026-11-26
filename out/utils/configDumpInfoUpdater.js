@@ -596,7 +596,7 @@ function removeMetadataByName(doc, metadataName) {
     return n;
 }
 /**
- * Применяет список путей из Commit.txt к документу дампа (без записи на диск).
+ * Применяет список путей из commit_devtools.txt к документу дампа (без записи на диск).
  */
 function applyCommitPathsToDocument(configRoot, commitXmlPaths, doc, outputChannel) {
     const configDumpPath = path.normalize(path.join(configRoot, 'ConfigDumpInfo.xml'));
@@ -644,7 +644,7 @@ function applyCommitPathsToDocument(configRoot, commitXmlPaths, doc, outputChann
 }
 exports.applyCommitPathsToDocument = applyCommitPathsToDocument;
 /**
- * Полный цикл: синхронизация новых объектов + правки по Commit.txt + валидация дампа + одна запись на диск.
+ * Полный цикл: синхронизация новых объектов + правки по commit_devtools.txt + валидация дампа + одна запись на диск.
  */
 async function runUpdateConfigDumpFromCommitTxt(options) {
     const { validateXML } = await Promise.resolve().then(() => __importStar(require('../utils/xmlUtils')));

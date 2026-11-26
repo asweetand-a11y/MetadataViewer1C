@@ -471,7 +471,7 @@ class PredefinedDataPanel {
                 xmlToWrite = Buffer.concat([bomBuffer, contentBuffer]).toString('utf8');
             }
             fs.writeFileSync(this.state.predefinedPath, xmlToWrite, 'utf8');
-            // Логируем измененный файл в Commit.txt
+            // Логируем измененный файл в commit_devtools.txt
             commitFileLogger_1.CommitFileLogger.getInstance().logChangedFile(this.state.predefinedPath);
             // Обновляем ConfigDumpInfo.xml
             const configDumpInfoPath = path.join(this.state.configRoot, 'ConfigDumpInfo.xml');

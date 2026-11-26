@@ -382,7 +382,7 @@ class FormPreviewer {
                     // ВАЖНО: Добавляем BOM (Byte Order Mark) для UTF-8, как в оригинальных файлах 1С
                     const xmlWithBom = '\uFEFF' + normalizedXml;
                     await fs.promises.writeFile(formPath, xmlWithBom, 'utf8');
-                    // Логируем измененный файл в Commit.txt
+                    // Логируем измененный файл в commit_devtools.txt
                     commitFileLogger_1.CommitFileLogger.getInstance().logChangedFile(formPath);
                     panel.webview.postMessage({ type: 'formPreviewSaved', success: true });
                     vscode.window.showInformationMessage('Форма успешно сохранена.');

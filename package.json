@@ -2,7 +2,7 @@
 	"name": "1c-configuration-tree",
 	"displayName": "1C Configuration tree",
 	"description": "Дерево конфигураций 1С: Предприятие 8",
-	"version": "2.10.28",
+	"version": "2.10.29",
 	"publisher": "whiterabbit",
 	"repository": {
 		"type": "git",
@@ -497,7 +497,7 @@
 					},
 					"metadataViewer.commitFilePath": {
 						"type": "string",
-						"default": "${workspaceFolder}\\commit_devtools\\commit_devtools.txt",
+						"default": "${workspaceFolder}\\build\\commit_devtools\\commit_devtools.txt",
 						"description": "%1c-metadata-viewer.commitFilePath.title%"
 					},
 					"metadataViewer.onecAiAccessToken": {

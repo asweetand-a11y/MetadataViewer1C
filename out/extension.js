@@ -74,6 +74,9 @@ function activate(context) {
     try {
         exports.outputChannel.appendLine('=== Расширение "1C Metadata Viewer" активировано ===');
         exports.outputChannel.show(true); // Показываем панель Output автоматически
+        void (0, commitFileLogger_1.migrateLegacyCommitFilePath)().catch((error) => {
+            exports.outputChannel.appendLine(`[CommitFileLogger] Не удалось обновить путь commit_devtools.txt: ${error}`);
+        });
         context.subscriptions.push(exports.statusBarProgress);
         context.subscriptions.push(exports.contextStatusBar);
         // Optional extra features ported from bsl-cursor (code actions, diff peek, metadata scan, AST rename)
@@ -403,16 +406,17 @@ function activate(context) {
     }
     // Отслеживание сохранения BSL файлов
     context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((document) => {
-        // Проверяем, что это BSL файл
-        if (document.languageId === 'bsl' || document.fileName.endsWith('.bsl')) {
-            const config = vscode.workspace.getConfiguration();
-            const debugMode = config.get('metadataViewer.debugMode', false);
-            if (debugMode) {
-                exports.outputChannel.appendLine(`[BSL Save] Файл сохранен: ${document.fileName}`);
-            }
-            // Логируем сохраненный файл в Commit.txt
-            commitFileLogger_1.CommitFileLogger.getInstance().logChangedFile(document.fileName);
+        if (document.uri.scheme !== 'file') {
+            return;
         }
+        const lowerName = document.fileName.toLowerCase();
+        const isTracked = document.languageId === 'bsl'
+            || lowerName.endsWith('.bsl')
+            || lowerName.endsWith('.xml');
+        if (!isTracked || lowerName.endsWith('\\commit_devtools.txt')) {
+            return;
+        }
+        commitFileLogger_1.CommitFileLogger.getInstance().logChangedFile(document.fileName);
     }));
 }
 exports.activate = activate;
@@ -424,9 +428,9 @@ function deactivate() {
     try {
         exports.outputChannel.appendLine('=== Расширение "1C Metadata Viewer" деактивировано ===');
         void (0, embeddedMcpServer_1.stopEmbeddedMcpServer)();
-        // Очищаем содержимое файла Commit.txt при закрытии IDE
+        // Очищаем содержимое файла commit_devtools.txt при закрытии IDE
         commitFileLogger_1.CommitFileLogger.getInstance().clearCommitFile();
-        exports.outputChannel.appendLine('Commit.txt очищен');
+        exports.outputChannel.appendLine('commit_devtools.txt очищен');
     }
     catch (error) {
         exports.outputChannel.appendLine(`Ошибка при деактивации расширения: ${error}`);

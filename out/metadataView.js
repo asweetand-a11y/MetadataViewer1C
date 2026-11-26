@@ -508,7 +508,7 @@ class MetadataView {
         }
     }
     /**
-     * Обновление ConfigDumpInfo.xml по списку путей из Commit.txt для выбранной XML-конфигурации.
+     * Обновление ConfigDumpInfo.xml по списку путей из commit_devtools.txt для выбранной XML-конфигурации.
      * С валидацией исходных XML и итогового дампа, прогресс в статус-баре.
      */
     async updateConfigDumpFromCommit(item) {
@@ -519,17 +519,17 @@ class MetadataView {
             return;
         }
         if (item.configType === 'edt') {
-            vscode.window.showInformationMessage('Обновление дампа по Commit.txt для EDT не поддерживается.');
+            vscode.window.showInformationMessage('Обновление дампа по commit_devtools.txt для EDT не поддерживается.');
             return;
         }
         const configRoot = item.path;
         const logger = commitFileLogger_1.CommitFileLogger.getInstance();
         if (!logger.getResolvedCommitFilePath()) {
-            vscode.window.showWarningMessage('Не задан путь к Commit.txt (параметр metadataViewer.commitFilePath).');
+            vscode.window.showWarningMessage('Не задан путь к commit_devtools.txt (параметр metadataViewer.commitFilePath).');
             return;
         }
         sb.show();
-        sb.text = '$(sync~spin) Обновление дампа: чтение Commit.txt…';
+        sb.text = '$(sync~spin) Обновление дампа: чтение commit_devtools.txt…';
         const allLogged = logger.getLoggedPaths();
         const cfgNorm = normalizeFs(configRoot);
         const xmlUnderConfig = allLogged.filter((p) => {
@@ -541,8 +541,8 @@ class MetadataView {
         });
         if (xmlUnderConfig.length === 0) {
             sb.text = '$(alert) Обновление дампа: нет путей';
-            extension_1.outputChannel.appendLine(`[updateConfigDumpFromCommit] Нет .xml из Commit.txt под ${configRoot}`);
-            vscode.window.showInformationMessage('В Commit.txt нет XML-файлов для выбранной конфигурации.');
+            extension_1.outputChannel.appendLine(`[updateConfigDumpFromCommit] Нет .xml из commit_devtools.txt под ${configRoot}`);
+            vscode.window.showInformationMessage('В commit_devtools.txt нет XML-файлов для выбранной конфигурации.');
             setTimeout(() => sb.hide(), 2500);
             return;
         }
@@ -630,7 +630,7 @@ class MetadataView {
             extension_1.outputChannel.appendLine(`[updateConfigDumpFromCommit] Пропущены пути (не сопоставлены с Metadata): ${runResult.applyResult.skippedPaths.length}`);
         }
         sb.text = '$(check) Дамп конфигурации обновлён';
-        vscode.window.showInformationMessage('ConfigDumpInfo.xml обновлён по Commit.txt.');
+        vscode.window.showInformationMessage('ConfigDumpInfo.xml обновлён по commit_devtools.txt.');
         setTimeout(() => sb.hide(), 2500);
     }
     /**

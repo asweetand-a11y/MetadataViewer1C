@@ -9,7 +9,7 @@ import { TreeItem } from './ConfigurationFormats/utils';
 // Added imports for autogen-bsl features
 import { initBslCursorFeatures } from './autogen-bsl/init';
 import { startEmbeddedMcpServer, stopEmbeddedMcpServer } from './autogen-bsl/mcp/embeddedMcpServer';
-import { CommitFileLogger } from './utils/commitFileLogger';
+import { CommitFileLogger, migrateLegacyCommitFilePath } from './utils/commitFileLogger';
 import { BookmarkManager } from './utils/bookmarkManager';
 import { validateMetadataXmlFile } from './validation/metadataXmlValidator';
 import { ensureModulePropertyState } from './utils/extensionPropertyState';
@@ -54,6 +54,9 @@ export function activate(context: vscode.ExtensionContext) {
 	try {
 		outputChannel.appendLine('=== Расширение "1C Metadata Viewer" активировано ===');
 		outputChannel.show(true); // Показываем панель Output автоматически
+		void migrateLegacyCommitFilePath().catch((error) => {
+			outputChannel.appendLine(`[CommitFileLogger] Не удалось обновить путь commit_devtools.txt: ${error}`);
+		});
 
 		context.subscriptions.push(statusBarProgress);
 		context.subscriptions.push(contextStatusBar);
@@ -397,18 +400,17 @@ export function activate(context: vscode.ExtensionContext) {
 	// Отслеживание сохранения BSL файлов
 	context.subscriptions.push(
 		vscode.workspace.onDidSaveTextDocument((document) => {
-			// Проверяем, что это BSL файл
-			if (document.languageId === 'bsl' || document.fileName.endsWith('.bsl')) {
-				const config = vscode.workspace.getConfiguration();
-				const debugMode = config.get<boolean>('metadataViewer.debugMode', false);
-				
-				if (debugMode) {
-					outputChannel.appendLine(`[BSL Save] Файл сохранен: ${document.fileName}`);
-				}
-				
-				// Логируем сохраненный файл в commit_devtools.txt
-				CommitFileLogger.getInstance().logChangedFile(document.fileName);
+			if (document.uri.scheme !== 'file') {
+				return;
 			}
+			const lowerName = document.fileName.toLowerCase();
+			const isTracked = document.languageId === 'bsl'
+				|| lowerName.endsWith('.bsl')
+				|| lowerName.endsWith('.xml');
+			if (!isTracked || lowerName.endsWith('\\commit_devtools.txt')) {
+				return;
+			}
+			CommitFileLogger.getInstance().logChangedFile(document.fileName);
 		})
 	);
 }

@@ -1400,7 +1400,7 @@ class MetadataPanel {
                     vscode.window.showWarningMessage(`Объект сохранён; не удалось обновить документы (RegisterRecords): ${m.substring(0, 200)}`);
                 }
                 vscode.window.showInformationMessage("Изменения объекта успешно сохранены.");
-                // Логируем измененный файл в Commit.txt
+                // Логируем измененный файл в commit_devtools.txt
                 commitFileLogger_1.CommitFileLogger.getInstance().logChangedFile(obj.sourcePath);
                 if (obj.subsystems !== undefined &&
                     (0, subsystemMembership_1.shouldOfferSubsystemMembership)(obj.sourcePath, obj.xmlObjectType)) {
@@ -1524,7 +1524,7 @@ class MetadataPanel {
             }
             await this.saveFormToXml(formData, formPath);
             vscode.window.showInformationMessage("Форма успешно сохранена.");
-            // Логируем измененный файл в Commit.txt
+            // Логируем измененный файл в commit_devtools.txt
             commitFileLogger_1.CommitFileLogger.getInstance().logChangedFile(formPath);
             // Обновляем локальный кэш/дерево метаданных для конфигурации, содержащей эту форму
             try {

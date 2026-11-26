@@ -16,6 +16,39 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { outputChannel, statusBarProgress } from '../extension';
 
+const COMMIT_FILE_PATH_SETTING = 'metadataViewer.commitFilePath';
+const DEFAULT_COMMIT_FILE_PATH = '${workspaceFolder}\\build\\commit_devtools\\commit_devtools.txt';
+const LEGACY_COMMIT_FILE_PATHS = new Set([
+  '${workspacefolder}\\build\\commit\\commit.txt',
+  '${workspacefolder}\\build\\commit.txt',
+  '${workspacefolder}\\commit_devtools\\commit_devtools.txt',
+]);
+
+function isLegacyCommitFilePath(value: string): boolean {
+  const normalized = value.trim().replace(/\//g, '\\').toLowerCase();
+  return LEGACY_COMMIT_FILE_PATHS.has(normalized);
+}
+
+/**
+ * Заменяет сохранённый старый путь build\\commit\\commit.txt на текущий путь по умолчанию.
+ * Явно заданный другой путь не трогает.
+ */
+export async function migrateLegacyCommitFilePath(): Promise<void> {
+  const config = vscode.workspace.getConfiguration();
+  const inspected = config.inspect<string>(COMMIT_FILE_PATH_SETTING);
+  if (!inspected) return;
+  const targets: Array<[string | undefined, vscode.ConfigurationTarget]> = [
+    [inspected.globalValue, vscode.ConfigurationTarget.Global],
+    [inspected.workspaceValue, vscode.ConfigurationTarget.Workspace],
+    [inspected.workspaceFolderValue, vscode.ConfigurationTarget.WorkspaceFolder],
+  ];
+  await Promise.all(targets.map(async ([value, target]) => {
+    if (!value || !isLegacyCommitFilePath(value)) return;
+    await config.update(COMMIT_FILE_PATH_SETTING, DEFAULT_COMMIT_FILE_PATH, target);
+    outputChannel.appendLine(`[CommitFileLogger] Путь обновлён: ${value} -> ${DEFAULT_COMMIT_FILE_PATH}`);
+  }));
+}
+
 export class CommitFileLogger {
   private static instance: CommitFileLogger | null = null;
 
@@ -68,24 +101,35 @@ export class CommitFileLogger {
   }
 
   /**
-   * Получить путь к файлу commit_devtools.txt из настроек
+   * Каталог рабочей области, в которой лежит изменённый файл.
+   * Если файл вне всех корней, берётся первая корневая папка.
    */
-  private getCommitFilePath(): string | null {
-    const config = vscode.workspace.getConfiguration();
-    const commitPath = config.get<string>('metadataViewer.commitFilePath', '');
-    
-    if (!commitPath) {
+  private workspaceFolderFor(changedFilePath?: string): string | null {
+    const folders = vscode.workspace.workspaceFolders;
+    if (!folders || folders.length === 0) {
       return null;
     }
+    if (changedFilePath) {
+      const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(changedFilePath));
+      if (folder) {
+        return folder.uri.fsPath;
+      }
+    }
+    return folders[0].uri.fsPath;
+  }
 
-    // Заменяем переменную ${workspaceFolder} на реальный путь
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  /**
+   * Путь к commit_devtools.txt. Пустая настройка заменяется путём по умолчанию.
+   */
+  private getCommitFilePath(changedFilePath?: string): string | null {
+    const config = vscode.workspace.getConfiguration();
+    const configured = config.get<string>(COMMIT_FILE_PATH_SETTING, '').trim();
+    const commitPath = configured || DEFAULT_COMMIT_FILE_PATH;
+    const workspaceFolder = this.workspaceFolderFor(changedFilePath);
     if (!workspaceFolder) {
       return null;
     }
-
-    const resolvedPath = commitPath.replace(/\$\{workspaceFolder\}/g, workspaceFolder);
-    return resolvedPath;
+    return commitPath.replace(/\$\{workspaceFolder\}/g, workspaceFolder);
   }
 
   /**
@@ -140,11 +184,9 @@ export class CommitFileLogger {
     const config = vscode.workspace.getConfiguration();
     const debugMode = config.get<boolean>('metadataViewer.debugMode', false);
 
-    const commitFilePath = this.getCommitFilePath();
+    const commitFilePath = this.getCommitFilePath(filePath);
     if (!commitFilePath) {
-      if (debugMode) {
-        outputChannel.appendLine('[CommitFileLogger] Путь к commit_devtools.txt не настроен');
-      }
+      outputChannel.appendLine('[CommitFileLogger] Нет корневой папки рабочей области, commit_devtools.txt не записан');
       return;
     }
 
@@ -170,6 +212,7 @@ export class CommitFileLogger {
 
       // Добавляем запись в файл
       fs.appendFileSync(commitFilePath, normalizedPath + '\r\n', 'utf-8');
+      outputChannel.appendLine(`[CommitFileLogger] ${normalizedPath} -> ${commitFilePath}`);
 
       if (debugMode) {
         outputChannel.appendLine(`[CommitFileLogger] Добавлен файл: ${normalizedPath}`);
@@ -192,11 +235,9 @@ export class CommitFileLogger {
     const config = vscode.workspace.getConfiguration();
     const debugMode = config.get<boolean>('metadataViewer.debugMode', false);
 
-    const commitFilePath = this.getCommitFilePath();
+    const commitFilePath = this.getCommitFilePath(filePaths[0]);
     if (!commitFilePath) {
-      if (debugMode) {
-        outputChannel.appendLine('[CommitFileLogger] Путь к commit_devtools.txt не настроен');
-      }
+      outputChannel.appendLine('[CommitFileLogger] Нет корневой папки рабочей области, commit_devtools.txt не записан');
       return;
     }
 

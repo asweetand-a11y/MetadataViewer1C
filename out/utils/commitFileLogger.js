@@ -1,6 +1,6 @@
 "use strict";
 /**
- * Утилита для логирования измененных файлов в Commit.txt
+ * Утилита для логирования измененных файлов в commit_devtools.txt
  *
  * Формат файла:
  * - Одно имя файла на строку (полный абсолютный путь в Windows формате)
@@ -35,11 +35,44 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CommitFileLogger = void 0;
+exports.CommitFileLogger = exports.migrateLegacyCommitFilePath = void 0;
 const vscode = __importStar(require("vscode"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const extension_1 = require("../extension");
+const COMMIT_FILE_PATH_SETTING = 'metadataViewer.commitFilePath';
+const DEFAULT_COMMIT_FILE_PATH = '${workspaceFolder}\\build\\commit_devtools\\commit_devtools.txt';
+const LEGACY_COMMIT_FILE_PATHS = new Set([
+    '${workspacefolder}\\build\\commit\\commit.txt',
+    '${workspacefolder}\\build\\commit.txt',
+    '${workspacefolder}\\commit_devtools\\commit_devtools.txt',
+]);
+function isLegacyCommitFilePath(value) {
+    const normalized = value.trim().replace(/\//g, '\\').toLowerCase();
+    return LEGACY_COMMIT_FILE_PATHS.has(normalized);
+}
+/**
+ * Заменяет сохранённый старый путь build\\commit\\commit.txt на текущий путь по умолчанию.
+ * Явно заданный другой путь не трогает.
+ */
+async function migrateLegacyCommitFilePath() {
+    const config = vscode.workspace.getConfiguration();
+    const inspected = config.inspect(COMMIT_FILE_PATH_SETTING);
+    if (!inspected)
+        return;
+    const targets = [
+        [inspected.globalValue, vscode.ConfigurationTarget.Global],
+        [inspected.workspaceValue, vscode.ConfigurationTarget.Workspace],
+        [inspected.workspaceFolderValue, vscode.ConfigurationTarget.WorkspaceFolder],
+    ];
+    await Promise.all(targets.map(async ([value, target]) => {
+        if (!value || !isLegacyCommitFilePath(value))
+            return;
+        await config.update(COMMIT_FILE_PATH_SETTING, DEFAULT_COMMIT_FILE_PATH, target);
+        extension_1.outputChannel.appendLine(`[CommitFileLogger] Путь обновлён: ${value} -> ${DEFAULT_COMMIT_FILE_PATH}`);
+    }));
+}
+exports.migrateLegacyCommitFilePath = migrateLegacyCommitFilePath;
 class CommitFileLogger {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     constructor() { }
@@ -50,13 +83,13 @@ class CommitFileLogger {
         return CommitFileLogger.instance;
     }
     /**
-     * Публично: разрешённый путь к Commit.txt или null, если не настроено / нет workspace.
+     * Публично: разрешённый путь к commit_devtools.txt или null, если не настроено / нет workspace.
      */
     getResolvedCommitFilePath() {
         return this.getCommitFilePath();
     }
     /**
-     * Прочитать все пути из Commit.txt (нормализованные, без дубликатов, в порядке появления).
+     * Прочитать все пути из commit_devtools.txt (нормализованные, без дубликатов, в порядке появления).
      */
     getLoggedPaths() {
         const commitFilePath = this.getCommitFilePath();
@@ -82,26 +115,39 @@ class CommitFileLogger {
         }
         catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            extension_1.outputChannel.appendLine(`[CommitFileLogger] Ошибка чтения Commit.txt: ${msg}`);
+            extension_1.outputChannel.appendLine(`[CommitFileLogger] Ошибка чтения commit_devtools.txt: ${msg}`);
         }
         return ordered;
     }
     /**
-     * Получить путь к файлу Commit.txt из настроек
+     * Каталог рабочей области, в которой лежит изменённый файл.
+     * Если файл вне всех корней, берётся первая корневая папка.
      */
-    getCommitFilePath() {
-        const config = vscode.workspace.getConfiguration();
-        const commitPath = config.get('metadataViewer.commitFilePath', '');
-        if (!commitPath) {
+    workspaceFolderFor(changedFilePath) {
+        const folders = vscode.workspace.workspaceFolders;
+        if (!folders || folders.length === 0) {
             return null;
         }
-        // Заменяем переменную ${workspaceFolder} на реальный путь
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        if (changedFilePath) {
+            const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(changedFilePath));
+            if (folder) {
+                return folder.uri.fsPath;
+            }
+        }
+        return folders[0].uri.fsPath;
+    }
+    /**
+     * Путь к commit_devtools.txt. Пустая настройка заменяется путём по умолчанию.
+     */
+    getCommitFilePath(changedFilePath) {
+        const config = vscode.workspace.getConfiguration();
+        const configured = config.get(COMMIT_FILE_PATH_SETTING, '').trim();
+        const commitPath = configured || DEFAULT_COMMIT_FILE_PATH;
+        const workspaceFolder = this.workspaceFolderFor(changedFilePath);
         if (!workspaceFolder) {
             return null;
         }
-        const resolvedPath = commitPath.replace(/\$\{workspaceFolder\}/g, workspaceFolder);
-        return resolvedPath;
+        return commitPath.replace(/\$\{workspaceFolder\}/g, workspaceFolder);
     }
     /**
      * Нормализовать путь к файлу (привести к абсолютному виду с обратными слешами)
@@ -116,7 +162,7 @@ class CommitFileLogger {
         return absolutePath;
     }
     /**
-     * Прочитать существующие записи из Commit.txt
+     * Прочитать существующие записи из commit_devtools.txt
      */
     readExistingEntries(commitFilePath) {
         const entries = new Set();
@@ -136,22 +182,20 @@ class CommitFileLogger {
         }
         catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            extension_1.outputChannel.appendLine(`[CommitFileLogger] Ошибка чтения Commit.txt: ${msg}`);
+            extension_1.outputChannel.appendLine(`[CommitFileLogger] Ошибка чтения commit_devtools.txt: ${msg}`);
         }
         return entries;
     }
     /**
-     * Записать файл в Commit.txt
+     * Записать файл в commit_devtools.txt
      * @param filePath Абсолютный путь к измененному файлу
      */
     logChangedFile(filePath) {
         const config = vscode.workspace.getConfiguration();
         const debugMode = config.get('metadataViewer.debugMode', false);
-        const commitFilePath = this.getCommitFilePath();
+        const commitFilePath = this.getCommitFilePath(filePath);
         if (!commitFilePath) {
-            if (debugMode) {
-                extension_1.outputChannel.appendLine('[CommitFileLogger] Путь к Commit.txt не настроен');
-            }
+            extension_1.outputChannel.appendLine('[CommitFileLogger] Нет корневой папки рабочей области, commit_devtools.txt не записан');
             return;
         }
         try {
@@ -172,31 +216,30 @@ class CommitFileLogger {
             }
             // Добавляем запись в файл
             fs.appendFileSync(commitFilePath, normalizedPath + '\r\n', 'utf-8');
+            extension_1.outputChannel.appendLine(`[CommitFileLogger] ${normalizedPath} -> ${commitFilePath}`);
             if (debugMode) {
                 extension_1.outputChannel.appendLine(`[CommitFileLogger] Добавлен файл: ${normalizedPath}`);
             }
-            extension_1.statusBarProgress.text = '$(check) Добавлено в Commit.txt';
+            extension_1.statusBarProgress.text = '$(check) Добавлено в commit_devtools.txt';
             extension_1.statusBarProgress.show();
             setTimeout(() => extension_1.statusBarProgress.hide(), 2500);
         }
         catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            extension_1.outputChannel.appendLine(`[CommitFileLogger] Ошибка записи в Commit.txt: ${msg}`);
-            vscode.window.showWarningMessage(`Не удалось записать в Commit.txt: ${msg}`);
+            extension_1.outputChannel.appendLine(`[CommitFileLogger] Ошибка записи в commit_devtools.txt: ${msg}`);
+            vscode.window.showWarningMessage(`Не удалось записать в commit_devtools.txt: ${msg}`);
         }
     }
     /**
-     * Записать несколько файлов в Commit.txt
+     * Записать несколько файлов в commit_devtools.txt
      * @param filePaths Массив абсолютных путей к измененным файлам
      */
     logChangedFiles(filePaths) {
         const config = vscode.workspace.getConfiguration();
         const debugMode = config.get('metadataViewer.debugMode', false);
-        const commitFilePath = this.getCommitFilePath();
+        const commitFilePath = this.getCommitFilePath(filePaths[0]);
         if (!commitFilePath) {
-            if (debugMode) {
-                extension_1.outputChannel.appendLine('[CommitFileLogger] Путь к Commit.txt не настроен');
-            }
+            extension_1.outputChannel.appendLine('[CommitFileLogger] Нет корневой папки рабочей области, commit_devtools.txt не записан');
             return;
         }
         try {
@@ -228,18 +271,18 @@ class CommitFileLogger {
                 extension_1.outputChannel.appendLine(`[CommitFileLogger] Добавлено файлов: ${newPaths.length}`);
                 newPaths.forEach(p => extension_1.outputChannel.appendLine(`  - ${p}`));
             }
-            extension_1.statusBarProgress.text = '$(check) Добавлено в Commit.txt';
+            extension_1.statusBarProgress.text = '$(check) Добавлено в commit_devtools.txt';
             extension_1.statusBarProgress.show();
             setTimeout(() => extension_1.statusBarProgress.hide(), 2500);
         }
         catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            extension_1.outputChannel.appendLine(`[CommitFileLogger] Ошибка записи в Commit.txt: ${msg}`);
-            vscode.window.showWarningMessage(`Не удалось записать в Commit.txt: ${msg}`);
+            extension_1.outputChannel.appendLine(`[CommitFileLogger] Ошибка записи в commit_devtools.txt: ${msg}`);
+            vscode.window.showWarningMessage(`Не удалось записать в commit_devtools.txt: ${msg}`);
         }
     }
     /**
-     * Очистить содержимое файла Commit.txt
+     * Очистить содержимое файла commit_devtools.txt
      */
     clearCommitFile() {
         const config = vscode.workspace.getConfiguration();
@@ -247,7 +290,7 @@ class CommitFileLogger {
         const commitFilePath = this.getCommitFilePath();
         if (!commitFilePath) {
             if (debugMode) {
-                extension_1.outputChannel.appendLine('[CommitFileLogger] Путь к Commit.txt не настроен, очистка не требуется');
+                extension_1.outputChannel.appendLine('[CommitFileLogger] Путь к commit_devtools.txt не настроен, очистка не требуется');
             }
             return;
         }
@@ -256,18 +299,18 @@ class CommitFileLogger {
                 // Очищаем файл, записывая пустую строку
                 fs.writeFileSync(commitFilePath, '', 'utf-8');
                 if (debugMode) {
-                    extension_1.outputChannel.appendLine(`[CommitFileLogger] Файл Commit.txt очищен: ${commitFilePath}`);
+                    extension_1.outputChannel.appendLine(`[CommitFileLogger] Файл commit_devtools.txt очищен: ${commitFilePath}`);
                 }
             }
             else {
                 if (debugMode) {
-                    extension_1.outputChannel.appendLine(`[CommitFileLogger] Файл Commit.txt не существует, очистка не требуется: ${commitFilePath}`);
+                    extension_1.outputChannel.appendLine(`[CommitFileLogger] Файл commit_devtools.txt не существует, очистка не требуется: ${commitFilePath}`);
                 }
             }
         }
         catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            extension_1.outputChannel.appendLine(`[CommitFileLogger] Ошибка очистки Commit.txt: ${msg}`);
+            extension_1.outputChannel.appendLine(`[CommitFileLogger] Ошибка очистки commit_devtools.txt: ${msg}`);
             // Не показываем ошибку пользователю при деактивации, только логируем
         }
     }
