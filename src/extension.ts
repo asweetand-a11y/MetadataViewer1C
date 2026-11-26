@@ -406,7 +406,7 @@ export function activate(context: vscode.ExtensionContext) {
 					outputChannel.appendLine(`[BSL Save] Файл сохранен: ${document.fileName}`);
 				}
 				
-				// Логируем сохраненный файл в Commit.txt
+				// Логируем сохраненный файл в commit_devtools.txt
 				CommitFileLogger.getInstance().logChangedFile(document.fileName);
 			}
 		})
@@ -422,10 +422,10 @@ export function deactivate() {
 		outputChannel.appendLine('=== Расширение "1C Metadata Viewer" деактивировано ===');
 		void stopEmbeddedMcpServer();
 
-		// Очищаем содержимое файла Commit.txt при закрытии IDE
+		// Очищаем содержимое файла commit_devtools.txt при закрытии IDE
 		CommitFileLogger.getInstance().clearCommitFile();
 		
-		outputChannel.appendLine('Commit.txt очищен');
+		outputChannel.appendLine('commit_devtools.txt очищен');
 	} catch (error) {
 		outputChannel.appendLine(`Ошибка при деактивации расширения: ${error}`);
 	}

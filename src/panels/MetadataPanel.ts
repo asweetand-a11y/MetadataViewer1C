@@ -1544,7 +1544,7 @@ export class MetadataPanel {
 
                 vscode.window.showInformationMessage("Изменения объекта успешно сохранены.");
                 
-                // Логируем измененный файл в Commit.txt
+                // Логируем измененный файл в commit_devtools.txt
                 CommitFileLogger.getInstance().logChangedFile(obj.sourcePath);
 
                 if (
@@ -1690,7 +1690,7 @@ export class MetadataPanel {
 
             vscode.window.showInformationMessage("Форма успешно сохранена.");
             
-            // Логируем измененный файл в Commit.txt
+            // Логируем измененный файл в commit_devtools.txt
             CommitFileLogger.getInstance().logChangedFile(formPath);
 
             // Обновляем локальный кэш/дерево метаданных для конфигурации, содержащей эту форму

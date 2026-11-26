@@ -517,7 +517,7 @@ export class PredefinedDataPanel {
             }
             fs.writeFileSync(this.state.predefinedPath, xmlToWrite, 'utf8');
             
-            // Логируем измененный файл в Commit.txt
+            // Логируем измененный файл в commit_devtools.txt
             CommitFileLogger.getInstance().logChangedFile(this.state.predefinedPath);
             
             // Обновляем ConfigDumpInfo.xml

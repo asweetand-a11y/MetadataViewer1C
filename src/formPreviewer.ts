@@ -412,7 +412,7 @@ export class FormPreviewer {
           const xmlWithBom = '\uFEFF' + normalizedXml;
           await fs.promises.writeFile(formPath, xmlWithBom, 'utf8');
 
-          // Логируем измененный файл в Commit.txt
+          // Логируем измененный файл в commit_devtools.txt
           CommitFileLogger.getInstance().logChangedFile(formPath);
 
           panel.webview.postMessage({ type: 'formPreviewSaved', success: true });

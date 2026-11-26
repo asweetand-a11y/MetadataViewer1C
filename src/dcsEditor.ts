@@ -797,7 +797,7 @@ export class DcsEditor {
       const contentBuffer = Buffer.from(updatedXml, 'utf8');
       fs.writeFileSync(templatePath, Buffer.concat([bomBuffer, contentBuffer]));
       
-      // Логируем измененный файл в Commit.txt
+      // Логируем измененный файл в commit_devtools.txt
       CommitFileLogger.getInstance().logChangedFile(templatePath);
 
       // 5) (MVP) Report.xml пока не обновляем автоматически.

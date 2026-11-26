@@ -654,7 +654,7 @@ export interface ApplyCommitPathsResult {
 }
 
 /**
- * Применяет список путей из Commit.txt к документу дампа (без записи на диск).
+ * Применяет список путей из commit_devtools.txt к документу дампа (без записи на диск).
  */
 export function applyCommitPathsToDocument(
     configRoot: string,
@@ -719,7 +719,7 @@ export interface RunUpdateConfigDumpFromCommitResult {
 }
 
 /**
- * Полный цикл: синхронизация новых объектов + правки по Commit.txt + валидация дампа + одна запись на диск.
+ * Полный цикл: синхронизация новых объектов + правки по commit_devtools.txt + валидация дампа + одна запись на диск.
  */
 export async function runUpdateConfigDumpFromCommitTxt(options: {
     configRoot: string;
